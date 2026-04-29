@@ -1,19 +1,260 @@
 export const backendModules = {
-  dashboard: { title: "Company Dashboard", description: "Company + payroll run overview mapped from backend models.", entities: [{ name: "Company", purpose: "Legal and payroll config", fields: ["name", "taxId", "currency"] }, { name: "PayrollRun", purpose: "Current payroll cycle", fields: ["periodStart", "periodEnd", "status"] }] },
-  employees: { title: "Employee Management", description: "Master data for employees and organization structure.", entities: [{ name: "Employee", purpose: "Employee profile", fields: ["employeeCode", "fullName", "email", "status"] }, { name: "Department", purpose: "Department mapping", fields: ["name", "code"] }, { name: "Designation", purpose: "Role/grade mapping", fields: ["title", "grade"] }] },
-  payrollRuns: { title: "Payroll Run Wizard", description: "Run payroll with attendance and leave summaries.", entities: [{ name: "PayrollRunItem", purpose: "Per-employee computation", fields: ["gross", "deductions", "net"] }, { name: "AttendanceSummary", purpose: "Attendance based inputs", fields: ["presentDays", "overtimeHours"] }, { name: "LeaveSummary", purpose: "Leave based deduction", fields: ["lop", "paidLeaves"] }] },
-  payrollRunDetails: { title: "Payroll Run Details", description: "Drill-down view for run status and line items.", entities: [{ name: "PayrollRun", purpose: "Lifecycle status", fields: ["status", "processedAt", "approvedAt"] }, { name: "PayrollApproval", purpose: "Approver chain", fields: ["approverId", "decision", "comment"] }] },
-  payslips: { title: "Payslip List", description: "Admin listing for generated payslips.", entities: [{ name: "Payslip", purpose: "Final salary statement", fields: ["employeeId", "month", "netPay"] }] },
-  myPayslips: { title: "My Payslips", description: "Employee self-service payslip archive.", entities: [{ name: "Payslip", purpose: "Personal payslip timeline", fields: ["month", "grossPay", "netPay"] }] },
-  approvals: { title: "Approval Queue", description: "Pending payroll approvals from approval model.", entities: [{ name: "PayrollApproval", purpose: "Workflow approvals", fields: ["runId", "approver", "decision"] }, { name: "AuditLog", purpose: "Decision trace", fields: ["actor", "action", "timestamp"] }] },
-  salaryComponents: { title: "Salary Components", description: "Reusable allowance/deduction components.", entities: [{ name: "SalaryComponent", purpose: "Earning/Deduction definition", fields: ["code", "name", "type", "taxable"] }] },
-  salaryStructure: { title: "Salary Structure Builder", description: "Attach components into company-grade structures.", entities: [{ name: "SalaryStructure", purpose: "Component composition", fields: ["name", "components", "effectiveFrom"] }] },
-  taxDeclarations: { title: "Tax Declarations", description: "Collect employee tax investments and proofs.", entities: [{ name: "TaxDeclaration", purpose: "Declaration workflow", fields: ["employeeId", "fiscalYear", "status"] }] },
-  loans: { title: "Loan & Advance", description: "Loan requests and installment schedules.", entities: [{ name: "EmployeeLoan", purpose: "Loan master", fields: ["amount", "tenureMonths", "interestRate"] }, { name: "LoanInstallment", purpose: "EMI schedule", fields: ["dueDate", "amount", "paid"] }] },
-  reimbursements: { title: "Reimbursements", description: "Expense claim requests and payout integration.", entities: [{ name: "Reimbursement", purpose: "Claim tracking", fields: ["claimType", "amount", "status"] }, { name: "Payment", purpose: "Settlement status", fields: ["mode", "reference", "paidAt"] }] },
-  reports: { title: "Reports", description: "Payroll and compliance reports.", entities: [{ name: "Invoice", purpose: "Billing/statement records", fields: ["invoiceNo", "amount", "dueDate"] }, { name: "AuditLog", purpose: "Operational audit", fields: ["entity", "action", "actor"] }] },
-  settings: { title: "Settings", description: "Roles, permissions and locations configuration.", entities: [{ name: "Role", purpose: "Access role", fields: ["name", "level"] }, { name: "Permission", purpose: "Feature permissions", fields: ["resource", "action"] }, { name: "WorkLocation", purpose: "Office mapping", fields: ["name", "timezone"] }] },
-  billing: { title: "Subscription & Billing", description: "Plan and invoicing linked to subscriptions.", entities: [{ name: "SubscriptionPlan", purpose: "Plan definition", fields: ["name", "price", "cycle"] }, { name: "CompanySubscription", purpose: "Company active plan", fields: ["status", "renewalDate"] }] },
-  onboarding: { title: "Onboarding Wizard", description: "New company setup flow before first payroll run.", entities: [{ name: "Company", purpose: "Registration details", fields: ["name", "industry", "size"] }, { name: "User", purpose: "Admin account", fields: ["fullName", "email", "role"] }] },
-  superAdmin: { title: "Super Admin Dashboard", description: "Cross-tenant monitoring and governance view.", entities: [{ name: "Company", purpose: "Tenant health", fields: ["status", "createdAt"] }, { name: "CompanySubscription", purpose: "Billing oversight", fields: ["plan", "status"] }] },
+  dashboard: {
+    title: "Company Dashboard",
+    description: "Company + payroll run overview mapped from backend models.",
+    entities: [
+      {
+        name: "Company",
+        purpose: "Legal and payroll config",
+        fields: ["name", "taxId", "currency"],
+      },
+      {
+        name: "PayrollRun",
+        purpose: "Current payroll cycle",
+        fields: ["periodStart", "periodEnd", "status"],
+      },
+    ],
+  },
+  employees: {
+    title: "Employee Management",
+    description: "Master data for employees and organization structure.",
+    entities: [
+      {
+        name: "Employee",
+        purpose: "Employee profile",
+        fields: ["employeeCode", "fullName", "email", "status"],
+      },
+      {
+        name: "Department",
+        purpose: "Department mapping",
+        fields: ["name", "code"],
+      },
+      {
+        name: "Designation",
+        purpose: "Role/grade mapping",
+        fields: ["title", "grade"],
+      },
+    ],
+  },
+  payrollRuns: {
+    title: "Payroll Run Wizard",
+    description: "Run payroll with attendance and leave summaries.",
+    entities: [
+      {
+        name: "PayrollRunItem",
+        purpose: "Per-employee computation",
+        fields: ["gross", "deductions", "net"],
+      },
+      {
+        name: "AttendanceSummary",
+        purpose: "Attendance based inputs",
+        fields: ["presentDays", "overtimeHours"],
+      },
+      {
+        name: "LeaveSummary",
+        purpose: "Leave based deduction",
+        fields: ["lop", "paidLeaves"],
+      },
+    ],
+  },
+  payrollRunDetails: {
+    title: "Payroll Run Details",
+    description: "Drill-down view for run status and line items.",
+    entities: [
+      {
+        name: "PayrollRun",
+        purpose: "Lifecycle status",
+        fields: ["status", "processedAt", "approvedAt"],
+      },
+      {
+        name: "PayrollApproval",
+        purpose: "Approver chain",
+        fields: ["approverId", "decision", "comment"],
+      },
+    ],
+  },
+  payslips: {
+    title: "Payslip List",
+    description: "Admin listing for generated payslips.",
+    entities: [
+      {
+        name: "Payslip",
+        purpose: "Final salary statement",
+        fields: ["employeeId", "month", "netPay"],
+      },
+    ],
+  },
+  myPayslips: {
+    title: "My Payslips",
+    description: "Employee self-service payslip archive.",
+    entities: [
+      {
+        name: "Payslip",
+        purpose: "Personal payslip timeline",
+        fields: ["month", "grossPay", "netPay"],
+      },
+    ],
+  },
+  approvals: {
+    title: "Approval Queue",
+    description: "Pending payroll approvals from approval model.",
+    entities: [
+      {
+        name: "PayrollApproval",
+        purpose: "Workflow approvals",
+        fields: ["runId", "approver", "decision"],
+      },
+      {
+        name: "AuditLog",
+        purpose: "Decision trace",
+        fields: ["actor", "action", "timestamp"],
+      },
+    ],
+  },
+  salaryComponents: {
+    title: "Salary Components",
+    description: "Reusable allowance/deduction components.",
+    entities: [
+      {
+        name: "SalaryComponent",
+        purpose: "Earning/Deduction definition",
+        fields: ["code", "name", "type", "taxable"],
+      },
+    ],
+  },
+  salaryStructure: {
+    title: "Salary Structure Builder",
+    description: "Attach components into company-grade structures.",
+    entities: [
+      {
+        name: "SalaryStructure",
+        purpose: "Component composition",
+        fields: ["name", "components", "effectiveFrom"],
+      },
+    ],
+  },
+  taxDeclarations: {
+    title: "Tax Declarations",
+    description: "Collect employee tax investments and proofs.",
+    entities: [
+      {
+        name: "TaxDeclaration",
+        purpose: "Declaration workflow",
+        fields: ["employeeId", "fiscalYear", "status"],
+      },
+    ],
+  },
+  loans: {
+    title: "Loan & Advance",
+    description: "Loan requests and installment schedules.",
+    entities: [
+      {
+        name: "EmployeeLoan",
+        purpose: "Loan master",
+        fields: ["amount", "tenureMonths", "interestRate"],
+      },
+      {
+        name: "LoanInstallment",
+        purpose: "EMI schedule",
+        fields: ["dueDate", "amount", "paid"],
+      },
+    ],
+  },
+  reimbursements: {
+    title: "Reimbursements",
+    description: "Expense claim requests and payout integration.",
+    entities: [
+      {
+        name: "Reimbursement",
+        purpose: "Claim tracking",
+        fields: ["claimType", "amount", "status"],
+      },
+      {
+        name: "Payment",
+        purpose: "Settlement status",
+        fields: ["mode", "reference", "paidAt"],
+      },
+    ],
+  },
+  reports: {
+    title: "Reports",
+    description: "Payroll and compliance reports.",
+    entities: [
+      {
+        name: "Invoice",
+        purpose: "Billing/statement records",
+        fields: ["invoiceNo", "amount", "dueDate"],
+      },
+      {
+        name: "AuditLog",
+        purpose: "Operational audit",
+        fields: ["entity", "action", "actor"],
+      },
+    ],
+  },
+  settings: {
+    title: "Settings",
+    description: "Roles, permissions and locations configuration.",
+    entities: [
+      { name: "Role", purpose: "Access role", fields: ["name", "level"] },
+      {
+        name: "Permission",
+        purpose: "Feature permissions",
+        fields: ["resource", "action"],
+      },
+      {
+        name: "WorkLocation",
+        purpose: "Office mapping",
+        fields: ["name", "timezone"],
+      },
+    ],
+  },
+  billing: {
+    title: "Subscription & Billing",
+    description: "Plan and invoicing linked to subscriptions.",
+    entities: [
+      {
+        name: "SubscriptionPlan",
+        purpose: "Plan definition",
+        fields: ["name", "price", "cycle"],
+      },
+      {
+        name: "CompanySubscription",
+        purpose: "Company active plan",
+        fields: ["status", "renewalDate"],
+      },
+    ],
+  },
+  onboarding: {
+    title: "Onboarding Wizard",
+    description: "New company setup flow before first payroll run.",
+    entities: [
+      {
+        name: "Company",
+        purpose: "Registration details",
+        fields: ["name", "industry", "size"],
+      },
+      {
+        name: "User",
+        purpose: "Admin account",
+        fields: ["fullName", "email", "role"],
+      },
+    ],
+  },
+  superAdmin: {
+    title: "Super Admin Dashboard",
+    description: "Cross-tenant monitoring and governance view.",
+    entities: [
+      {
+        name: "Company",
+        purpose: "Tenant health",
+        fields: ["status", "createdAt"],
+      },
+      {
+        name: "CompanySubscription",
+        purpose: "Billing oversight",
+        fields: ["plan", "status"],
+      },
+    ],
+  },
 };

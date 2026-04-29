@@ -14,7 +14,7 @@ export default function AppLayout() {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider breakpoint="lg" collapsedWidth="0">
-        <div className="text-white p-4 font-bold">Payroll SaaS</div>
+        <div className="text-white p-4 font-bold">Payroll SaaS1</div>
         <Menu
           theme="dark"
           mode="inline"
