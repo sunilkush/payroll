@@ -1,1 +1,6 @@
-export default function PayrollRunDetailsPage(){return <div className="p-6"><h1>PayrollRunDetailsPage</h1></div>;}
+import ModulePage from "../components/ModulePage";
+import { backendModules } from "../data/backendModules";
+
+export default function PayrollRunDetailsPage() {
+  return <ModulePage {...backendModules.payrollRunDetails} />;
+}

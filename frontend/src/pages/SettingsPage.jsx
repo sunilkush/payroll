@@ -1,1 +1,6 @@
-export default function SettingsPage(){return <div className="p-6"><h1>SettingsPage</h1></div>;}
+import ModulePage from "../components/ModulePage";
+import { backendModules } from "../data/backendModules";
+
+export default function SettingsPage() {
+  return <ModulePage {...backendModules.settings} />;
+}

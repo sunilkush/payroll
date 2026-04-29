@@ -1,1 +1,6 @@
-export default function SalaryStructureBuilderPage(){return <div className="p-6"><h1>SalaryStructureBuilderPage</h1></div>;}
+import ModulePage from "../components/ModulePage";
+import { backendModules } from "../data/backendModules";
+
+export default function SalaryStructureBuilderPage() {
+  return <ModulePage {...backendModules.salaryStructure} />;
+}

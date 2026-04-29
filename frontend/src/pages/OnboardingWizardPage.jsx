@@ -1,1 +1,6 @@
-export default function OnboardingWizardPage(){return <div className="p-6"><h1>OnboardingWizardPage</h1></div>;}
+import ModulePage from "../components/ModulePage";
+import { backendModules } from "../data/backendModules";
+
+export default function OnboardingWizardPage() {
+  return <ModulePage {...backendModules.onboarding} />;
+}
