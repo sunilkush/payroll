@@ -1,1 +1,6 @@
-export default function TaxDeclarationPage(){return <div className="p-6"><h1>TaxDeclarationPage</h1></div>;}
+import ModulePage from "../components/ModulePage";
+import { backendModules } from "../data/backendModules";
+
+export default function TaxDeclarationPage() {
+  return <ModulePage {...backendModules.taxDeclarations} />;
+}
