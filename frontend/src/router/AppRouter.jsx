@@ -2,7 +2,22 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "../pages/LandingPage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
 import CompanyDashboardPage from "../pages/CompanyDashboardPage.jsx";
-
+import EmployeeManagementPage from "../pages/EmployeeManagementPage.jsx";
+import PayrollRunWizardPage from "../pages/PayrollRunWizardPage.jsx";
+import PayrollRunDetailsPage from "../pages/PayrollRunDetailsPage.jsx";
+import PayslipListPage from "../pages/PayslipListPage.jsx";
+import MyPayslipsPage from "../pages/MyPayslipsPage.jsx";
+import ApprovalQueuePage from "../pages/ApprovalQueuePage.jsx";
+import SalaryComponentsPage from "../pages/SalaryComponentsPage.jsx";
+import SalaryStructureBuilderPage from "../pages/SalaryStructureBuilderPage.jsx";
+import TaxDeclarationPage from "../pages/TaxDeclarationPage.jsx";
+import LoanAdvancePage from "../pages/LoanAdvancePage.jsx";
+import ReimbursementPage from "../pages/ReimbursementPage.jsx";
+import ReportsPage from "../pages/ReportsPage.jsx";
+import SettingsPage from "../pages/SettingsPage.jsx";
+import SubscriptionBillingPage from "../pages/SubscriptionBillingPage.jsx";
+import OnboardingWizardPage from "../pages/OnboardingWizardPage.jsx";
+import SuperAdminDashboardPage from "../pages/SuperAdminDashboardPage.jsx";
 export const AppRouter = () => (
   <HashRouter>
     <Routes>
