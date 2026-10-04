@@ -28,6 +28,13 @@ npm run dev:server                    # http://localhost:5000
 npm run dev:client                    # doosre terminal mein, http://localhost:5173
 ```
 
+App ko bhara hua dekhna ho to demo data daal sakte ho (2 companies, staff, pichhle mahine ki
+attendance, leaves aur payroll; sab nakli):
+
+```bash
+npm run seed:demo                     # logins aur password script ke end mein print hote hain
+```
+
 Shuru karne ka order: Super Admin login -> company + admin banao -> admin login -> Settings mein
 office location (aur chaho to Leave / PF / ESI ON) -> staff add karo -> staff login karke punch kare.
 
@@ -180,6 +187,11 @@ git pull && npm run install:all && npm run build && pm2 restart payroll
 - **Server ka time** kuch bhi ho, attendance ki date aur cron `APP_TIMEZONE` se chalte hain.
 - **PF/ESI rates** Super Admin ki Global Settings mein hain. Live jaane se pehle CA se confirm karo,
   khaaskar "PF wage floor (% of gross)".
+- **Office location ka map** (admin Settings) OpenStreetMap se aata hai: map ki tiles
+  `tile.openstreetmap.org` se aur place search `nominatim.openstreetmap.org` se. Dono free hain aur
+  API key nahi chahiye, lekin server ke bahar internet zaroori hai, aur ye sirf halke use ke liye hain
+  (bahut zyada users hon to apna tile/search provider lagana hoga). In dono ko `server/app.js` ke
+  Content-Security-Policy mein ijazat di gayi hai.
 - **Fake GPS** web browser par poori tarah nahi ruk sakta. Har punch ke saath IP aur device save
   hota hai, shak hone par wahi dekho.
 

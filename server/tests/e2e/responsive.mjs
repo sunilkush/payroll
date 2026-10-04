@@ -305,8 +305,16 @@ try {
         const latBefore = await page.inputValue('#location-lat-0');
         const mapCanvas = page.locator('.location-map__canvas').first();
         await mapCanvas.scrollIntoViewIfNeeded();
-        if (!(await page.locator('.location-map__pin').count())) fail(current, 'map par pin nahi dikha');
         const mapBox = await mapCanvas.boundingBox();
+        // Pin sirf maujood hi nahi, map ke dabbe ke andar bhi hona chahiye
+        const pinBox = await page.locator('.location-map__pin').first().boundingBox().catch(() => null);
+        const pinInside =
+          pinBox &&
+          pinBox.x >= mapBox.x &&
+          pinBox.x + pinBox.width <= mapBox.x + mapBox.width &&
+          pinBox.y >= mapBox.y &&
+          pinBox.y + pinBox.height <= mapBox.y + mapBox.height;
+        if (!pinInside) fail(current, `pin map ke andar nahi dikh raha (pin ${JSON.stringify(pinBox)})`);
         await page.mouse.click(mapBox.x + mapBox.width * 0.25, mapBox.y + mapBox.height * 0.3);
         await page.waitForTimeout(400);
         const latAfter = await page.inputValue('#location-lat-0');

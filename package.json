@@ -10,6 +10,7 @@
     "start": "npm --prefix server start",
     "test": "npm --prefix server test",
     "test:responsive": "npm run build && npm --prefix server run test:responsive",
-    "seed:superadmin": "npm --prefix server run seed:superadmin"
+    "seed:superadmin": "npm --prefix server run seed:superadmin",
+    "seed:demo": "npm --prefix server run seed:demo"
   }
 }

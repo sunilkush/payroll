@@ -8,6 +8,7 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "seed:superadmin": "node scripts/seedSuperAdmin.js",
+    "seed:demo": "node scripts/seedDemo.js",
     "test": "node --test \"tests/**/*.test.js\"",
     "test:unit": "node --test \"tests/unit/*.test.js\"",
     "test:responsive": "node tests/e2e/responsive.mjs"
