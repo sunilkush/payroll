@@ -1,0 +1,19 @@
+import Joi from 'joi';
+import { currentMonth } from '../utils/dateUtil.js';
+import { objectId } from './common.js';
+
+export const punchSchema = Joi.object({
+  lat: Joi.number().min(-90).max(90).required().label('Latitude'),
+  lng: Joi.number().min(-180).max(180).required().label('Longitude'),
+  accuracy: Joi.number().min(0).required().label('GPS accuracy'),
+});
+
+const month = Joi.string()
+  .pattern(/^\d{4}-(0[1-9]|1[0-2])$/)
+  .default(() => currentMonth())
+  .label('Month')
+  .messages({ 'string.pattern.base': 'Month YYYY-MM format mein hona chahiye' });
+
+export const monthlyQuerySchema = Joi.object({ month, userId: objectId });
+
+export const reportQuerySchema = Joi.object({ month });

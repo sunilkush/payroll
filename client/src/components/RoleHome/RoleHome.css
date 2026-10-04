@@ -1,0 +1,84 @@
+.role-home__title {
+  font-size: var(--font-size-xl);
+  line-height: 1.25;
+}
+
+.role-home__welcome {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+/* Mobile: ek column. Tablet: 2. Desktop: 3. */
+.role-home__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.role-home__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.role-home__card-title {
+  font-size: var(--font-size-lg);
+}
+
+.role-home__card-text {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.role-home__link {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Poora card dabane layak: link ka click area card jitna bada */
+.role-home__link::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  border-radius: var(--radius-md);
+}
+
+.role-home__card:has(.role-home__link:hover) {
+  border-color: var(--color-primary);
+}
+
+.role-home__badge {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+}
+
+@media (min-width: 768px) {
+  .role-home__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+  }
+}
+
+@media (min-width: 1366px) {
+  .role-home__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

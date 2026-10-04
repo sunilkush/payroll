@@ -1,0 +1,82 @@
+/* Mobile: CL aur EL ke cards saath-saath (chhote), tablet se bade */
+.my-leaves__balances {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.my-leaves__balance {
+  min-width: 0;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.my-leaves__balance-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.my-leaves__available {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.my-leaves__available span {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+}
+
+.my-leaves__breakup,
+.my-leaves__note,
+.my-leaves__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Breakup ke do hisse: mobile par upar-neeche */
+.my-leaves__breakup span {
+  display: block;
+}
+
+.my-leaves__dates {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--space-4);
+}
+
+.my-leaves__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .my-leaves__balances {
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .my-leaves__balance {
+    padding: var(--space-4) var(--space-6);
+  }
+
+  .my-leaves__balance-title {
+    font-size: var(--font-size-md);
+  }
+
+  .my-leaves__breakup span {
+    display: inline;
+    margin-right: var(--space-4);
+  }
+
+  .my-leaves__dates {
+    grid-template-columns: 1fr 1fr;
+  }
+}

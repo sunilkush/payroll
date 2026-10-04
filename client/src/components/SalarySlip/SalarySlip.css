@@ -1,0 +1,101 @@
+.salary-slip dl {
+  margin: 0;
+}
+
+.salary-slip__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.salary-slip__name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.salary-slip__muted {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.salary-slip__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+}
+
+.salary-slip__row dt {
+  color: var(--color-text-muted);
+}
+
+.salary-slip__row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.salary-slip__row--total {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  font-weight: var(--font-weight-bold);
+  border-top: 1px solid var(--color-border);
+}
+
+.salary-slip__row--total dt {
+  color: var(--color-text);
+}
+
+/* Days: mobile par 2 column */
+.salary-slip__days {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.salary-slip__heading {
+  margin: var(--space-4) 0 var(--space-1);
+  padding-bottom: var(--space-1);
+  font-size: var(--font-size-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Mobile: Earnings ke neeche Deductions */
+.salary-slip__columns {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.salary-slip__net {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-lg);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+}
+
+.salary-slip__net strong {
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .salary-slip__days {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .salary-slip__columns {
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--space-6);
+  }
+}

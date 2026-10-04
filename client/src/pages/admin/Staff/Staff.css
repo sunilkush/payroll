@@ -1,0 +1,25 @@
+.staff__contact {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.staff__name {
+  font-weight: var(--font-weight-medium);
+}
+
+.staff__name:hover {
+  text-decoration: underline;
+}
+
+.staff__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (min-width: 1024px) {
+  .staff__row-actions {
+    justify-content: flex-start;
+  }
+}

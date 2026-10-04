@@ -1,0 +1,15 @@
+.attendance-month__loading {
+  color: var(--color-text-muted);
+}
+
+.attendance-month__weekday,
+.attendance-month__note {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.attendance-month__missed {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-warning);
+}

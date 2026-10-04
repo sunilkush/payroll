@@ -1,0 +1,18 @@
+.attendance__name {
+  margin-right: var(--space-2);
+  font-weight: var(--font-weight-medium);
+}
+
+.attendance__name:hover {
+  text-decoration: underline;
+}
+
+.attendance__absent {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-danger);
+}
+
+.attendance__missed {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-warning);
+}

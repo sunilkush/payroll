@@ -1,0 +1,106 @@
+/*
+ * Mobile-first: phone par card poori chaudai leta hai, button bada aur angoothe ki pahunch mein.
+ * Tablet/desktop par wahi card beech mein simat jata hai.
+ */
+.punch-screen__title {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-xl);
+}
+
+.punch-screen__card {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.punch-screen__date {
+  color: var(--color-text-muted);
+}
+
+.punch-screen__clock {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.punch-screen__status {
+  margin-bottom: var(--space-4);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.punch-screen__status--in {
+  color: var(--color-success);
+}
+
+.punch-screen__button {
+  width: 100%;
+  min-height: 72px;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  /* Double-tap par zoom na ho */
+  touch-action: manipulation;
+}
+
+.punch-screen__button--in {
+  background: var(--color-success);
+}
+
+.punch-screen__button--out {
+  background: var(--color-danger);
+}
+
+.punch-screen__button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.punch-screen__times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.punch-screen__time {
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.punch-screen__time dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.punch-screen__time dd {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.punch-screen__hint {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .punch-screen {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .punch-screen__card {
+    padding: var(--space-8) var(--space-6);
+  }
+}
