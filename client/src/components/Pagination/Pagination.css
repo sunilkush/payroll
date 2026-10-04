@@ -1,0 +1,12 @@
+/* Mobile: beech mein. Desktop: daayein. */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+}
+
+@media (min-width: 992px) {
+  .pagination {
+    justify-content: flex-end;
+  }
+}

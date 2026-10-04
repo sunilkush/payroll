@@ -1,0 +1,34 @@
+/* Control (Input/Select) Ant Design ka hai; yahan sirf label, error aur hint ka layout hai. */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-4);
+}
+
+.form-field__label {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.form-field__required {
+  color: var(--color-danger);
+}
+
+.form-field__select {
+  width: 100%;
+}
+
+.form-field__error,
+.form-field__hint {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.form-field__error {
+  color: var(--color-danger);
+}
+
+.form-field__hint {
+  color: var(--color-text-muted);
+}

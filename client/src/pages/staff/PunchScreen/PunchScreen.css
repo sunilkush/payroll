@@ -1,0 +1,77 @@
+/*
+ * Mobile-first: phone par card poori chaudai leta hai, button bada aur angoothe ki pahunch mein.
+ * Tablet/desktop par wahi card beech mein simat jata hai.
+ */
+.punch-screen__title {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-xl);
+}
+
+.punch-screen__card {
+  text-align: center;
+}
+
+.punch-screen__date {
+  color: var(--color-text-muted);
+}
+
+.punch-screen__clock {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.punch-screen__status {
+  margin-bottom: var(--space-4);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.punch-screen__status--in {
+  color: var(--color-success);
+}
+
+/* Ant Design ka button, par aam button se kaafi bada */
+.punch-screen__button.ant-btn {
+  height: 72px;
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-md);
+  /* Double-tap par zoom na ho */
+  touch-action: manipulation;
+}
+
+/* Punch In hara (Punch Out Ant Design ke "danger" se laal hota hai) */
+.punch-screen__button--in.ant-btn-primary:not(:disabled) {
+  background: var(--color-success);
+}
+
+.punch-screen__times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.punch-screen__time.ant-card {
+  background: var(--color-bg);
+}
+
+.punch-screen__time .ant-statistic-content {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.punch-screen__hint {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .punch-screen {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}

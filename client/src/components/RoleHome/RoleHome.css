@@ -1,0 +1,56 @@
+.role-home__title {
+  font-size: var(--font-size-xl);
+  line-height: 1.25;
+}
+
+.role-home__welcome {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+/* Mobile: ek column. Tablet: 2. Badi screen: 3. */
+.role-home__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.role-home__card {
+  position: relative;
+  height: 100%;
+}
+
+.role-home__card-text {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.role-home__link {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Poora card dabane layak: link ka click area card jitna bada */
+.role-home__link::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+@media (min-width: 768px) {
+  .role-home__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+  }
+}
+
+@media (min-width: 1366px) {
+  .role-home__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

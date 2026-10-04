@@ -1,0 +1,26 @@
+.my-salary__lop {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+.my-salary__net {
+  font-weight: var(--font-weight-bold);
+}
+
+.my-salary__actions,
+.my-salary__modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.my-salary__modal-actions {
+  margin-top: var(--space-4);
+}
+
+@media (min-width: 992px) {
+  .my-salary__actions {
+    justify-content: flex-start;
+  }
+}

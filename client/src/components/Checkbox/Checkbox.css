@@ -1,0 +1,14 @@
+.checkbox {
+  display: flex;
+  /* Poori line dabane layak ho, sirf chhota box nahi */
+  min-height: 36px;
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.checkbox__hint {
+  display: block;
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+}

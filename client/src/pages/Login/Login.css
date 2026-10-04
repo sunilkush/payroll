@@ -1,0 +1,27 @@
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  /* Mobile browser ki address bar ke saath bhi poori screen (jahan support ho) */
+  min-height: 100dvh;
+  padding: var(--space-3);
+}
+
+.login__card {
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow-md);
+}
+
+.login__title {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary);
+  text-align: center;
+}
+
+.login__subtitle {
+  margin-bottom: var(--space-6);
+  color: var(--color-text-muted);
+  text-align: center;
+}
