@@ -19,7 +19,7 @@
   margin-top: var(--space-4);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 992px) {
   .my-salary__actions {
     justify-content: flex-start;
   }

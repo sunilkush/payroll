@@ -10,4 +10,20 @@ export default defineConfig({
       '/api': 'http://localhost:5000',
     },
   },
+  build: {
+    // Ant Design badi library hai. Use alag file mein rakhne se hamara code badalne par
+    // users ko sirf chhoti app file dobara download karni padti hai, library cache se aati hai.
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
+            return 'react';
+          }
+          return 'vendor'; // antd, icons, dayjs, axios
+        },
+      },
+    },
+  },
 });

@@ -1,26 +1,15 @@
-/* Mobile: har section mein fields ek column mein. Tablet se: 2 column (grid apne aap bharta hai). */
+/* Har section Ant Design ka Card hai. Mobile: fields ek column mein. Tablet se: 2, badi screen: 3. */
 .staff-form__section {
-  min-width: 0;
-  margin: 0 0 var(--space-4);
-  padding: var(--space-3) var(--space-4) var(--space-1);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.staff-form__legend {
-  padding: 0 var(--space-2);
-  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-4);
 }
 
 .staff-form__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   column-gap: var(--space-6);
 }
 
 .staff-form__gross {
-  margin-bottom: var(--space-4);
   padding: var(--space-3) var(--space-4);
   background: var(--color-primary-light);
   border-radius: var(--radius-sm);
@@ -35,17 +24,13 @@
 }
 
 @media (min-width: 768px) {
-  .staff-form__section {
-    padding: var(--space-4) var(--space-6) var(--space-2);
-  }
-
   .staff-form__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1366px) {
   .staff-form__grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

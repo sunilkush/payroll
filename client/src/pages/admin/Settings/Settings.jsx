@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Card } from 'antd';
 import { getSettingsApi, updateSettingsApi } from '../../../api/settingsApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
@@ -145,8 +146,7 @@ export default function Settings() {
       <Alert type={message.type}>{message.text}</Alert>
 
       <form onSubmit={handleSubmit} noValidate>
-        <fieldset className="settings__section">
-          <legend className="settings__legend">Office Locations</legend>
+        <Card className="settings__section" size="small" title="Office Locations">
           <p className="settings__help">
             Staff sirf in locations ki range (radius) ke andar punch in/out kar sakta hai.
           </p>
@@ -217,10 +217,9 @@ export default function Settings() {
           <Button variant="secondary" onClick={() => addItem('locations', NEW_LOCATION)}>
             + Add Location
           </Button>
-        </fieldset>
+        </Card>
 
-        <fieldset className="settings__section">
-          <legend className="settings__legend">Attendance Rules</legend>
+        <Card className="settings__section" size="small" title="Attendance Rules">
           <div className="settings__grid">
             <FormField
               label="GPS accuracy limit (meters)"
@@ -246,10 +245,9 @@ export default function Settings() {
               />
             ))}
           </div>
-        </fieldset>
+        </Card>
 
-        <fieldset className="settings__section">
-          <legend className="settings__legend">Holidays (paid)</legend>
+        <Card className="settings__section" size="small" title="Holidays (paid)">
           {form.holidays.length === 0 && <p className="settings__empty">Abhi koi holiday nahi hai.</p>}
 
           {form.holidays.map((holiday, index) => (
@@ -281,10 +279,9 @@ export default function Settings() {
           <Button variant="secondary" onClick={() => addItem('holidays', NEW_HOLIDAY)}>
             + Add Holiday
           </Button>
-        </fieldset>
+        </Card>
 
-        <fieldset className="settings__section">
-          <legend className="settings__legend">Leave Management</legend>
+        <Card className="settings__section" size="small" title="Leave Management">
           <Checkbox
             label="Leave management enabled"
             name="leaveEnabled"
@@ -338,10 +335,9 @@ export default function Settings() {
               />
             </>
           )}
-        </fieldset>
+        </Card>
 
-        <fieldset className="settings__section">
-          <legend className="settings__legend">PF &amp; ESI</legend>
+        <Card className="settings__section" size="small" title="PF & ESI">
           <p className="settings__help">OFF hone par kisi bhi staff ki salary se ye deduction nahi katega.</p>
           <Checkbox
             label="PF enabled"
@@ -364,7 +360,7 @@ export default function Settings() {
             checked={form.esiEnabled}
             onChange={(event) => setField('esiEnabled', event.target.checked)}
           />
-        </fieldset>
+        </Card>
 
         <div className="settings__actions">
           <Button type="submit" disabled={saving}>

@@ -1,4 +1,4 @@
-import Button from '../Button/Button.jsx';
+import { Pagination as AntPagination } from 'antd';
 import './Pagination.css';
 
 export default function Pagination({ page, totalPages, onChange }) {
@@ -6,15 +6,8 @@ export default function Pagination({ page, totalPages, onChange }) {
 
   return (
     <nav className="pagination" aria-label="Pagination">
-      <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-        Previous
-      </Button>
-      <span>
-        Page {page} / {totalPages}
-      </span>
-      <Button size="sm" variant="secondary" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
-        Next
-      </Button>
+      {/* Server hamein kul pages deta hai, isliye pageSize 1 rakh kar total = totalPages */}
+      <AntPagination current={page} total={totalPages} pageSize={1} showSizeChanger={false} onChange={onChange} />
     </nav>
   );
 }

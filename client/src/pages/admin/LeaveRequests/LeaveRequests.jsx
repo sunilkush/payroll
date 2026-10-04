@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Select } from 'antd';
 import { approveLeaveApi, listLeavesApi, rejectLeaveApi } from '../../../api/leaveApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
@@ -74,18 +75,13 @@ export default function LeaveRequests() {
   return (
     <section className="leave-requests">
       <PageHeader title="Leave Requests" subtitle={`${result.total} requests`}>
-        <select
+        <Select
           className="leave-requests__filter"
           aria-label="Status filter"
+          options={LEAVE_STATUS_OPTIONS}
           value={query.status}
-          onChange={(event) => setQuery({ status: event.target.value, page: 1 })}
-        >
-          {LEAVE_STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          onChange={(status) => setQuery({ status, page: 1 })}
+        />
       </PageHeader>
 
       <Alert type={message.type}>{message.text}</Alert>

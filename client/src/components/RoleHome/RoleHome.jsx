@@ -1,9 +1,10 @@
+import { Card, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { filterByFeatures } from '../../utils/roles.js';
 import './RoleHome.css';
 
-// Har role ka landing page. Jis module mein `to` hai wo ban chuka hai aur link ho jata hai,
+// Har role ka landing page. Jis module mein `to` hai wo ban chuka hai aur poora card link hota hai,
 // baaki "Coming soon" dikhte hain.
 export default function RoleHome({ title, modules }) {
   const { user, company } = useAuth();
@@ -15,16 +16,17 @@ export default function RoleHome({ title, modules }) {
 
       <ul className="role-home__grid">
         {filterByFeatures(modules, company).map((module) => (
-          <li key={module.name} className="role-home__card">
-            <h2 className="role-home__card-title">{module.name}</h2>
-            <p className="role-home__card-text">{module.description}</p>
-            {module.to ? (
-              <Link to={module.to} className="role-home__link">
-                Open &rarr;
-              </Link>
-            ) : (
-              <span className="role-home__badge">Coming soon</span>
-            )}
+          <li key={module.name}>
+            <Card className="role-home__card" hoverable={Boolean(module.to)} title={module.name}>
+              <p className="role-home__card-text">{module.description}</p>
+              {module.to ? (
+                <Link to={module.to} className="role-home__link">
+                  Open &rarr;
+                </Link>
+              ) : (
+                <Tag>Coming soon</Tag>
+              )}
+            </Card>
           </li>
         ))}
       </ul>

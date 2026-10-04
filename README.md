@@ -43,6 +43,26 @@ npm test                # server ke saare tests (unit + API)
   Asli database ko nahi chhute. Doosra DB dena ho to `TEST_MONGO_URI` set karo (naam `_test` par
   khatam hona zaroori hai).
 
+## UI: Ant Design
+
+UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke saath-saath
+`client/src/components/` ke chhote wrappers use karte hain, taaki har jagah ek jaisa dikhe:
+
+| Hamara component | Andar Ant Design ka |
+|---|---|
+| `Button`, `FormField`, `Checkbox`, `SearchBar`, `MonthPicker` | Button, Input / Select / TextArea, Checkbox, DatePicker |
+| `Modal`, `Drawer`, `Alert`, `Badge`, `Loader`, `Pagination` | Modal, Drawer, Alert, Tag, Spin, Pagination |
+| `Table` | Desktop: Table. Mobile/tablet: Card + Descriptions |
+| `AppLayout`, `Navbar`, `NavMenu` | Layout, Sider, Menu |
+| `SummaryTiles`, `RoleHome` | Card, Statistic |
+
+- **Rang aur font** ek hi jagah hain: `client/src/styles/variables.css`. Ant Design ka theme
+  (`styles/theme.js`) wahin se padhta hai, isliye wahan rang badalne se poora app badalta hai.
+- **Inline style ab bhi nahi** (Rule 2). Ant Design component ko badalna ho to us page/component ki
+  `.css` file mein class se badlo.
+- Naya page banate waqt table ke liye hamara `Table` hi use karo (seedha Ant Design ka nahi),
+  warna phone par cards nahi banenge.
+
 ## Responsive (Rule 10: mobile-first)
 
 Har page pehle phone ke liye banta hai, phir badi screen ke liye badalta hai. Breakpoints
@@ -52,7 +72,7 @@ Har page pehle phone ke liye banta hai, phir badi screen ke liye badalta hai. Br
 |---|---|
 | Mobile (360px se) | Hamburger + drawer menu, tables ki jagah cards, forms ek column |
 | Tablet (768px se) | Hamburger + drawer, cards 2 ek line mein, forms 2 column |
-| Desktop (1024px se) | Baayein sidebar, asli tables |
+| Desktop (992px se, Ant Design ka `lg`) | Baayein sidebar, asli tables |
 
 CSS likhne ka tareeka: pehle mobile ka style, phir `@media (min-width: ...)` se badi screen
 (`max-width` nahi). Tables ke liye kuch alag nahi karna: `Table` component phone par apne aap

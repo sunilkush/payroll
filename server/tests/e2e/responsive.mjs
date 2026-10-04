@@ -203,13 +203,15 @@ async function checkLayout(page, viewport, where, { loggedIn = true } = {}) {
       const box = element.getBoundingClientRect();
       return box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden';
     };
-    const small = [...document.querySelectorAll('button, select, input:not([type=checkbox]), textarea, .nav-menu__link')]
+    // Ant Design controls ka bahari dabba naapte hain (andar ka <input> chhota hota hai)
+    const small = [...document.querySelectorAll('.ant-btn, .ant-input-affix-wrapper, input.ant-input, textarea.ant-input, .ant-select, .ant-picker, .ant-menu-item')]
+      .filter((element) => !element.closest('.ant-input-affix-wrapper') || element.classList.contains('ant-input-affix-wrapper'))
       .filter(visible)
       .map((element) => ({ height: Math.round(element.getBoundingClientRect().height), label: (element.textContent || element.getAttribute('aria-label') || element.name || element.tagName).trim().slice(0, 30) }))
       .filter((item) => item.height < 36);
     return {
       // Desktop par table apne dabbe ke andar daayein-baayein scroll na kare (columns sama jayein)
-      tableScroll: [...document.querySelectorAll('.table')].some((table) => table.scrollWidth > table.clientWidth + 1),
+      tableScroll: [...document.querySelectorAll('.ant-table-content')].some((table) => table.scrollWidth > table.clientWidth + 1),
       overflow: document.documentElement.scrollWidth - window.innerWidth,
       sidebar: visible(document.querySelector('.app-layout__sidebar')),
       hamburger: visible(document.querySelector('.navbar__menu')),
@@ -220,7 +222,7 @@ async function checkLayout(page, viewport, where, { loggedIn = true } = {}) {
   if (result.overflow > 1) fail(where, `page ${result.overflow}px daayein-baayein scroll hota hai`);
   if (result.tableScroll) fail(where, 'table apne dabbe mein daayein-baayein scroll ho rahi hai');
   if (loggedIn) {
-    const desktop = viewport.width >= 1024;
+    const desktop = viewport.width >= 992;
     if (result.sidebar !== desktop) fail(where, `sidebar ${desktop ? 'dikhna chahiye' : 'nahi dikhna chahiye'}`);
     if (result.hamburger === desktop) fail(where, `hamburger ${desktop ? 'nahi dikhna chahiye' : 'dikhna chahiye'}`);
   }
@@ -266,15 +268,15 @@ try {
       }
 
       // Drawer: chhoti screen par hamburger se khule, link dabane par band ho
-      if (viewport.width < 1024) {
+      if (viewport.width < 992) {
         current = `${role}/drawer@${viewport.name}`;
         await page.click('.navbar__menu');
-        await page.waitForSelector('.drawer__panel');
+        await page.waitForSelector('.ant-drawer-content-wrapper');
         await page.waitForTimeout(350); // slide animation poora hone do
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-${role}-drawer`, false);
-        await page.click('.drawer .nav-menu__link >> nth=0');
-        await page.waitForSelector('.drawer', { state: 'detached', timeout: 5000 }).catch(() => fail(current, 'link dabane par drawer band nahi hua'));
+        await page.click('.ant-drawer .ant-menu-item a >> nth=0');
+        await page.waitForSelector('.ant-drawer-content-wrapper', { state: 'hidden', timeout: 5000 }).catch(() => fail(current, 'link dabane par drawer band nahi hua'));
       }
 
       // Modals
@@ -282,7 +284,8 @@ try {
         current = `superadmin/new-company-modal@${viewport.name}`;
         await page.goto(`${api.origin}/superadmin/companies`, { waitUntil: 'networkidle' });
         await page.click('text=+ New Company');
-        await page.waitForSelector('.modal__dialog');
+        await page.waitForSelector('.ant-modal-container, .ant-modal-content');
+        await page.waitForTimeout(500); // modal khulne ka animation
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-superadmin-new-company-modal`);
       }
@@ -291,6 +294,7 @@ try {
         await page.goto(`${api.origin}/admin/payroll`, { waitUntil: 'networkidle' });
         await page.click('.payroll__actions >> text=View >> nth=0');
         await page.waitForSelector('.salary-slip');
+        await page.waitForTimeout(500); // modal khulne ka animation
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-admin-salary-slip-modal`);
       }
@@ -298,7 +302,8 @@ try {
         current = `staff/apply-leave-modal@${viewport.name}`;
         await page.goto(`${api.origin}/staff/leaves`, { waitUntil: 'networkidle' });
         await page.click('text=+ Apply Leave');
-        await page.waitForSelector('.modal__dialog');
+        await page.waitForSelector('.ant-modal-container, .ant-modal-content');
+        await page.waitForTimeout(500); // modal khulne ka animation
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-staff-apply-leave-modal`);
 
@@ -306,6 +311,7 @@ try {
         await page.goto(`${api.origin}/staff/salary`, { waitUntil: 'networkidle' });
         await page.click('.my-salary__actions >> text=View');
         await page.waitForSelector('.salary-slip');
+        await page.waitForTimeout(500); // modal khulne ka animation
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-staff-salary-slip-modal`);
       }
@@ -325,6 +331,10 @@ try {
         await context.setGeolocation(INSIDE);
         await page.click('.punch-screen__button');
         await page.waitForSelector('.punch-screen__button--out', { timeout: 10000 }).catch(() => fail(current, 'punch in nahi hua'));
+        await page.waitForTimeout(500); // button ka rang hare se laal hone ka animation poora ho
+        const punchOutColor = await page.locator('.punch-screen__button').evaluate((el) => getComputedStyle(el).backgroundColor);
+        const [red, green] = punchOutColor.match(/\d+/g).map(Number);
+        if (green >= red) fail(current, `Punch Out button laal nahi hai (${punchOutColor})`);
         await shot(page, '360-staff-punch-after-in');
 
         await page.click('.punch-screen__button');

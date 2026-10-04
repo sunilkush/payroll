@@ -1,16 +1,22 @@
-import { currentMonth } from '../../utils/format.js';
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
 import './MonthPicker.css';
 
+const FORMAT = 'YYYY-MM';
+
+// value / onChange: 'YYYY-MM' string. Aane wale mahine nahi chune ja sakte.
 export default function MonthPicker({ value, onChange }) {
   return (
     <label className="month-picker">
       <span className="month-picker__label">Month</span>
-      <input
-        type="month"
-        className="month-picker__input"
-        value={value}
-        max={currentMonth()}
-        onChange={(event) => event.target.value && onChange(event.target.value)}
+      <DatePicker
+        picker="month"
+        format="MMM YYYY"
+        allowClear={false}
+        inputReadOnly // phone par keyboard na khule, sirf picker
+        value={dayjs(value, FORMAT)}
+        disabledDate={(date) => date.isAfter(dayjs(), 'month')}
+        onChange={(date) => date && onChange(date.format(FORMAT))}
       />
     </label>
   );

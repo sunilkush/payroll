@@ -1,11 +1,8 @@
+import { Alert as AntAlert } from 'antd';
 import './Alert.css';
 
-// type: error | success
+// type: error | success. children khali ho to kuch nahi dikhta.
 export default function Alert({ type = 'error', children }) {
   if (!children) return null;
-  return (
-    <p className={`alert alert--${type}`} role={type === 'error' ? 'alert' : 'status'}>
-      {children}
-    </p>
-  );
+  return <AntAlert className="alert" type={type} title={children} showIcon role={type === 'error' ? 'alert' : 'status'} />;
 }

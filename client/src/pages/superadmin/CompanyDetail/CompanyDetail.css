@@ -43,7 +43,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 992px) {
   .company-detail__row-actions {
     justify-content: flex-start;
   }

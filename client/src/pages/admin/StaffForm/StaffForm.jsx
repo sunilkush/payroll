@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Card } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createStaffApi, getStaffApi, updateStaffApi } from '../../../api/staffApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
@@ -153,8 +154,7 @@ export default function StaffForm() {
         <form onSubmit={handleSubmit} noValidate>
           <Alert>{error}</Alert>
 
-          <fieldset className="staff-form__section">
-            <legend className="staff-form__legend">Personal Details</legend>
+          <Card className="staff-form__section" size="small" title="Personal Details">
             <div className="staff-form__grid">
               {field('name', 'Full name', 'name', { required: true })}
               {field('employeeCode', 'Employee code', 'employeeCode', {
@@ -176,10 +176,9 @@ export default function StaffForm() {
                 hint: isEdit ? 'Khali chhodo to password nahi badlega' : 'Kam se kam 8 characters',
               })}
             </div>
-          </fieldset>
+          </Card>
 
-          <fieldset className="staff-form__section">
-            <legend className="staff-form__legend">Salary Structure (monthly)</legend>
+          <Card className="staff-form__section" size="small" title="Salary Structure (monthly)">
             <div className="staff-form__grid">
               {SALARY_FIELDS.map((item) => (
                 <FormField
@@ -200,10 +199,9 @@ export default function StaffForm() {
             <p className="staff-form__gross">
               Monthly Gross: <strong>{formatCurrency(grossSalary(form))}</strong>
             </p>
-          </fieldset>
+          </Card>
 
-          <fieldset className="staff-form__section">
-            <legend className="staff-form__legend">PF &amp; ESI</legend>
+          <Card className="staff-form__section" size="small" title="PF & ESI">
             <div className="staff-form__grid">
               <div>
                 <Checkbox
@@ -226,16 +224,15 @@ export default function StaffForm() {
                 {field('esicNo', 'ESIC number', 'esicNo', { inputMode: 'numeric' })}
               </div>
             </div>
-          </fieldset>
+          </Card>
 
-          <fieldset className="staff-form__section">
-            <legend className="staff-form__legend">Bank Details</legend>
+          <Card className="staff-form__section" size="small" title="Bank Details">
             <div className="staff-form__grid">
               {field('accountNo', 'Account number', 'bankDetails.accountNo', { inputMode: 'numeric' })}
               {field('ifsc', 'IFSC', 'bankDetails.ifsc', { hint: 'Jaise SBIN0001234' })}
               {field('bankName', 'Bank name', 'bankDetails.bankName')}
             </div>
-          </fieldset>
+          </Card>
 
           <div className="staff-form__actions">
             <Button variant="secondary" onClick={() => navigate('/admin/staff')}>

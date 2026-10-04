@@ -1,9 +1,5 @@
 .leave-requests__filter {
-  min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  width: 160px;
 }
 
 .leave-requests__name {
@@ -27,7 +23,7 @@
   margin-top: var(--space-4);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 992px) {
   .leave-requests__actions {
     justify-content: flex-start;
   }

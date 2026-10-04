@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Card } from 'antd';
 import { getGlobalSettingsApi, updateGlobalSettingsApi } from '../../../api/globalSettingsApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
@@ -122,8 +123,7 @@ export default function GlobalSettings() {
 
       <form onSubmit={handleSubmit} noValidate>
         {SECTIONS.map((section) => (
-          <fieldset key={section.title} className="global-settings__section">
-            <legend className="global-settings__legend">{section.title}</legend>
+          <Card key={section.title} className="global-settings__section" size="small" title={section.title}>
             <div className="global-settings__grid">
               {section.fields.map((field) => {
                 const key = keyOf(section, field);
@@ -144,7 +144,7 @@ export default function GlobalSettings() {
                 );
               })}
             </div>
-          </fieldset>
+          </Card>
         ))}
 
         <div className="global-settings__actions">

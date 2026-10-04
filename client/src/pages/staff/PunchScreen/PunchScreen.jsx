@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button, Card, Statistic } from 'antd';
 import { getTodayApi, punchInApi, punchOutApi } from '../../../api/attendanceApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
@@ -71,7 +72,7 @@ export default function PunchScreen() {
     <section className="punch-screen">
       <h1 className="punch-screen__title">Punch In / Out</h1>
 
-      <div className="punch-screen__card">
+      <Card className="punch-screen__card">
         <p className="punch-screen__date">
           {WEEKDAYS[new Date(`${today.date}T00:00:00`).getDay()]}, {formatDate(today.date)}
         </p>
@@ -81,26 +82,27 @@ export default function PunchScreen() {
         <Alert type={message.type}>{message.text}</Alert>
 
         {!punchedOut && (
-          <button
-            type="button"
+          <Button
+            block
+            type="primary"
+            danger={punchedIn}
             className={`punch-screen__button punch-screen__button--${punchedIn ? 'out' : 'in'}`}
-            disabled={Boolean(step) || noLocation}
+            loading={Boolean(step)}
+            disabled={noLocation}
             onClick={handlePunch}
           >
             {buttonLabel}
-          </button>
+          </Button>
         )}
 
-        <dl className="punch-screen__times">
-          <div className="punch-screen__time">
-            <dt>Punch In</dt>
-            <dd>{formatTime(attendance?.punchIn?.time)}</dd>
-          </div>
-          <div className="punch-screen__time">
-            <dt>Punch Out</dt>
-            <dd>{formatTime(attendance?.punchOut?.time)}</dd>
-          </div>
-        </dl>
+        <div className="punch-screen__times">
+          <Card size="small" variant="borderless" className="punch-screen__time">
+            <Statistic title="Punch In" value={formatTime(attendance?.punchIn?.time)} />
+          </Card>
+          <Card size="small" variant="borderless" className="punch-screen__time">
+            <Statistic title="Punch Out" value={formatTime(attendance?.punchOut?.time)} />
+          </Card>
+        </div>
 
         {noLocation ? (
           <p className="punch-screen__hint">Office location set nahi hai. Admin se contact karein.</p>
@@ -110,7 +112,7 @@ export default function PunchScreen() {
             {locations.map((location) => `${location.name} (${location.radius}m)`).join(', ')}
           </p>
         )}
-      </div>
+      </Card>
     </section>
   );
 }

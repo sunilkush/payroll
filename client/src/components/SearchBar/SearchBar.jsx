@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Input, Select } from 'antd';
 import Button from '../Button/Button.jsx';
 import './SearchBar.css';
 
@@ -13,26 +14,22 @@ export default function SearchBar({ placeholder, status, statusOptions, onSearch
 
   return (
     <form className="search-bar" onSubmit={handleSubmit}>
-      <input
+      <Input
         type="search"
         className="search-bar__input"
         placeholder={placeholder}
         aria-label={placeholder}
+        allowClear
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
-      <select
+      <Select
         className="search-bar__status"
         aria-label="Status filter"
+        options={statusOptions}
         value={status}
-        onChange={(event) => onStatusChange(event.target.value)}
-      >
-        {statusOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        onChange={onStatusChange}
+      />
       <Button type="submit" variant="secondary">
         Search
       </Button>

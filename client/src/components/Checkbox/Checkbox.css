@@ -1,22 +1,10 @@
 .checkbox {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
   /* Poori line dabane layak ho, sirf chhota box nahi */
   min-height: 36px;
   margin-bottom: var(--space-3);
-  padding: var(--space-1) 0;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
-
-.checkbox__input {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  accent-color: var(--color-primary);
 }
 
 .checkbox__hint {

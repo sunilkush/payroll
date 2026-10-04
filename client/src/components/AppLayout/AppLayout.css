@@ -2,13 +2,17 @@
   min-height: 100vh;
 }
 
-/* Mobile/tablet: sidebar nahi, menu drawer mein hota hai */
+/* Desktop ka sidebar: page scroll hone par bhi apni jagah rahe */
 .app-layout__sidebar {
-  display: none;
+  position: sticky;
+  top: var(--navbar-height);
+  height: calc(100vh - var(--navbar-height));
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
 }
 
 .app-layout__content {
-  /* Grid/flex ke andar lambi cheez (table) page ko chauda na kare */
+  /* Flex ke andar lambi cheez (table) page ko chauda na kare */
   min-width: 0;
   padding: var(--space-4) var(--page-gutter) var(--space-8);
 }
@@ -18,21 +22,13 @@
   margin: 0 auto;
 }
 
-@media (min-width: 1024px) {
-  .app-layout__sidebar {
-    position: fixed;
-    top: var(--navbar-height);
-    bottom: 0;
-    left: 0;
-    display: block;
-    width: var(--sidebar-width);
-    overflow-y: auto;
-    background: var(--color-surface);
-    border-right: 1px solid var(--color-border);
-  }
+/* Drawer ke andar menu kinare tak jaye */
+.drawer .ant-drawer-body {
+  padding: 0;
+}
 
+@media (min-width: 992px) {
   .app-layout__content {
-    margin-left: var(--sidebar-width);
     padding-top: var(--space-6);
   }
 }

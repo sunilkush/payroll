@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { Card } from 'antd';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import Alert from '../../components/Alert/Alert.jsx';
+import Button from '../../components/Button/Button.jsx';
+import FormField from '../../components/FormField/FormField.jsx';
+import Loader from '../../components/Loader/Loader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLE_HOME } from '../../utils/roles.js';
-import Loader from '../../components/Loader/Loader.jsx';
 import './Login.css';
 
 export default function Login() {
@@ -39,48 +43,35 @@ export default function Login() {
 
   return (
     <div className="login">
-      <form className="login__card" onSubmit={handleSubmit} noValidate>
-        <h1 className="login__title">Payroll</h1>
-        <p className="login__subtitle">Apne account mein login karein</p>
+      <Card className="login__card">
+        <form onSubmit={handleSubmit} noValidate>
+          <h1 className="login__title">Payroll</h1>
+          <p className="login__subtitle">Apne account mein login karein</p>
 
-        {error && (
-          <p className="login__error" role="alert">
-            {error}
-          </p>
-        )}
+          <Alert>{error}</Alert>
 
-        <label className="login__label" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          className="login__input"
-          autoComplete="username"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
+          <FormField
+            label="Email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            value={form.email}
+            onChange={handleChange}
+          />
+          <FormField
+            label="Password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={form.password}
+            onChange={handleChange}
+          />
 
-        <label className="login__label" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          className="login__input"
-          autoComplete="current-password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
-
-        <button type="submit" className="login__submit" disabled={submitting}>
-          {submitting ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+          <Button type="submit" block loading={submitting}>
+            Login
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

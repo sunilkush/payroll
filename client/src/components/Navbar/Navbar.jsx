@@ -1,11 +1,13 @@
+import { MenuOutlined } from '@ant-design/icons';
+import { Button, Layout } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLE_HOME, ROLE_LABEL } from '../../utils/roles.js';
 import './Navbar.css';
 
-// Upar ki patti. Mobile/tablet par hamburger button drawer kholta hai (onMenuClick);
-// desktop par menu sidebar mein hota hai aur hamburger chhup jata hai.
-export default function Navbar({ onMenuClick }) {
+// Upar ki patti. showMenuButton (mobile/tablet) par hamburger drawer kholta hai (onMenuClick);
+// desktop par menu sidebar mein hota hai.
+export default function Navbar({ showMenuButton, onMenuClick }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -15,10 +17,16 @@ export default function Navbar({ onMenuClick }) {
   };
 
   return (
-    <header className="navbar">
-      <button type="button" className="navbar__menu" aria-label="Menu kholein" onClick={onMenuClick}>
-        <span className="navbar__menu-icon" />
-      </button>
+    <Layout.Header className="navbar">
+      {showMenuButton && (
+        <Button
+          type="text"
+          className="navbar__menu"
+          aria-label="Menu kholein"
+          icon={<MenuOutlined />}
+          onClick={onMenuClick}
+        />
+      )}
       <Link to={ROLE_HOME[user.role]} className="navbar__brand">
         Payroll
       </Link>
@@ -27,10 +35,10 @@ export default function Navbar({ onMenuClick }) {
           <span className="navbar__name">{user.name}</span>
           <span className="navbar__role">{ROLE_LABEL[user.role]}</span>
         </div>
-        <button type="button" className="navbar__logout" onClick={handleLogout}>
+        <Button danger size="small" onClick={handleLogout}>
           Logout
-        </button>
+        </Button>
       </div>
-    </header>
+    </Layout.Header>
   );
 }

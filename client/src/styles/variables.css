@@ -6,7 +6,7 @@
  *
  *   base (koi media query nahi)   mobile, 360px se
  *   @media (min-width: 768px)     tablet: forms 2 column, table ke cards 2 ek line mein
- *   @media (min-width: 1024px)    desktop layout: sidebar dikhta hai, hamburger chhup jata hai,
+ *   @media (min-width: 992px)    desktop layout: sidebar dikhta hai, hamburger chhup jata hai,
  *                                 cards ki jagah asli table
  *   @media (min-width: 1366px)    badi screen: content ki max width
  *

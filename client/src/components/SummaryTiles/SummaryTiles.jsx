@@ -1,15 +1,15 @@
+import { Card, Statistic } from 'antd';
 import './SummaryTiles.css';
 
 // items: [{ label, value }]
 export default function SummaryTiles({ items }) {
   return (
-    <dl className="summary-tiles">
+    <div className="summary-tiles">
       {items.map((item) => (
-        <div key={item.label} className="summary-tiles__tile">
-          <dt className="summary-tiles__label">{item.label}</dt>
-          <dd className="summary-tiles__value">{item.value}</dd>
-        </div>
+        <Card key={item.label} size="small" className="summary-tiles__tile">
+          <Statistic title={item.label} value={item.value} />
+        </Card>
       ))}
-    </dl>
+    </div>
   );
 }

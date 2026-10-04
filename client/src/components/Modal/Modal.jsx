@@ -1,35 +1,12 @@
-import { useEffect } from 'react';
-import { useScrollLock } from '../../utils/scrollLock.js';
-import './Modal.css';
+import { Modal as AntModal } from 'antd';
 
+// Pages ise tabhi render karte hain jab dikhana ho ({open && <Modal>}), isliye yahan hamesha open hai.
+// Buttons page khud andar rakhta hai (footer nahi). Chhoti screen par Ant Design ise apne aap
+// screen ki chaudai mein fit kar deta hai aur peeche ka page scroll hone se rokta hai.
 export default function Modal({ title, onClose, children }) {
-  useScrollLock();
-
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
-
   return (
-    <div className="modal" onMouseDown={onClose}>
-      <div
-        className="modal__dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="modal__header">
-          <h2 className="modal__title">{title}</h2>
-          <button type="button" className="modal__close" aria-label="Close" onClick={onClose}>
-            &times;
-          </button>
-        </header>
-        <div className="modal__body">{children}</div>
-      </div>
-    </div>
+    <AntModal open title={title} onCancel={onClose} footer={null} width={520} destroyOnHidden>
+      {children}
+    </AntModal>
   );
 }

@@ -1,16 +1,4 @@
 .alert {
   margin-bottom: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-  border-radius: var(--radius-sm);
-}
-
-.alert--error {
-  color: var(--color-danger);
-  background: var(--color-danger-light);
-}
-
-.alert--success {
-  color: var(--color-success);
-  background: var(--color-success-light);
+  text-align: left;
 }
