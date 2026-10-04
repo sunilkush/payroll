@@ -5,9 +5,9 @@ import { markMissedPunchOuts } from '../services/attendanceService.js';
 async function run(options) {
   try {
     const count = await markMissedPunchOuts(options);
-    if (count) console.log(`[autoPunchOut] ${count} attendance par missedPunchOut flag laga`);
+    if (count) console.log(`[autoPunchOut] flagged missedPunchOut on ${count} attendance record(s)`);
   } catch (err) {
-    console.error('[autoPunchOut] fail:', err.message);
+    console.error('[autoPunchOut] failed:', err.message);
   }
 }
 

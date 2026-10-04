@@ -1,44 +1,87 @@
-import { MenuOutlined } from '@ant-design/icons';
-import { Button, Layout } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import {
+  CalendarOutlined,
+  DownOutlined,
+  LogoutOutlined,
+  MenuFoldOutlined,
+  MenuOutlined,
+  MenuUnfoldOutlined,
+} from '@ant-design/icons';
+import { Avatar, Button, Dropdown, Layout } from 'antd';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { ROLE_HOME, ROLE_LABEL } from '../../utils/roles.js';
+import { useLogout } from '../../context/useLogout.js';
+import { formatDate, WEEKDAYS } from '../../utils/format.js';
+import { activeLink, filterByFeatures, initials, ROLE_NAV, roleLine } from '../../utils/roles.js';
 import './Navbar.css';
 
-// Upar ki patti. showMenuButton (mobile/tablet) par hamburger drawer kholta hai (onMenuClick);
-// desktop par menu sidebar mein hota hai.
-export default function Navbar({ showMenuButton, onMenuClick }) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+// Upar ki patti.
+//   Mobile/tablet: hamburger (drawer kholta hai) + chalu section ka naam + avatar menu
+//   Desktop:       sidebar chhota/bada karne ka button + section ka naam + avatar menu
+export default function Navbar({ desktop, collapsed, onMenuClick, onToggleCollapse }) {
+  const { user, company } = useAuth();
+  const { pathname } = useLocation();
+  const logout = useLogout();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+  const today = new Date();
+  const role = roleLine(user);
+  const section = activeLink(filterByFeatures(ROLE_NAV[user.role], company), pathname);
+
+  const userMenu = {
+    items: [
+      {
+        key: 'user',
+        disabled: true,
+        label: (
+          <span className="navbar__menu-user">
+            <strong>{user.name}</strong>
+            <span>{user.email}</span>
+          </span>
+        ),
+      },
+      { type: 'divider' },
+      { key: 'logout', danger: true, icon: <LogoutOutlined />, label: 'Logout', onClick: logout },
+    ],
   };
 
   return (
     <Layout.Header className="navbar">
-      {showMenuButton && (
+      {desktop ? (
+        <Button
+          type="text"
+          className="navbar__collapse"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          onClick={onToggleCollapse}
+        />
+      ) : (
         <Button
           type="text"
           className="navbar__menu"
-          aria-label="Menu kholein"
+          aria-label="Open menu"
           icon={<MenuOutlined />}
           onClick={onMenuClick}
         />
       )}
-      <Link to={ROLE_HOME[user.role]} className="navbar__brand">
-        Payroll
-      </Link>
-      <div className="navbar__user">
-        <div className="navbar__identity">
-          <span className="navbar__name">{user.name}</span>
-          <span className="navbar__role">{ROLE_LABEL[user.role]}</span>
-        </div>
-        <Button danger size="small" onClick={handleLogout}>
-          Logout
-        </Button>
+
+      <div className="navbar__section">
+        <span className="navbar__section-name">{section?.label ?? 'Payroll'}</span>
+        <span className="navbar__section-company">{company?.name ?? 'All companies'}</span>
       </div>
+
+      <span className="navbar__date">
+        <CalendarOutlined /> {WEEKDAYS[today.getDay()].slice(0, 3)}, {formatDate(today)}
+      </span>
+
+      <Dropdown menu={userMenu} trigger={['click']} placement="bottomRight">
+        <Button type="text" className="navbar__user" aria-label="User menu">
+          <Avatar className="navbar__avatar">{initials(user.name)}</Avatar>
+          <span className="navbar__identity">
+            <span className="navbar__name">{user.name}</span>
+            {role && <span className="navbar__role">{role}</span>}
+          </span>
+          <DownOutlined className="navbar__caret" />
+        </Button>
+      </Dropdown>
     </Layout.Header>
   );
 }

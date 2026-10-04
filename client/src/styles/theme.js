@@ -20,5 +20,24 @@ export function buildTheme() {
       controlHeight: 44,
       controlHeightSM: 36,
     },
+    components: {
+      Layout: {
+        siderBg: read('--color-navy'),
+        headerBg: read('--color-surface'),
+      },
+      // Gehre sidebar ka menu: background sidebar ka hi dikhe, active item primary rang ka
+      Menu: {
+        darkItemBg: 'transparent',
+        darkSubMenuItemBg: 'transparent',
+        darkItemColor: read('--color-on-dark-muted'),
+        darkItemHoverBg: read('--color-glass'),
+        darkItemHoverColor: read('--color-text-inverse'),
+        darkItemSelectedBg: read('--color-primary'),
+        darkItemSelectedColor: read('--color-text-inverse'),
+        itemBorderRadius: 10,
+        itemMarginInline: 12,
+        itemHeight: 44,
+      },
+    },
   };
 }

@@ -23,7 +23,7 @@ export default function StatCards({ items }) {
               )}
               {item.hint && <p className="stat-cards__hint">{item.hint}</p>}
             </div>
-            {item.to && <Link to={item.to} className="stat-cards__link" aria-label={`${item.label} kholein`} />}
+            {item.to && <Link to={item.to} className="stat-cards__link" aria-label={`Open ${item.label}`} />}
           </Card>
         </li>
       ))}

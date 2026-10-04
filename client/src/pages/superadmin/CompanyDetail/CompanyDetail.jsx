@@ -102,7 +102,7 @@ export default function CompanyDetail() {
     try {
       await updateCompanyApi(id, details);
       await load();
-      setMessage({ type: 'success', text: 'Company details save ho gayi.' });
+      setMessage({ type: 'success', text: 'Company details saved.' });
     } catch (err) {
       setDetailErrors(toFieldErrors(err));
       setMessage({ type: 'error', text: err.message });
@@ -113,15 +113,15 @@ export default function CompanyDetail() {
 
   const handleToggleCompany = () => {
     const action = company.isActive ? 'block' : 'unblock';
-    const warning = company.isActive ? '\nIs company ke saare users login nahi kar payenge.' : '';
-    if (!window.confirm(`"${company.name}" ko ${action} karna hai?${warning}`)) return;
-    run(() => setCompanyStatusApi(id, !company.isActive), `Company ${action} ho gayi.`);
+    const warning = company.isActive ? '\nAll users of this company will be unable to log in.' : '';
+    if (!window.confirm(`${action === 'block' ? 'Block' : 'Unblock'} "${company.name}"?${warning}`)) return;
+    run(() => setCompanyStatusApi(id, !company.isActive), `Company ${action}ed.`);
   };
 
   const handleToggleAdmin = (admin) => {
     const action = admin.isActive ? 'deactivate' : 'activate';
-    if (!window.confirm(`${admin.name} ko ${action} karna hai?`)) return;
-    run(() => updateAdminApi(id, admin._id, { isActive: !admin.isActive }), `Admin ${action} ho gaya.`);
+    if (!window.confirm(`${action === 'deactivate' ? 'Deactivate' : 'Activate'} ${admin.name}?`)) return;
+    run(() => updateAdminApi(id, admin._id, { isActive: !admin.isActive }), `Admin ${action}d.`);
   };
 
   const handleAdminFormChange = (event) => {
@@ -139,7 +139,7 @@ export default function CompanyDetail() {
       } else {
         await updateAdminApi(id, modal.admin._id, { password: adminForm.adminPassword });
       }
-      const successText = modal.type === 'add' ? 'Admin add ho gaya.' : 'Password reset ho gaya.';
+      const successText = modal.type === 'add' ? 'Admin added.' : 'Password reset.';
       closeModal();
       await load();
       setMessage({ type: 'success', text: successText });
@@ -209,7 +209,7 @@ export default function CompanyDetail() {
         </Button>
       </div>
 
-      <Table columns={ADMIN_COLUMNS} empty="Is company ka abhi koi admin nahi hai.">
+      <Table columns={ADMIN_COLUMNS} empty="This company has no admin yet.">
         {admins.map((admin) => (
           <tr key={admin._id}>
             <td>{admin.name}</td>
@@ -253,7 +253,7 @@ export default function CompanyDetail() {
                 value={adminForm.adminPassword}
                 onChange={handleAdminFormChange}
                 error={modalFieldErrors.password}
-                hint="Kam se kam 8 characters"
+                hint="At least 8 characters"
                 required
                 autoFocus
               />

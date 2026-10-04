@@ -45,7 +45,7 @@ export default function Attendance() {
 
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'Koi staff nahi mila.'}>
+      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'No staff found.'}>
         {rows.map(({ staff, summary }) => (
           <tr key={staff._id}>
             <td>{staff.employeeCode}</td>

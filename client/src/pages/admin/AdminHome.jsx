@@ -24,14 +24,14 @@ import { loadAll } from '../../utils/dashboard.js';
 import { currentMonth, formatCurrency, formatDate, formatMonth } from '../../utils/format.js';
 
 const LINKS = [
-  { name: 'Staff', description: 'Staff add/edit aur salary structure', to: '/admin/staff', icon: <TeamOutlined /> },
-  { name: 'Attendance', description: 'Monthly report aur missed punch-outs', to: '/admin/attendance', icon: <ClockCircleOutlined /> },
-  { name: 'Leave Requests', description: 'CL/EL approve ya reject', to: '/admin/leaves', icon: <CalendarOutlined />, feature: 'leaveEnabled' },
-  { name: 'Payroll', description: 'Salary generate, slips aur Excel', to: '/admin/payroll', icon: <WalletOutlined /> },
+  { name: 'Staff', description: 'Add/edit staff and salary structure', to: '/admin/staff', icon: <TeamOutlined /> },
+  { name: 'Attendance', description: 'Monthly report and missed punch-outs', to: '/admin/attendance', icon: <ClockCircleOutlined /> },
+  { name: 'Leave Requests', description: 'Approve or reject CL/EL', to: '/admin/leaves', icon: <CalendarOutlined />, feature: 'leaveEnabled' },
+  { name: 'Payroll', description: 'Generate salary, slips and Excel', to: '/admin/payroll', icon: <WalletOutlined /> },
   { name: 'Settings', description: 'Office location, week off, leave, PF/ESI', to: '/admin/settings', icon: <SettingOutlined /> },
 ];
 
-const DAY_HINT = { WEEK_OFF: 'Aaj week off hai', HOLIDAY: 'Aaj holiday hai' };
+const DAY_HINT = { WEEK_OFF: 'Today is a week off', HOLIDAY: 'Today is a holiday' };
 
 export default function AdminHome() {
   const { user, company } = useAuth();
@@ -61,9 +61,9 @@ export default function AdminHome() {
       to: '/admin/staff',
     },
     {
-      label: 'Aaj present',
+      label: 'Present today',
       value: loaded ? (today ? `${today.present} / ${today.totalStaff}` : '-') : undefined,
-      hint: today && (DAY_HINT[today.dayType] ?? `${today.notMarked} ne punch nahi kiya`),
+      hint: today && (DAY_HINT[today.dayType] ?? `${today.notMarked} not punched in`),
       icon: <CheckCircleOutlined />,
       tone: 'success',
       to: '/admin/attendance',
@@ -77,8 +77,8 @@ export default function AdminHome() {
     },
     {
       label: `Payroll (${formatMonth(month)})`,
-      value: loaded ? (payroll?.rows.length ? formatCurrency(payroll.totals.netSalary) : 'Bani nahi') : undefined,
-      hint: payroll?.rows.length ? (payroll.hasDraft ? 'Draft' : 'Final') : 'Generate karna baaki hai',
+      value: loaded ? (payroll?.rows.length ? formatCurrency(payroll.totals.netSalary) : 'Not generated') : undefined,
+      hint: payroll?.rows.length ? (payroll.hasDraft ? 'Draft' : 'Final') : 'Yet to be generated',
       icon: <WalletOutlined />,
       tone: 'accent',
       to: '/admin/payroll',
@@ -87,11 +87,11 @@ export default function AdminHome() {
 
   return (
     <section>
-      <DashboardHero name={user.name} subtitle={company?.name} />
+      <DashboardHero user={user} subtitle={company?.name} />
 
       {today?.locationsCount === 0 && (
         <Alert type="warning">
-          Office location set nahi hai, isliye staff punch nahi kar payega. <Link to="/admin/settings">Settings mein location jodein</Link>
+          No office location is set, so staff cannot punch. <Link to="/admin/settings">Add a location in Settings</Link>
         </Alert>
       )}
 
@@ -101,8 +101,8 @@ export default function AdminHome() {
         {company?.leaveEnabled && (
           <ListCard
             title="Pending leave requests"
-            action={{ to: '/admin/leaves', label: 'Sab dekhein' }}
-            empty="Koi pending request nahi hai."
+            action={{ to: '/admin/leaves', label: 'View all' }}
+            empty="No pending requests."
           >
             {pending.map((leave) => (
               <ListRow
@@ -111,7 +111,7 @@ export default function AdminHome() {
                 meta={`${formatDate(leave.fromDate)}${leave.toDate !== leave.fromDate ? ` - ${formatDate(leave.toDate)}` : ''} · ${leave.reason}`}
                 right={
                   <Badge tone="warning">
-                    {leave.type} · {leave.days} din
+                    {leave.type} · {leave.days} day(s)
                   </Badge>
                 }
                 to="/admin/leaves"

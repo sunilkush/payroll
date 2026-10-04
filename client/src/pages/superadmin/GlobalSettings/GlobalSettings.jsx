@@ -17,7 +17,7 @@ const SECTIONS = [
       {
         name: 'payrollDaysBasis',
         label: 'Days basis',
-        hint: 'Per day salary = Monthly gross / itne din (har mahine fix)',
+        hint: 'Per day salary = Monthly gross / this many days (fixed every month)',
         step: '1',
       },
     ],
@@ -27,15 +27,15 @@ const SECTIONS = [
     group: 'pf',
     fields: [
       { name: 'employeeRate', label: 'Employee rate (%)' },
-      { name: 'employerRate', label: 'Employer rate (%)', hint: 'Isme se EPS nikal kar baaki EPF mein jata hai' },
+      { name: 'employerRate', label: 'Employer rate (%)', hint: 'EPS is taken out of this; the rest goes to EPF' },
       { name: 'epsRate', label: 'EPS rate (%)' },
-      { name: 'wageCeiling', label: 'Wage ceiling (Rs.)', hint: 'Company "cap at ceiling" ON rakhe to PF isi par rukta hai' },
-      { name: 'edliRate', label: 'EDLI rate (%)', hint: 'Employer ka extra, sirf report mein' },
-      { name: 'adminRate', label: 'Admin charges (%)', hint: 'Employer ka extra, sirf report mein' },
+      { name: 'wageCeiling', label: 'Wage ceiling (Rs.)', hint: 'PF stops at this amount when a company keeps "cap at ceiling" ON' },
+      { name: 'edliRate', label: 'EDLI rate (%)', hint: 'Employer extra, for reports only' },
+      { name: 'adminRate', label: 'Admin charges (%)', hint: 'Employer extra, for reports only' },
       {
         name: 'wageFloorPercent',
         label: 'PF wage floor (% of gross)',
-        hint: 'Naye Labour Codes: PF wage, gross ke is % se kam nahi maani jaati. 0 = ye rule band',
+        hint: 'New Labour Codes: PF wage is treated as at least this % of gross. 0 = rule off',
       },
     ],
   },
@@ -45,7 +45,7 @@ const SECTIONS = [
     fields: [
       { name: 'employeeRate', label: 'Employee rate (%)' },
       { name: 'employerRate', label: 'Employer rate (%)' },
-      { name: 'wageLimit', label: 'Wage limit (Rs.)', hint: 'Monthly gross is se zyada ho to ESI lagu nahi' },
+      { name: 'wageLimit', label: 'Wage limit (Rs.)', hint: 'ESI does not apply if monthly gross is above this' },
     ],
   },
 ];
@@ -101,7 +101,7 @@ export default function GlobalSettings() {
     try {
       const res = await updateGlobalSettingsApi(toPayload(form));
       setForm(toForm(res.data.settings));
-      setMessage({ type: 'success', text: 'Global settings save ho gayi.' });
+      setMessage({ type: 'success', text: 'Global settings saved.' });
     } catch (err) {
       setFieldErrors(toFieldErrors(err));
       setMessage({ type: 'error', text: err.errors?.[0]?.message || err.message });
@@ -113,12 +113,12 @@ export default function GlobalSettings() {
 
   return (
     <section className="global-settings">
-      <PageHeader title="Global Settings" subtitle="PF/ESI ke rates aur ceilings, saari companies ke liye" />
+      <PageHeader title="Global Settings" subtitle="PF/ESI rates and ceilings for all companies" />
       <Alert type={message.type}>{message.text}</Alert>
       <p className="global-settings__note">
-        Ye numbers har company ki nayi payroll par lagu hote hain. Pehle se bani payroll tab tak nahi
-        badalti jab tak admin Regenerate na kare; final ho chuki payroll kabhi nahi badalti. Rates
-        badalne se pehle apne CA se confirm kar lein.
+        These numbers apply to new payroll for every company. Existing payroll does not change until an
+        admin clicks Regenerate; finalized payroll never changes. Confirm with your CA before changing
+        the rates.
       </p>
 
       <form onSubmit={handleSubmit} noValidate>

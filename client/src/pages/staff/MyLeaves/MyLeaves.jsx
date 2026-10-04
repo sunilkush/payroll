@@ -73,7 +73,7 @@ export default function MyLeaves() {
       closeApply();
       setMessage({
         type: 'success',
-        text: `${res.data.leave.days} din ki ${form.type} apply ho gayi. Admin ke approve karne tak balance block rahega.`,
+        text: `Applied for ${res.data.leave.days} day(s) of ${form.type}. The balance stays blocked until an admin approves it.`,
       });
       setPage(1);
       await load();
@@ -86,11 +86,11 @@ export default function MyLeaves() {
   };
 
   const handleCancel = async (leave) => {
-    if (!window.confirm('Ye leave request cancel karni hai? Balance wapas mil jayega.')) return;
+    if (!window.confirm('Cancel this leave request? The balance will be returned.')) return;
     setBusyId(leave._id);
     try {
       await cancelLeaveApi(leave._id);
-      setMessage({ type: 'success', text: 'Leave cancel ho gayi.' });
+      setMessage({ type: 'success', text: 'Leave cancelled.' });
       await load();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -127,7 +127,7 @@ export default function MyLeaves() {
         </div>
       )}
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'Abhi tak koi leave apply nahi ki.'}>
+      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'No leave applied yet.'}>
         {result.items.map((leave) => (
           <tr key={leave._id}>
             <td>{leave.type}</td>
@@ -198,7 +198,7 @@ export default function MyLeaves() {
               error={fieldErrors.reason}
               required
             />
-            <p className="my-leaves__hint">Week off aur holidays leave mein nahi ginte.</p>
+            <p className="my-leaves__hint">Week offs and holidays are not counted as leave.</p>
             <div className="my-leaves__actions">
               <Button variant="secondary" onClick={closeApply}>
                 Close

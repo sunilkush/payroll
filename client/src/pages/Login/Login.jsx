@@ -21,7 +21,7 @@ import './Login.css';
 const FEATURES = [
   { icon: <EnvironmentOutlined />, label: 'Geofence punch in / out' },
   { icon: <CalendarOutlined />, label: 'CL / EL leave approval' },
-  { icon: <WalletOutlined />, label: 'PF / ESI ke saath payroll' },
+  { icon: <WalletOutlined />, label: 'Payroll with PF / ESI' },
   { icon: <FileTextOutlined />, label: 'Salary slip PDF' },
 ];
 
@@ -84,17 +84,17 @@ export default function Login() {
 
         <div className="login__hero">
           <span className="login__pill">
-            <SafetyCertificateOutlined /> Har company ka data alag aur surakshit
+            <SafetyCertificateOutlined /> Each company’s data kept separate and secure
           </span>
           <h2 className="login__headline">
-            Attendance se salary slip tak, <span className="login__headline-accent">sab ek hi jagah.</span>
+            From attendance to salary slip, <span className="login__headline-accent">all in one place.</span>
           </h2>
-          <p className="login__lead">Punch, leave aur payroll ko ek saath sambhalein, phone se bhi.</p>
+          <p className="login__lead">Manage punches, leave and payroll together, even from your phone.</p>
         </div>
 
         <div className="login__preview" aria-hidden="true">
           <div className="login__preview-head">
-            <span>Aaj ki attendance</span>
+            <span>Attendance today</span>
             <span className="login__preview-chip">Present</span>
           </div>
           <p className="login__preview-time">09:30 AM</p>
@@ -124,7 +124,7 @@ export default function Login() {
       <main className="login__main">
         <form className="login__form" onSubmit={handleSubmit} noValidate>
           <h1 className="login__title">Welcome back</h1>
-          <p className="login__subtitle">Apne account mein login karein</p>
+          <p className="login__subtitle">Sign in to your account</p>
 
           <Alert>{error}</Alert>
 
@@ -134,7 +134,7 @@ export default function Login() {
             type="email"
             className="login__input"
             autoComplete="username"
-            placeholder="aap@company.com"
+            placeholder="you@company.com"
             prefix={<MailOutlined className="login__input-icon" />}
             value={form.email}
             onChange={handleChange}
@@ -162,7 +162,7 @@ export default function Login() {
             Login
           </Button>
 
-          <p className="login__help">Password bhool gaye? Apne admin se reset karwayein.</p>
+          <p className="login__help">Forgot your password? Ask your admin to reset it.</p>
         </form>
         <p className="login__footer">&copy; {new Date().getFullYear()} Payroll</p>
       </main>

@@ -52,7 +52,7 @@ export default function PunchScreen() {
       setStep('saving');
       const res = await (punchedIn ? punchOutApi(position) : punchInApi(position));
       setToday((prev) => ({ ...prev, attendance: res.data.attendance }));
-      setMessage({ type: 'success', text: punchedIn ? 'Punch out ho gaya.' : 'Punch in ho gaya.' });
+      setMessage({ type: 'success', text: punchedIn ? 'Punched out.' : 'Punched in.' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     } finally {
@@ -61,12 +61,12 @@ export default function PunchScreen() {
   };
 
   let buttonLabel = punchedIn ? 'Punch Out' : 'Punch In';
-  if (step === 'locating') buttonLabel = 'Location le rahe hain...';
+  if (step === 'locating') buttonLabel = 'Getting location...';
   if (step === 'saving') buttonLabel = 'Saving...';
 
-  let status = 'Aaj punch in nahi hua';
+  let status = 'Not punched in today';
   if (punchedIn) status = `Punch in: ${attendance.punchIn.locationName ?? 'Office'}`;
-  if (punchedOut) status = 'Aaj ki attendance poori ho gayi';
+  if (punchedOut) status = 'Attendance complete for today';
 
   return (
     <section className="punch-screen">
@@ -105,10 +105,10 @@ export default function PunchScreen() {
         </div>
 
         {noLocation ? (
-          <p className="punch-screen__hint">Office location set nahi hai. Admin se contact karein.</p>
+          <p className="punch-screen__hint">No office location is set. Please contact your admin.</p>
         ) : (
           <p className="punch-screen__hint">
-            Punch sirf office range ke andar hota hai:{' '}
+            You can punch only within the office range:{' '}
             {locations.map((location) => `${location.name} (${location.radius}m)`).join(', ')}
           </p>
         )}

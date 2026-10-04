@@ -13,7 +13,7 @@ const loginLimiter = rateLimit({
   max: env.loginRateLimit.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Bahut zyada login attempts. Thodi der baad try karein.' },
+  message: { success: false, message: 'Too many login attempts. Please try again later.' },
 });
 
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);

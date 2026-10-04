@@ -7,7 +7,7 @@ import { creditCompany } from './leaveService.js';
 
 export async function getSettings() {
   const company = await Company.findById(getTenantId());
-  if (!company) throw new ApiError(404, 'Company nahi mili.');
+  if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }
 

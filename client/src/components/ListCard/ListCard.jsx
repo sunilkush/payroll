@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import './ListCard.css';
 
 // Dashboard ki chhoti list (jaise pending leave requests). Rows ke liye <ListRow> use karo.
-// action: { to, label } - card ke upar daayein "Sab dekhein" jaisa link.
-export default function ListCard({ title, action, empty = 'Abhi kuch nahi hai.', children }) {
+// action: { to, label } - card ke upar daayein "View all" jaisa link.
+export default function ListCard({ title, action, empty = 'Nothing here yet.', children }) {
   const rows = [children].flat().filter(Boolean);
 
   return (
@@ -42,7 +42,7 @@ export function ListRow({ icon, title, meta, right, to }) {
       {to && (
         <>
           <RightOutlined className="list-card__arrow" />
-          <Link to={to} className="list-card__link" aria-label={`${title} kholein`} />
+          <Link to={to} className="list-card__link" aria-label={`Open ${title}`} />
         </>
       )}
     </li>

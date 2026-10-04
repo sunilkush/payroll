@@ -5,9 +5,9 @@ import { creditMonthlyLeaves } from '../services/leaveService.js';
 async function run() {
   try {
     const count = await creditMonthlyLeaves();
-    if (count) console.log(`[monthlyLeaveCredit] ${count} staff ko is mahine ka CL/EL credit mila`);
+    if (count) console.log(`[monthlyLeaveCredit] credited this month's CL/EL to ${count} staff`);
   } catch (err) {
-    console.error('[monthlyLeaveCredit] fail:', err.message);
+    console.error('[monthlyLeaveCredit] failed:', err.message);
   }
 }
 

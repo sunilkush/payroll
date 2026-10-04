@@ -13,7 +13,19 @@ const app = express();
 app.set('trust proxy', env.trustProxy);
 if (env.forceHttps) app.use(httpsRedirect);
 
-app.use(helmet()); // security headers; HTTPS par HSTS bhi bhejta hai
+// Security headers; HTTPS par HSTS bhi bhejta hai. Content-Security-Policy mein sirf wahi bahar ki
+// jagahein khuli hain jo Settings ke office-location map ko chahiye: OpenStreetMap ki map tiles
+// (images) aur uski place search.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        'img-src': ["'self'", 'data:', 'https://*.tile.openstreetmap.org'],
+        'connect-src': ["'self'", 'https://nominatim.openstreetmap.org'],
+      },
+    },
+  })
+);
 app.use(cors({ origin: env.clientUrl }));
 app.use(express.json({ limit: '1mb' }));
 if (env.nodeEnv === 'development') app.use(morgan('dev'));

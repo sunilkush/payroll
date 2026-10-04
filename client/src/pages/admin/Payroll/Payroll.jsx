@@ -81,12 +81,12 @@ export default function Payroll() {
     }
   };
 
-  const handleGenerate = () => run(() => generatePayrollApi(month), 'Payroll generate ho gayi.');
+  const handleGenerate = () => run(() => generatePayrollApi(month), 'Payroll generated.');
 
   const handleFinalize = () => {
-    const warning = `${formatMonth(month)} ki payroll final karni hai?\nFinal hone ke baad ye badli nahi ja sakti aur staff ko salary slip dikhne lagegi.`;
+    const warning = `Finalize payroll for ${formatMonth(month)}?\nOnce final it cannot be changed, and staff will be able to see their salary slips.`;
     if (!window.confirm(warning)) return;
-    run(() => finalizePayrollApi(month), 'Payroll final ho gayi.');
+    run(() => finalizePayrollApi(month), 'Payroll finalized.');
   };
 
   const openEdit = (payroll) => {
@@ -141,14 +141,14 @@ export default function Payroll() {
 
       {data?.hasDraft && !data.monthCompleted && (
         <p className="payroll__note">
-          Ye mahina abhi chal raha hai, isliye payroll draft hai: bache hue din paid maane gaye hain. Mahina
-          poora hone par Regenerate karke Finalize karein.
+          This month is still running, so the payroll is a draft: the remaining days are counted as paid.
+          Regenerate and finalize once the month is over.
         </p>
       )}
       {hasRows && data.hasDraft && (
         <p className="payroll__note">
-          Attendance, leave, salary ya PF/ESI settings badalne ke baad Regenerate dabayein. Final ho chuki
-          entries nahi badaltin.
+          Click Regenerate after changing attendance, leave, salary or PF/ESI settings. Finalized entries do
+          not change.
         </p>
       )}
 
@@ -156,7 +156,7 @@ export default function Payroll() {
 
       <Table
         columns={COLUMNS}
-        empty={data ? 'Is mahine ki payroll abhi bani nahi hai. "Generate Payroll" dabayein.' : 'Loading...'}
+        empty={data ? 'Payroll has not been generated for this month. Click "Generate Payroll".' : 'Loading...'}
       >
         {rows.map((payroll) => (
           <tr key={payroll._id}>
@@ -222,11 +222,11 @@ export default function Payroll() {
               value={form.otherDeductions}
               onChange={(event) => setForm((prev) => ({ ...prev, otherDeductions: event.target.value }))}
               error={fieldErrors.otherDeductions}
-              hint="Advance, fine waghera. PF/ESI alag se apne aap katte hain."
+              hint="Advance, fines, etc. PF/ESI are deducted automatically."
               autoFocus
             />
             <FormField
-              label="Remarks (slip par dikhega)"
+              label="Remarks (shown on the slip)"
               name="remarks"
               maxLength={200}
               value={form.remarks}

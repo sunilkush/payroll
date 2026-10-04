@@ -17,10 +17,10 @@ const holiday = Joi.object({
 // Arrays poore replace hote hain. settings ke sirf bheje gaye keys badalte hain.
 export const updateSettingsSchema = Joi.object({
   locations: Joi.array().items(location).max(20).unique('name', { ignoreUndefined: true }).messages({
-    'array.unique': 'Do locations ka naam same nahi ho sakta',
+    'array.unique': 'Two locations cannot have the same name',
   }),
   holidays: Joi.array().items(holiday).max(100).unique('date').messages({
-    'array.unique': 'Ek date par ek hi holiday ho sakta hai',
+    'array.unique': 'Only one holiday is allowed per date',
   }),
   settings: Joi.object({
     pfEnabled: Joi.boolean(),

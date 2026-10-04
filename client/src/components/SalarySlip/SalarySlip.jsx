@@ -81,7 +81,7 @@ export default function SalarySlip({ payroll }) {
 
       {employerContribution.total > 0 && (
         <section>
-          <h3 className="salary-slip__heading">Employer Contributions (salary se nahi katte)</h3>
+          <h3 className="salary-slip__heading">Employer Contributions (not deducted from salary)</h3>
           <dl>
             {rows([
               ['EPF', formatCurrency(employerContribution.epf)],

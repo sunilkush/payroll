@@ -27,11 +27,11 @@ export default class ErrorBoundary extends Component {
     return (
       <Result
         status="error"
-        title="Is page mein kuch gadbad ho gayi"
-        subTitle="Page dobara kholne se aksar theek ho jata hai. Na ho to apne admin / developer ko batayein."
+        title="Something went wrong on this page"
+        subTitle="Reloading the page usually fixes it. If it does not, please contact your admin."
         extra={
           <Button type="primary" onClick={() => window.location.reload()}>
-            Page dobara kholein
+            Reload page
           </Button>
         }
       />

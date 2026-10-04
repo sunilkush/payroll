@@ -12,7 +12,7 @@ const MAX_RANGE_DAYS = 90;
 
 async function getCompanyOrThrow() {
   const company = await Company.findById(getTenantId());
-  if (!company) throw new ApiError(404, 'Company nahi mili.');
+  if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }
 
@@ -20,7 +20,7 @@ async function getCompanyOrThrow() {
 async function getLeaveCompanyOrThrow() {
   const company = await getCompanyOrThrow();
   if (!company.settings.leaveEnabled) {
-    throw new ApiError(403, 'Aapki company mein leave management band hai. Admin se contact karein.');
+    throw new ApiError(403, 'Leave management is turned off for your company. Please contact your admin.');
   }
   return company;
 }
@@ -101,17 +101,17 @@ function moveDays(leave, changes) {
 export async function applyLeave(user, { type, fromDate, toDate, reason }) {
   const company = await getLeaveCompanyOrThrow();
 
-  if (toDate < fromDate) throw new ApiError(400, 'To date, from date se pehle nahi ho sakti.');
+  if (toDate < fromDate) throw new ApiError(400, 'To date cannot be before from date.');
   if (fromDate.slice(0, 4) !== toDate.slice(0, 4)) {
-    throw new ApiError(400, 'Ek request ek hi saal ke andar honi chahiye. Do alag requests daalein.');
+    throw new ApiError(400, 'A request must be within one calendar year. Please submit two separate requests.');
   }
   if (!company.settings.allowPastLeave && fromDate < todayStr()) {
-    throw new ApiError(400, 'Beeti hui dates ki leave apply nahi ho sakti.');
+    throw new ApiError(400, 'You cannot apply for leave on past dates.');
   }
 
   const dates = datesBetween(fromDate, toDate);
   if (dates.length > MAX_RANGE_DAYS) {
-    throw new ApiError(400, `Ek request mein ${MAX_RANGE_DAYS} din se zyada nahi ho sakte.`);
+    throw new ApiError(400, `A request cannot span more than ${MAX_RANGE_DAYS} days.`);
   }
   // Week off aur holiday pehle se paid hain, isliye leave mein nahi ginte.
   const holidays = new Set(company.holidays.map((holiday) => holiday.date));
@@ -119,7 +119,7 @@ export async function applyLeave(user, { type, fromDate, toDate, reason }) {
     (date) => !holidays.has(date) && !company.settings.weekOffDays.includes(weekdayOf(date))
   );
   const days = workingDates.length;
-  if (!days) throw new ApiError(400, 'In dates mein koi working day nahi hai.');
+  if (!days) throw new ApiError(400, 'There are no working days in these dates.');
 
   const overlapping = await Leave.exists({
     userId: user._id,
@@ -127,10 +127,10 @@ export async function applyLeave(user, { type, fromDate, toDate, reason }) {
     fromDate: { $lte: toDate },
     toDate: { $gte: fromDate },
   });
-  if (overlapping) throw new ApiError(409, 'In dates par aapki leave pehle se lagi hai.');
+  if (overlapping) throw new ApiError(409, 'You already have leave on these dates.');
 
   if (await Attendance.exists({ userId: user._id, date: { $in: workingDates } })) {
-    throw new ApiError(400, 'In dates mein se kisi din aapki attendance lag chuki hai.');
+    throw new ApiError(400, 'Your attendance is already marked on one of these dates.');
   }
 
   // Balance block: available se pending mein. Filter ($gte) ki wajah se balance kabhi minus nahi jata,
@@ -144,7 +144,7 @@ export async function applyLeave(user, { type, fromDate, toDate, reason }) {
   );
   if (!balance) {
     const current = await LeaveBalance.findOne({ userId: user._id, year });
-    throw new ApiError(400, `${type} balance kam hai (available ${current[type].available}, chahiye ${days}).`);
+    throw new ApiError(400, `Not enough ${type} balance (available ${current[type].available}, required ${days}).`);
   }
 
   try {
@@ -168,8 +168,8 @@ async function decide(id, { status, actor, note, extraFilter = {} }) {
   );
   if (!leave) {
     const exists = await Leave.exists({ _id: id, ...extraFilter });
-    if (!exists) throw new ApiError(404, 'Leave nahi mili.');
-    throw new ApiError(409, 'Is leave par pehle hi action ho chuka hai.');
+    if (!exists) throw new ApiError(404, 'Leave request not found.');
+    throw new ApiError(409, 'This leave request has already been actioned.');
   }
 
   const { days } = leave;

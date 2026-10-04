@@ -61,15 +61,15 @@ export default function LeaveRequests() {
 
   const handleApprove = (leave) => {
     const name = leave.userId?.name ?? 'Staff';
-    if (!window.confirm(`${name} ki ${leave.days} din ki ${leave.type} approve karni hai?`)) return;
-    run(() => approveLeaveApi(leave._id), 'Leave approve ho gayi.');
+    if (!window.confirm(`Approve ${leave.days} day(s) of ${leave.type} for ${name}?`)) return;
+    run(() => approveLeaveApi(leave._id), 'Leave approved.');
   };
 
   const handleReject = async (event) => {
     event.preventDefault();
     const leave = rejecting;
     closeReject();
-    await run(() => rejectLeaveApi(leave._id, note), 'Leave reject ho gayi. Staff ka balance wapas ho gaya.');
+    await run(() => rejectLeaveApi(leave._id, note), 'Leave rejected. The balance has been returned to the staff member.');
   };
 
   return (
@@ -86,7 +86,7 @@ export default function LeaveRequests() {
 
       <Alert type={message.type}>{message.text}</Alert>
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'Koi leave request nahi hai.'}>
+      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'No leave requests.'}>
         {result.items.map((leave) => (
           <tr key={leave._id}>
             <td>
@@ -132,7 +132,7 @@ export default function LeaveRequests() {
         <Modal title={`Reject Leave: ${rejecting.userId?.name ?? ''}`} onClose={closeReject}>
           <form onSubmit={handleReject}>
             <FormField
-              label="Reason (staff ko dikhega)"
+              label="Reason (visible to the staff member)"
               name="note"
               multiline
               maxLength={300}

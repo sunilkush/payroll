@@ -11,7 +11,7 @@ import { creditUser } from './leaveService.js';
 
 async function findStaffOrThrow(id) {
   const staff = await User.findOne({ _id: id, role: ROLES.STAFF });
-  if (!staff) throw new ApiError(404, 'Staff nahi mila.');
+  if (!staff) throw new ApiError(404, 'Staff member not found.');
   return staff;
 }
 

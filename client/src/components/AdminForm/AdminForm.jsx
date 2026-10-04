@@ -23,7 +23,7 @@ export default function AdminForm({ values, errors, onChange, errorPrefix = '' }
         value={values.adminEmail}
         onChange={onChange}
         error={errorFor('email')}
-        hint="Admin isi email se login karega"
+        hint="The admin will log in with this email"
         required
       />
       <FormField
@@ -42,7 +42,7 @@ export default function AdminForm({ values, errors, onChange, errorPrefix = '' }
         value={values.adminPassword}
         onChange={onChange}
         error={errorFor('password')}
-        hint="Kam se kam 8 characters"
+        hint="At least 8 characters"
         required
       />
     </>

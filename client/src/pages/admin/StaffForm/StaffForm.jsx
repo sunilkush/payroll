@@ -121,7 +121,7 @@ export default function StaffForm() {
       if (isEdit) await updateStaffApi(id, payload);
       else await createStaffApi(payload);
       navigate('/admin/staff', {
-        state: { message: `${form.name} ${isEdit ? 'update' : 'add'} ho gaya.` },
+        state: { message: `${form.name} ${isEdit ? 'updated' : 'added'}.` },
       });
     } catch (err) {
       setError(err.message);
@@ -159,13 +159,13 @@ export default function StaffForm() {
               {field('name', 'Full name', 'name', { required: true })}
               {field('employeeCode', 'Employee code', 'employeeCode', {
                 required: true,
-                hint: 'Company ke andar unique, jaise EMP001',
+                hint: 'Unique within the company, e.g. EMP001',
               })}
               {field('email', 'Email', 'email', {
                 type: 'email',
                 required: true,
                 autoComplete: 'off',
-                hint: 'Staff isi email se login karega',
+                hint: 'The staff member will log in with this email',
               })}
               {field('phone', 'Phone', 'phone', { type: 'tel' })}
               {field('joiningDate', 'Joining date', 'joiningDate', { type: 'date' })}
@@ -173,7 +173,7 @@ export default function StaffForm() {
                 type: 'password',
                 required: !isEdit,
                 autoComplete: 'new-password',
-                hint: isEdit ? 'Khali chhodo to password nahi badlega' : 'Kam se kam 8 characters',
+                hint: isEdit ? 'Leave blank to keep the current password' : 'At least 8 characters',
               })}
             </div>
           </Card>
@@ -209,7 +209,7 @@ export default function StaffForm() {
                   name="pfApplicable"
                   checked={form.pfApplicable}
                   onChange={handleChange}
-                  hint="Company settings mein PF ON hone par hi katega"
+                  hint="Deducted only if PF is ON in company settings"
                 />
                 {field('uan', 'UAN', 'uan', { inputMode: 'numeric', hint: '12 digits' })}
               </div>
@@ -219,7 +219,7 @@ export default function StaffForm() {
                   name="esiApplicable"
                   checked={form.esiApplicable}
                   onChange={handleChange}
-                  hint="Company settings mein ESI ON hone par hi katega"
+                  hint="Deducted only if ESI is ON in company settings"
                 />
                 {field('esicNo', 'ESIC number', 'esicNo', { inputMode: 'numeric' })}
               </div>
@@ -229,7 +229,7 @@ export default function StaffForm() {
           <Card className="staff-form__section" size="small" title="Bank Details">
             <div className="staff-form__grid">
               {field('accountNo', 'Account number', 'bankDetails.accountNo', { inputMode: 'numeric' })}
-              {field('ifsc', 'IFSC', 'bankDetails.ifsc', { hint: 'Jaise SBIN0001234' })}
+              {field('ifsc', 'IFSC', 'bankDetails.ifsc', { hint: 'e.g. SBIN0001234' })}
               {field('bankName', 'Bank name', 'bankDetails.bankName')}
             </div>
           </Card>

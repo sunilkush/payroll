@@ -43,6 +43,8 @@ if (!fs.existsSync(path.join(here, '../../../client/dist/index.html'))) {
 fs.rmSync(SHOTS, { recursive: true, force: true });
 fs.mkdirSync(SHOTS, { recursive: true });
 
+const TINY_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+
 const failures = [];
 const fail = (where, message) => {
   failures.push(`${where}: ${message}`);
@@ -183,6 +185,11 @@ async function newPage(browser, viewport, token, where) {
     permissions: ['geolocation'],
     geolocation: INSIDE,
   });
+  // Map ki tiles internet se na aayein: har tile ki jagah 1x1 ki khali image. (CSP galat ho to browser
+  // request se pehle hi rok deta hai aur console error aata hai, to wo phir bhi pakda jata hai.)
+  await context.route('https://*.tile.openstreetmap.org/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: TINY_PNG })
+  );
   if (token) await context.addInitScript((value) => localStorage.setItem('payroll_token', value), token);
   const page = await context.newPage();
   page.on('console', (message) => {
@@ -292,6 +299,21 @@ try {
         await shot(page, `${viewport.name}-superadmin-new-company-modal`);
       }
       if (role === 'admin') {
+        // Office location ka map: pin dikhe, aur map par click karne se latitude badle
+        current = `admin/map-pin@${viewport.name}`;
+        await page.goto(`${api.origin}/admin/settings`, { waitUntil: 'networkidle' });
+        const latBefore = await page.inputValue('#location-lat-0');
+        const mapCanvas = page.locator('.location-map__canvas').first();
+        await mapCanvas.scrollIntoViewIfNeeded();
+        if (!(await page.locator('.location-map__pin').count())) fail(current, 'map par pin nahi dikha');
+        const mapBox = await mapCanvas.boundingBox();
+        await page.mouse.click(mapBox.x + mapBox.width * 0.25, mapBox.y + mapBox.height * 0.3);
+        await page.waitForTimeout(400);
+        const latAfter = await page.inputValue('#location-lat-0');
+        if (latAfter === latBefore) fail(current, `map par click se latitude nahi badla (${latBefore})`);
+        await checkLayout(page, viewport, current);
+        await shot(page, `${viewport.name}-admin-settings-map-pinned`, false);
+
         current = `admin/salary-slip-modal@${viewport.name}`;
         await page.goto(`${api.origin}/admin/payroll`, { waitUntil: 'networkidle' });
         await page.click('.payroll__actions >> text=View >> nth=0');
@@ -327,7 +349,7 @@ try {
         await context.setGeolocation(OUTSIDE);
         await page.click('.punch-screen__button');
         const outside = await message();
-        if (!/office range se bahar/.test(outside)) fail(current, `range ke bahar ka message nahi aaya: "${outside}"`);
+        if (!/outside the office range/.test(outside)) fail(current, `range ke bahar ka message nahi aaya: "${outside}"`);
         await shot(page, '360-staff-punch-outside-range');
 
         await context.setGeolocation(INSIDE);

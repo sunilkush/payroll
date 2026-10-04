@@ -47,8 +47,8 @@ export default function Staff() {
 
   const handleToggleStatus = async (staff) => {
     const action = staff.isActive ? 'deactivate' : 'activate';
-    const warning = staff.isActive ? '\nYe staff login nahi kar payega.' : '';
-    if (!window.confirm(`${staff.name} ko ${action} karna hai?${warning}`)) return;
+    const warning = staff.isActive ? '\nThis staff member will not be able to log in.' : '';
+    if (!window.confirm(`${action === 'deactivate' ? 'Deactivate' : 'Activate'} ${staff.name}?${warning}`)) return;
 
     setBusyId(staff._id);
     try {
@@ -71,7 +71,7 @@ export default function Staff() {
       <Alert type="success">{location.state?.message}</Alert>
 
       <SearchBar
-        placeholder="Name, email ya employee code se search karein"
+        placeholder="Search by name, email or employee code"
         status={query.status}
         statusOptions={STATUS_OPTIONS}
         onSearch={(search) => setQuery((prev) => ({ ...prev, search, page: 1 }))}
@@ -80,7 +80,7 @@ export default function Staff() {
 
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'Koi staff nahi mila.'}>
+      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'No staff found.'}>
         {result.items.map((staff) => (
           <tr key={staff._id}>
             <td>{staff.employeeCode}</td>

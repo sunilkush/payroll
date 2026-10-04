@@ -9,14 +9,14 @@ import { escapeRegex } from '../utils/escapeRegex.js';
 
 async function findCompanyOrThrow(id) {
   const company = await Company.findById(id);
-  if (!company) throw new ApiError(404, 'Company nahi mili.');
+  if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }
 
 async function assertEmailFree(email) {
   if (await User.exists({ email })) {
-    throw new ApiError(409, 'Is email se user pehle se maujood hai.', [
-      { field: 'admin.email', message: 'Ye email pehle se use ho raha hai' },
+    throw new ApiError(409, 'A user with this email already exists.', [
+      { field: 'admin.email', message: 'This email is already in use' },
     ]);
   }
 }
@@ -101,7 +101,7 @@ export async function getCompany(id) {
 
 export async function updateCompany(id, data) {
   const company = await Company.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
-  if (!company) throw new ApiError(404, 'Company nahi mili.');
+  if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }
 
@@ -117,7 +117,7 @@ export async function createAdmin(companyId, data) {
 
 export async function updateAdmin(companyId, adminId, data) {
   const admin = await User.findOne({ _id: adminId, companyId, role: ROLES.ADMIN });
-  if (!admin) throw new ApiError(404, 'Admin nahi mila.');
+  if (!admin) throw new ApiError(404, 'Admin not found.');
 
   admin.set(data);
   await admin.save(); // save() se password hash hota hai

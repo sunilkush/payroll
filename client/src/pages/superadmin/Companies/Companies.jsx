@@ -75,7 +75,7 @@ export default function Companies() {
     setBusyId(company._id);
     try {
       await setCompanyStatusApi(company._id, !company.isActive);
-      message.success(`${company.name} ${company.isActive ? 'block' : 'unblock'} ho gayi.`);
+      message.success(`${company.name} ${company.isActive ? 'blocked' : 'unblocked'}.`);
       setReloadKey((key) => key + 1);
     } catch (err) {
       message.error(err.message);
@@ -102,7 +102,7 @@ export default function Companies() {
     setFieldErrors({});
     try {
       await createCompanyApi({ name: form.name, address: form.address, admin: toAdminPayload(form) });
-      message.success(`${form.name} ban gayi. Admin ab login kar sakta hai.`);
+      message.success(`${form.name} created. The admin can now log in.`);
       closeCreate();
       // Nayi company list mein sabse upar dikhe
       setSearchText('');
@@ -134,25 +134,25 @@ export default function Companies() {
 
   // Khali state: filter laga ho to "kuch nahi mila", warna pehli company banane ka button
   const empty = filtering ? (
-    'Is search / filter mein koi company nahi mili.'
+    'No companies match this search / filter.'
   ) : (
     <div className="companies__empty">
-      <p>Abhi koi company nahi hai. Pehli company banakar shuru karein.</p>
+      <p>No companies yet. Create your first company to get started.</p>
       {newCompanyButton}
     </div>
   );
 
   return (
     <section className="companies">
-      <PageHeader title="Companies" subtitle="Company banana, block karna aur unke admins">
+      <PageHeader title="Companies" subtitle="Create and block companies, and manage their admins">
         {newCompanyButton}
       </PageHeader>
 
       <div className="companies__toolbar">
         <Input
           className="companies__search"
-          placeholder="Company name se search karein"
-          aria-label="Company name se search karein"
+          placeholder="Search by company name"
+          aria-label="Search by company name"
           prefix={<SearchOutlined className="companies__search-icon" />}
           allowClear
           value={searchText}
@@ -184,7 +184,7 @@ export default function Companies() {
             </td>
             <td>
               <Tag icon={<UserOutlined />} color={company.adminCount ? 'blue' : 'warning'}>
-                {company.adminCount || 'Koi admin nahi'}
+                {company.adminCount || 'No admin'}
               </Tag>
             </td>
             <td>
@@ -200,14 +200,14 @@ export default function Companies() {
                   Open
                 </Button>
                 <Popconfirm
-                  title={company.isActive ? 'Company block karein?' : 'Company unblock karein?'}
+                  title={company.isActive ? 'Block this company?' : 'Unblock this company?'}
                   description={
                     company.isActive
-                      ? 'Is company ke saare users turant logout ho jayenge aur login nahi kar payenge.'
-                      : 'Is company ke users dobara login kar payenge.'
+                      ? 'All users of this company will be logged out immediately and will not be able to log in.'
+                      : 'Users of this company will be able to log in again.'
                   }
                   okText={company.isActive ? 'Block' : 'Unblock'}
-                  cancelText="Nahi"
+                  cancelText="Cancel"
                   okButtonProps={{ danger: company.isActive }}
                   onConfirm={() => handleToggleStatus(company)}
                 >
@@ -249,7 +249,7 @@ export default function Companies() {
               error={fieldErrors.address}
             />
             <h3 className="companies__form-section">Company Admin</h3>
-            <p className="companies__form-hint">Ye vyakti company ka staff, attendance aur payroll sambhalega.</p>
+            <p className="companies__form-hint">This person will manage staff, attendance and payroll for the company.</p>
             <AdminForm values={form} errors={fieldErrors} onChange={handleFormChange} errorPrefix="admin." />
             <div className="companies__form-actions">
               <Button variant="secondary" onClick={closeCreate}>

@@ -6,6 +6,7 @@ import Button from '../../../components/Button/Button.jsx';
 import Checkbox from '../../../components/Checkbox/Checkbox.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
+import LocationMap from '../../../components/LocationMap/LocationMap.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
@@ -104,7 +105,7 @@ export default function Settings() {
       updateItem('locations', index, { lat: position.lat.toFixed(6), lng: position.lng.toFixed(6) });
       setMessage({
         type: 'success',
-        text: `Location mil gayi (accuracy ${Math.round(position.accuracy)}m). Save karna na bhoolein.`,
+        text: `Location captured (accuracy ${Math.round(position.accuracy)}m). Remember to save.`,
       });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -128,7 +129,7 @@ export default function Settings() {
     try {
       const res = await updateSettingsApi(toPayload(form));
       setForm(toForm(res.data.company));
-      setMessage({ type: 'success', text: 'Settings save ho gayi.' });
+      setMessage({ type: 'success', text: 'Settings saved.' });
       // Navbar/dashboard ke links (jaise Leaves) nayi settings ke hisaab se dikhein.
       await refresh();
     } catch (err) {
@@ -148,11 +149,11 @@ export default function Settings() {
       <form onSubmit={handleSubmit} noValidate>
         <Card className="settings__section" size="small" title="Office Locations">
           <p className="settings__help">
-            Staff sirf in locations ki range (radius) ke andar punch in/out kar sakta hai.
+            Staff can punch in/out only within the range (radius) of these locations.
           </p>
 
           {form.locations.length === 0 && (
-            <p className="settings__empty">Abhi koi location nahi hai. Bina location ke staff punch nahi kar payega.</p>
+            <p className="settings__empty">No locations yet. Staff cannot punch without an office location.</p>
           )}
 
           {form.locations.map((location, index) => (
@@ -198,6 +199,12 @@ export default function Settings() {
                   required
                 />
               </div>
+              <LocationMap
+                lat={location.lat}
+                lng={location.lng}
+                radius={location.radius}
+                onPick={(lat, lng) => updateItem('locations', index, { lat: lat.toFixed(6), lng: lng.toFixed(6) })}
+              />
               <div className="settings__item-actions">
                 <Button
                   size="sm"
@@ -205,7 +212,7 @@ export default function Settings() {
                   disabled={locatingIndex !== null}
                   onClick={() => handleUseMyLocation(index)}
                 >
-                  {locatingIndex === index ? 'Location le rahe hain...' : 'Use my current location'}
+                  {locatingIndex === index ? 'Getting location...' : 'Use my current location'}
                 </Button>
                 <Button size="sm" variant="danger" onClick={() => removeItem('locations', index)}>
                   Remove
@@ -229,7 +236,7 @@ export default function Settings() {
               value={form.maxGpsAccuracy}
               onChange={(event) => setField('maxGpsAccuracy', event.target.value)}
               error={fieldErrors['settings.maxGpsAccuracy']}
-              hint="GPS accuracy is se kharab ho to punch reject hota hai"
+              hint="Punches with worse GPS accuracy than this are rejected"
               required
             />
           </div>
@@ -248,7 +255,7 @@ export default function Settings() {
         </Card>
 
         <Card className="settings__section" size="small" title="Holidays (paid)">
-          {form.holidays.length === 0 && <p className="settings__empty">Abhi koi holiday nahi hai.</p>}
+          {form.holidays.length === 0 && <p className="settings__empty">No holidays yet.</p>}
 
           {form.holidays.map((holiday, index) => (
             <div key={index} className="settings__holiday">
@@ -287,7 +294,7 @@ export default function Settings() {
             name="leaveEnabled"
             checked={form.leaveEnabled}
             onChange={(event) => setField('leaveEnabled', event.target.checked)}
-            hint="ON hone par hi staff leave apply kar sakta hai aur har mahine CL/EL credit hota hai. ON karte hi is mahine ka credit lag jata hai."
+            hint="Staff can apply for leave and CL/EL is credited every month only when this is ON. Turning it ON credits this month immediately."
           />
           {form.leaveEnabled && (
             <>
@@ -312,7 +319,7 @@ export default function Settings() {
                   value={form.elPerMonth}
                   onChange={(event) => setField('elPerMonth', event.target.value)}
                   error={fieldErrors['settings.elPerMonth']}
-                  hint="1.25 = saal ke 15"
+                  hint="1.25 = 15 per year"
                   required
                 />
                 <FormField
@@ -323,12 +330,12 @@ export default function Settings() {
                   value={form.elCarryForwardMax}
                   onChange={(event) => setField('elCarryForwardMax', event.target.value)}
                   error={fieldErrors['settings.elCarryForwardMax']}
-                  hint="Saal ke end mein itni EL agle saal jaati hai. CL lapse ho jaati hai."
+                  hint="At year end, up to this much EL carries forward. CL lapses."
                   required
                 />
               </div>
               <Checkbox
-                label="Beeti hui dates ki leave allow karein"
+                label="Allow leave for past dates"
                 name="allowPastLeave"
                 checked={form.allowPastLeave}
                 onChange={(event) => setField('allowPastLeave', event.target.checked)}
@@ -338,7 +345,7 @@ export default function Settings() {
         </Card>
 
         <Card className="settings__section" size="small" title="PF & ESI">
-          <p className="settings__help">OFF hone par kisi bhi staff ki salary se ye deduction nahi katega.</p>
+          <p className="settings__help">When OFF, this is not deducted from any staff salary.</p>
           <Checkbox
             label="PF enabled"
             name="pfEnabled"
@@ -347,11 +354,11 @@ export default function Settings() {
           />
           {form.pfEnabled && (
             <Checkbox
-              label="PF ko wage ceiling par cap karein"
+              label="Cap PF at the wage ceiling"
               name="pfCapAtCeiling"
               checked={form.pfCapAtCeiling}
               onChange={(event) => setField('pfCapAtCeiling', event.target.checked)}
-              hint="ON: PF ceiling (jaise Rs 15,000) tak ke wage par katega. OFF: actual wage par."
+              hint="ON: PF is calculated on wages up to the ceiling (e.g. Rs 15,000). OFF: on actual wages."
             />
           )}
           <Checkbox

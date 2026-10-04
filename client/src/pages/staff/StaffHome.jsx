@@ -25,9 +25,9 @@ import { currentMonth, formatCurrency, formatDate, formatMonth, formatTime, WEEK
 import './StaffHome.css';
 
 const LINKS = [
-  { name: 'Punch In / Out', description: 'Office range ke andar attendance', to: '/staff/punch', icon: <EnvironmentOutlined /> },
-  { name: 'My Attendance', description: 'Mahine ki attendance', to: '/staff/attendance', icon: <ClockCircleOutlined /> },
-  { name: 'My Leaves', description: 'Leave apply aur balance', to: '/staff/leaves', icon: <CalendarOutlined />, feature: 'leaveEnabled' },
+  { name: 'Punch In / Out', description: 'Mark attendance within office range', to: '/staff/punch', icon: <EnvironmentOutlined /> },
+  { name: 'My Attendance', description: 'Monthly attendance', to: '/staff/attendance', icon: <ClockCircleOutlined /> },
+  { name: 'My Leaves', description: 'Apply for leave and view balance', to: '/staff/leaves', icon: <CalendarOutlined />, feature: 'leaveEnabled' },
   { name: 'My Salary', description: 'Salary slips', to: '/staff/salary', icon: <FileTextOutlined /> },
 ];
 
@@ -52,25 +52,25 @@ export default function StaffHome() {
   // Sabse naye din pehle, sirf wo jinme kuch dikhane ko hai
   const recentDays = (data?.month?.days ?? []).filter((day) => day.status).reverse().slice(0, 5);
 
-  let punchStatus = 'Aaj punch in nahi hua';
+  let punchStatus = 'Not punched in today';
   let punchLabel = 'Punch In';
   if (attendance) {
     punchStatus = `Punch in: ${formatTime(attendance.punchIn.time)}`;
     punchLabel = 'Punch Out';
   }
-  if (attendance?.punchOut) punchStatus = `Aaj poora: ${formatTime(attendance.punchIn.time)} - ${formatTime(attendance.punchOut.time)}`;
+  if (attendance?.punchOut) punchStatus = `Done today: ${formatTime(attendance.punchIn.time)} - ${formatTime(attendance.punchOut.time)}`;
 
   const loaded = Boolean(data);
   const stats = [
     {
-      label: 'Present (is mahine)',
+      label: 'Present (this month)',
       value: loaded ? summary?.present ?? '-' : undefined,
       icon: <CheckCircleOutlined />,
       tone: 'success',
       to: '/staff/attendance',
     },
     {
-      label: 'Absent (is mahine)',
+      label: 'Absent (this month)',
       value: loaded ? summary?.absent ?? '-' : undefined,
       icon: <CloseCircleOutlined />,
       tone: 'danger',
@@ -84,8 +84,8 @@ export default function StaffHome() {
       to: '/staff/leaves',
     },
     {
-      label: 'Pichhli salary',
-      value: loaded ? (lastSalary ? formatCurrency(lastSalary.netSalary) : 'Abhi nahi') : undefined,
+      label: 'Last salary',
+      value: loaded ? (lastSalary ? formatCurrency(lastSalary.netSalary) : 'None yet') : undefined,
       hint: lastSalary && formatMonth(lastSalary.period),
       icon: <WalletOutlined />,
       tone: 'primary',
@@ -95,7 +95,7 @@ export default function StaffHome() {
 
   return (
     <section>
-      <DashboardHero name={user.name} subtitle={company?.name}>
+      <DashboardHero user={user} subtitle={company?.name}>
         <p className="staff-home__punch-status">{loaded ? punchStatus : 'Loading...'}</p>
         {!attendance?.punchOut && (
           <Button block className="staff-home__punch-button" onClick={() => navigate('/staff/punch')}>
@@ -108,9 +108,9 @@ export default function StaffHome() {
 
       <DashboardGrid>
         <ListCard
-          title="Pichhle din"
-          action={{ to: '/staff/attendance', label: 'Poora mahina' }}
-          empty="Is mahine abhi koi din nahi hai."
+          title="Recent days"
+          action={{ to: '/staff/attendance', label: 'Full month' }}
+          empty="No days this month yet."
         >
           {recentDays.map((day) => (
             <ListRow

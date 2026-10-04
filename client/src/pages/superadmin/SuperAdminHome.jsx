@@ -13,8 +13,8 @@ import { loadAll } from '../../utils/dashboard.js';
 import { formatCurrency } from '../../utils/format.js';
 
 const LINKS = [
-  { name: 'Companies', description: 'Company create, edit, block aur admins', to: '/superadmin/companies', icon: <BankOutlined /> },
-  { name: 'Global Settings', description: 'PF/ESI rates, ceilings aur payroll ke rules', to: '/superadmin/settings', icon: <SettingOutlined /> },
+  { name: 'Companies', description: 'Create, edit, block companies and manage admins', to: '/superadmin/companies', icon: <BankOutlined /> },
+  { name: 'Global Settings', description: 'PF/ESI rates, ceilings and payroll rules', to: '/superadmin/settings', icon: <SettingOutlined /> },
 ];
 
 export default function SuperAdminHome() {
@@ -67,15 +67,15 @@ export default function SuperAdminHome() {
 
   return (
     <section>
-      <DashboardHero name={user.name} subtitle="Super Admin · saari companies" />
+      <DashboardHero user={user} subtitle="All companies" />
 
       <StatCards items={stats} />
 
       <DashboardGrid>
         <ListCard
-          title="Nayi companies"
-          action={{ to: '/superadmin/companies', label: 'Sab dekhein' }}
-          empty="Abhi koi company nahi hai."
+          title="New companies"
+          action={{ to: '/superadmin/companies', label: 'View all' }}
+          empty="No companies yet."
         >
           {(data?.recent?.items ?? []).map((company) => (
             <ListRow

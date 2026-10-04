@@ -2,13 +2,17 @@
   min-height: 100vh;
 }
 
-/* Desktop ka sidebar: page scroll hone par bhi apni jagah rahe */
-.app-layout__sidebar {
+/* Desktop ka sidebar: poori oonchai, page scroll hone par bhi apni jagah */
+.app-layout__sidebar.ant-layout-sider {
   position: sticky;
-  top: var(--navbar-height);
-  height: calc(100vh - var(--navbar-height));
-  overflow-y: auto;
-  border-right: 1px solid var(--color-border);
+  top: 0;
+  height: 100vh;
+  box-shadow: var(--shadow-md);
+}
+
+.app-layout__main {
+  /* Flex ke andar lambi cheez (table) page ko chauda na kare */
+  min-width: 0;
 }
 
 /*
@@ -16,18 +20,8 @@
  * Sirf kinare ka gap (--page-gutter) rehta hai.
  */
 .app-layout__content {
-  /* Flex ke andar lambi cheez (table) page ko chauda na kare */
   min-width: 0;
   padding: var(--space-4) var(--page-gutter) var(--space-8);
-}
-
-.app-layout__inner {
-  width: 100%;
-}
-
-/* Drawer ke andar menu kinare tak jaye */
-.drawer .ant-drawer-body {
-  padding: 0;
 }
 
 @media (min-width: 992px) {

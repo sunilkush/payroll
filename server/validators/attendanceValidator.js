@@ -12,7 +12,7 @@ const month = Joi.string()
   .pattern(/^\d{4}-(0[1-9]|1[0-2])$/)
   .default(() => currentMonth())
   .label('Month')
-  .messages({ 'string.pattern.base': 'Month YYYY-MM format mein hona chahiye' });
+  .messages({ 'string.pattern.base': 'Month must be in YYYY-MM format' });
 
 export const monthlyQuerySchema = Joi.object({ month, userId: objectId });
 

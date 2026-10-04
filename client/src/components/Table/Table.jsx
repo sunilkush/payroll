@@ -20,7 +20,7 @@ import './Table.css';
 const isEmptyCell = (children) =>
   Children.toArray(children).every((child) => typeof child === 'string' && child.trim() === '');
 
-export default function Table({ columns, empty = 'Koi record nahi mila.', loading = false, primary, dense = false, children }) {
+export default function Table({ columns, empty = 'No records found.', loading = false, primary, dense = false, children }) {
   const desktop = Boolean(Grid.useBreakpoint().lg);
 
   // <tr><td>...</td></tr>  ->  [{ key, cells: [{ className, content }, ...] }]

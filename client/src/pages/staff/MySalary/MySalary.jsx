@@ -38,10 +38,10 @@ export default function MySalary() {
 
   return (
     <section className="my-salary">
-      <PageHeader title="My Salary" subtitle="Final ho chuki salary slips" />
+      <PageHeader title="My Salary" subtitle="Finalized salary slips" />
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} empty={rows ? 'Abhi tak koi salary slip nahi bani.' : 'Loading...'}>
+      <Table columns={COLUMNS} empty={rows ? 'No salary slips yet.' : 'Loading...'}>
         {(rows ?? []).map((payroll) => (
           <tr key={payroll._id}>
             <td>{formatMonth(payroll.period)}</td>
