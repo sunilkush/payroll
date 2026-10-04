@@ -1,0 +1,78 @@
+.list-card {
+  height: 100%;
+}
+
+.list-card__action {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.list-card__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-card__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* Ungli se dabane layak oonchai */
+  min-height: 56px;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.list-card__row:first-child {
+  border-top: none;
+}
+
+.list-card__icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+}
+
+.list-card__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-card__title {
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.list-card__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.list-card__right {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.list-card__arrow {
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Poori row dabane layak */
+.list-card__link {
+  position: absolute;
+  inset: 0;
+}
+
+.list-card__row:has(.list-card__link:hover) .list-card__title {
+  color: var(--color-primary);
+}

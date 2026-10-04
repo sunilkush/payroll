@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { PlusOutlined, SearchOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { App, Avatar, Input, Popconfirm, Segmented, Tag } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
 import { createCompanyApi, listCompaniesApi, setCompanyStatusApi } from '../../../api/companyApi.js';
 import AdminForm, { EMPTY_ADMIN, toAdminPayload } from '../../../components/AdminForm/AdminForm.jsx';
 import Alert from '../../../components/Alert/Alert.jsx';
@@ -8,7 +10,6 @@ import FormField from '../../../components/FormField/FormField.jsx';
 import Modal from '../../../components/Modal/Modal.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import Pagination from '../../../components/Pagination/Pagination.jsx';
-import SearchBar from '../../../components/SearchBar/SearchBar.jsx';
 import StatusBadge from '../../../components/StatusBadge/StatusBadge.jsx';
 import Table from '../../../components/Table/Table.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
@@ -17,15 +18,23 @@ import './Companies.css';
 
 const COLUMNS = ['Company', 'Admins', 'Staff', 'Status', 'Created', 'Actions'];
 const EMPTY_FORM = { name: '', address: '', ...EMPTY_ADMIN };
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All status' },
-  { value: 'active', label: 'Active' },
-  { value: 'blocked', label: 'Blocked' },
-];
+const SEARCH_DELAY_MS = 350;
+
+// "Shree Balaji Engineering" -> "SB"
+const initials = (name) =>
+  name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('');
 
 export default function Companies() {
+  const { message } = App.useApp();
+  const navigate = useNavigate();
+
   const [query, setQuery] = useState({ search: '', status: 'all', page: 1 });
-  const [result, setResult] = useState({ items: [], total: 0, totalPages: 1 });
+  const [searchText, setSearchText] = useState('');
+  const [result, setResult] = useState({ items: [], total: 0, totalPages: 1, counts: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
@@ -53,17 +62,23 @@ export default function Companies() {
     };
   }, [query, reloadKey]);
 
-  const handleToggleStatus = async (company) => {
-    const action = company.isActive ? 'block' : 'unblock';
-    const warning = company.isActive ? '\nIs company ke saare users login nahi kar payenge.' : '';
-    if (!window.confirm(`"${company.name}" ko ${action} karna hai?${warning}`)) return;
+  // Type karte hi search: aakhri akshar ke thodi der baad hi server ko bhejte hain.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const search = searchText.trim();
+      setQuery((prev) => (prev.search === search ? prev : { ...prev, search, page: 1 }));
+    }, SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
+  const handleToggleStatus = async (company) => {
     setBusyId(company._id);
     try {
       await setCompanyStatusApi(company._id, !company.isActive);
+      message.success(`${company.name} ${company.isActive ? 'block' : 'unblock'} ho gayi.`);
       setReloadKey((key) => key + 1);
     } catch (err) {
-      setError(err.message);
+      message.error(err.message);
     } finally {
       setBusyId(null);
     }
@@ -87,8 +102,11 @@ export default function Companies() {
     setFieldErrors({});
     try {
       await createCompanyApi({ name: form.name, address: form.address, admin: toAdminPayload(form) });
+      message.success(`${form.name} ban gayi. Admin ab login kar sakta hai.`);
       closeCreate();
-      setQuery((prev) => ({ ...prev, page: 1 }));
+      // Nayi company list mein sabse upar dikhe
+      setSearchText('');
+      setQuery({ search: '', status: 'all', page: 1 });
       setReloadKey((key) => key + 1);
     } catch (err) {
       setFormError(err.message);
@@ -98,46 +116,106 @@ export default function Companies() {
     }
   };
 
+  // counts na mile (jaise backend purana chal raha ho) to tabs bina ginti ke dikhte hain, page nahi girta.
+  const { counts } = result;
+  const withCount = (label, key) => (counts ? `${label} (${counts[key]})` : label);
+  const filtering = Boolean(query.search) || query.status !== 'all';
+  const statusTabs = [
+    { value: 'all', label: withCount('All', 'all') },
+    { value: 'active', label: withCount('Active', 'active') },
+    { value: 'blocked', label: withCount('Blocked', 'blocked') },
+  ];
+
+  const newCompanyButton = (
+    <Button icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
+      New Company
+    </Button>
+  );
+
+  // Khali state: filter laga ho to "kuch nahi mila", warna pehli company banane ka button
+  const empty = filtering ? (
+    'Is search / filter mein koi company nahi mili.'
+  ) : (
+    <div className="companies__empty">
+      <p>Abhi koi company nahi hai. Pehli company banakar shuru karein.</p>
+      {newCompanyButton}
+    </div>
+  );
+
   return (
     <section className="companies">
-      <PageHeader title="Companies" subtitle={`${result.total} total`}>
-        <Button onClick={() => setShowCreate(true)}>+ New Company</Button>
+      <PageHeader title="Companies" subtitle="Company banana, block karna aur unke admins">
+        {newCompanyButton}
       </PageHeader>
 
-      <SearchBar
-        placeholder="Company name se search karein"
-        status={query.status}
-        statusOptions={STATUS_OPTIONS}
-        onSearch={(search) => setQuery((prev) => ({ ...prev, search, page: 1 }))}
-        onStatusChange={(status) => setQuery((prev) => ({ ...prev, status, page: 1 }))}
-      />
+      <div className="companies__toolbar">
+        <Input
+          className="companies__search"
+          placeholder="Company name se search karein"
+          aria-label="Company name se search karein"
+          prefix={<SearchOutlined className="companies__search-icon" />}
+          allowClear
+          value={searchText}
+          onChange={(event) => setSearchText(event.target.value)}
+        />
+        <Segmented
+          className="companies__tabs"
+          options={statusTabs}
+          value={query.status}
+          onChange={(status) => setQuery((prev) => ({ ...prev, status, page: 1 }))}
+        />
+      </div>
 
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'Koi company nahi mili.'}>
+      <Table columns={COLUMNS} primary={0} loading={loading} empty={empty}>
         {result.items.map((company) => (
           <tr key={company._id}>
             <td>
-              <Link to={`/superadmin/companies/${company._id}`} className="companies__name">
-                {company.name}
+              <Link to={`/superadmin/companies/${company._id}`} className="companies__company">
+                <Avatar shape="square" size={44} className="companies__avatar">
+                  {initials(company.name)}
+                </Avatar>
+                <span className="companies__text">
+                  <span className="companies__name">{company.name}</span>
+                  {company.address && <span className="companies__address">{company.address}</span>}
+                </span>
               </Link>
-              {company.address && <p className="companies__address">{company.address}</p>}
             </td>
-            <td>{company.adminCount}</td>
-            <td>{company.staffCount}</td>
+            <td>
+              <Tag icon={<UserOutlined />} color={company.adminCount ? 'blue' : 'warning'}>
+                {company.adminCount || 'Koi admin nahi'}
+              </Tag>
+            </td>
+            <td>
+              <Tag icon={<TeamOutlined />}>{company.staffCount}</Tag>
+            </td>
             <td>
               <StatusBadge active={company.isActive} />
             </td>
             <td>{formatDate(company.createdAt)}</td>
             <td>
-              <Button
-                size="sm"
-                variant={company.isActive ? 'danger' : 'secondary'}
-                disabled={busyId === company._id}
-                onClick={() => handleToggleStatus(company)}
-              >
-                {company.isActive ? 'Block' : 'Unblock'}
-              </Button>
+              <div className="companies__actions">
+                <Button size="sm" variant="secondary" onClick={() => navigate(`/superadmin/companies/${company._id}`)}>
+                  Open
+                </Button>
+                <Popconfirm
+                  title={company.isActive ? 'Company block karein?' : 'Company unblock karein?'}
+                  description={
+                    company.isActive
+                      ? 'Is company ke saare users turant logout ho jayenge aur login nahi kar payenge.'
+                      : 'Is company ke users dobara login kar payenge.'
+                  }
+                  okText={company.isActive ? 'Block' : 'Unblock'}
+                  cancelText="Nahi"
+                  okButtonProps={{ danger: company.isActive }}
+                  onConfirm={() => handleToggleStatus(company)}
+                >
+                  <Button size="sm" variant={company.isActive ? 'danger' : 'secondary'} loading={busyId === company._id}>
+                    {company.isActive ? 'Block' : 'Unblock'}
+                  </Button>
+                </Popconfirm>
+              </div>
             </td>
           </tr>
         ))}
@@ -171,13 +249,14 @@ export default function Companies() {
               error={fieldErrors.address}
             />
             <h3 className="companies__form-section">Company Admin</h3>
+            <p className="companies__form-hint">Ye vyakti company ka staff, attendance aur payroll sambhalega.</p>
             <AdminForm values={form} errors={fieldErrors} onChange={handleFormChange} errorPrefix="admin." />
             <div className="companies__form-actions">
               <Button variant="secondary" onClick={closeCreate}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Create Company'}
+              <Button type="submit" loading={saving}>
+                Create Company
               </Button>
             </div>
           </form>

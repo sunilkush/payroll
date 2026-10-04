@@ -29,6 +29,8 @@ const VIEWPORTS = [
   { name: '360', width: 360, height: 740, mobile: true },
   { name: '768', width: 768, height: 1024, mobile: true },
   { name: '1366', width: 1366, height: 768, mobile: false },
+  // Content full width (container-fluid) hai, isliye badi screen par bhi dekhte hain ki khinch kar kharab na lage
+  { name: '1920', width: 1920, height: 1080, mobile: false },
 ];
 const OFFICE = { lat: 28.4595, lng: 77.0266 };
 const INSIDE = { latitude: 28.4599, longitude: 77.0266, accuracy: 20 };
@@ -283,7 +285,7 @@ try {
       if (role === 'superadmin') {
         current = `superadmin/new-company-modal@${viewport.name}`;
         await page.goto(`${api.origin}/superadmin/companies`, { waitUntil: 'networkidle' });
-        await page.click('text=+ New Company');
+        await page.click('.page-header__actions button');
         await page.waitForSelector('.ant-modal-container, .ant-modal-content');
         await page.waitForTimeout(500); // modal khulne ka animation
         await checkLayout(page, viewport, current);

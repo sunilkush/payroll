@@ -43,13 +43,17 @@ export async function listCompanies({ search, status, page, limit }) {
   if (status === 'active') filter.isActive = true;
   if (status === 'blocked') filter.isActive = false;
 
-  const [companies, total] = await Promise.all([
+  // Status tabs ki ginti: search lagu hota hai, status nahi (taaki har tab par apni ginti dikhe).
+  const { isActive: _status, ...searchOnly } = filter;
+  const [companies, total, all, active] = await Promise.all([
     Company.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
     Company.countDocuments(filter),
+    Company.countDocuments(searchOnly),
+    Company.countDocuments({ ...searchOnly, isActive: true }),
   ]);
 
   const counts = await countUsersByCompany(companies.map((c) => c._id));
@@ -60,7 +64,14 @@ export async function listCompanies({ search, status, page, limit }) {
     ...counts.get(String(company._id)),
   }));
 
-  return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
+  return {
+    items,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+    counts: { all, active, blocked: all - active },
+  };
 }
 
 export async function createCompany({ admin, ...data }) {

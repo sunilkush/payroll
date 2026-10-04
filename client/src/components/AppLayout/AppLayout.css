@@ -11,6 +11,10 @@
   border-right: 1px solid var(--color-border);
 }
 
+/*
+ * Content "container-fluid" hai: koi max chaudai nahi, screen jitni chaudi ho utna failta hai.
+ * Sirf kinare ka gap (--page-gutter) rehta hai.
+ */
 .app-layout__content {
   /* Flex ke andar lambi cheez (table) page ko chauda na kare */
   min-width: 0;
@@ -18,8 +22,7 @@
 }
 
 .app-layout__inner {
-  max-width: var(--content-max-width);
-  margin: 0 auto;
+  width: 100%;
 }
 
 /* Drawer ke andar menu kinare tak jaye */

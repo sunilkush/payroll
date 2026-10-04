@@ -74,6 +74,9 @@ Har page pehle phone ke liye banta hai, phir badi screen ke liye badalta hai. Br
 | Tablet (768px se) | Hamburger + drawer, cards 2 ek line mein, forms 2 column |
 | Desktop (992px se, Ant Design ka `lg`) | Baayein sidebar, asli tables |
 
+Content **full width (container-fluid)** hai: koi max chaudai nahi, sirf kinare ka gap. Isliye badi
+screen (1600px+) par forms mein zyada columns ho jate hain, aur check 1920px par bhi chalta hai.
+
 CSS likhne ka tareeka: pehle mobile ka style, phir `@media (min-width: ...)` se badi screen
 (`max-width` nahi). Tables ke liye kuch alag nahi karna: `Table` component phone par apne aap
 cards bana deta hai.

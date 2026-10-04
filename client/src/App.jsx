@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ConfigProvider } from 'antd';
+import { App as AntApp, ConfigProvider } from 'antd';
 import AppRoutes from './routes/AppRoutes.jsx';
 import { buildTheme } from './styles/theme.js';
 
@@ -8,7 +8,10 @@ export default function App() {
 
   return (
     <ConfigProvider theme={theme}>
-      <AppRoutes />
+      {/* AntApp: pages mein App.useApp() se toast (message) aur confirm (modal) milte hain */}
+      <AntApp>
+        <AppRoutes />
+      </AntApp>
     </ConfigProvider>
   );
 }

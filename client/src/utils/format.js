@@ -22,6 +22,13 @@ export const formatCurrency = (value) => currencyFormatter.format(Number(value) 
 export const grossSalary = (structure = {}) =>
   ['basic', 'hra', 'special', 'other'].reduce((sum, key) => sum + (Number(structure[key]) || 0), 0);
 
+// Din ke samay ke hisaab se: Good morning / afternoon / evening
+export function greeting(now = new Date()) {
+  const hour = now.getHours();
+  if (hour < 12) return 'Good morning';
+  return hour < 17 ? 'Good afternoon' : 'Good evening';
+}
+
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // <input type="month"> ke liye current month, 'YYYY-MM' (local time).

@@ -215,6 +215,40 @@ export async function getReport(month) {
   return { month, rows: rows.map(({ user, summary }) => ({ staff: toStaffInfo(user), summary })) };
 }
 
+// Admin dashboard ke liye: aaj kitne active staff present hain, kitne leave par, kitno ne punch nahi kiya.
+export async function getTodaySummary() {
+  const company = await getCompanyOrThrow();
+  const date = todayStr();
+  const [staff, records, leaves] = await Promise.all([
+    User.find({ role: ROLES.STAFF, isActive: true }).select('_id'),
+    Attendance.find({ date }).select('userId punchOut'),
+    Leave.find({ status: LEAVE_STATUS.APPROVED, fromDate: { $lte: date }, toDate: { $gte: date } }).select('userId'),
+  ]);
+
+  const activeIds = new Set(staff.map((user) => String(user._id)));
+  const todays = records.filter((record) => activeIds.has(String(record.userId)));
+  const presentIds = new Set(todays.map((record) => String(record.userId)));
+  const onLeave = new Set(
+    leaves.map((leave) => String(leave.userId)).filter((id) => activeIds.has(id) && !presentIds.has(id))
+  ).size;
+
+  let dayType = 'WORKING';
+  if (company.settings.weekOffDays.includes(weekdayOf(date))) dayType = 'WEEK_OFF';
+  if (company.holidays.some((holiday) => holiday.date === date)) dayType = 'HOLIDAY';
+
+  return {
+    date,
+    dayType,
+    totalStaff: activeIds.size,
+    present: presentIds.size,
+    punchedOut: todays.filter((record) => record.punchOut).length,
+    onLeave,
+    notMarked: activeIds.size - presentIds.size - onLeave,
+    // 0 ho to staff punch nahi kar sakta; dashboard admin ko yaad dilata hai
+    locationsCount: company.locations.length,
+  };
+}
+
 // Cron ke liye: jin dino punch out nahi hua un par flag lagata hai. Din PRESENT hi rehta hai.
 // Tenant context ke bahar chalta hai, isliye saari companies par lagu hota hai.
 export async function markMissedPunchOuts({ includeToday }) {

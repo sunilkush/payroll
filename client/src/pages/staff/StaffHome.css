@@ -1,0 +1,17 @@
+.staff-home__punch-status {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Banner ke andar ka button: gehre background par safed */
+.staff-home__punch-button.ant-btn {
+  margin-top: var(--space-2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-dark);
+  background: var(--color-surface);
+  border: none;
+}
+
+.staff-home__punch-button.ant-btn:hover:not(:disabled) {
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Grid, Layout } from 'antd';
 import { Outlet, useLocation } from 'react-router-dom';
 import Drawer from '../Drawer/Drawer.jsx';
+import ErrorBoundary from '../ErrorBoundary/ErrorBoundary.jsx';
 import Navbar from '../Navbar/Navbar.jsx';
 import NavMenu from '../NavMenu/NavMenu.jsx';
 import './AppLayout.css';
@@ -30,7 +31,9 @@ export default function AppLayout() {
         )}
         <Layout.Content className="app-layout__content">
           <div className="app-layout__inner">
-            <Outlet />
+            <ErrorBoundary resetKey={pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </Layout.Content>
       </Layout>

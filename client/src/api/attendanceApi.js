@@ -5,4 +5,6 @@ export const punchInApi = (position) => api.post('/attendance/punch-in', positio
 export const punchOutApi = (position) => api.post('/attendance/punch-out', position);
 // Staff: apna mahina. Admin: userId ke saath kisi staff ka mahina.
 export const getMonthlyAttendanceApi = (params) => api.get('/attendance', { params });
+// Admin dashboard: aaj kitne present / leave par / punch nahi kiya
+export const getTodaySummaryApi = () => api.get('/attendance/today-summary');
 export const getAttendanceReportApi = (month) => api.get('/attendance/report', { params: { month } });
