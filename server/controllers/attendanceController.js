@@ -18,6 +18,11 @@ export const today = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+export const todaySummary = asyncHandler(async (req, res) => {
+  const data = await attendanceService.getTodaySummary();
+  res.json({ success: true, data });
+});
+
 export const monthly = asyncHandler(async (req, res) => {
   const data = await attendanceService.getMonthly({ requester: req.user, ...req.query });
   res.json({ success: true, data });

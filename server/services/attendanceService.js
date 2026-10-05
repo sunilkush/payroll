@@ -10,24 +10,24 @@ import { checkGeofence } from './geoService.js';
 
 async function getCompanyOrThrow() {
   const company = await Company.findById(getTenantId());
-  if (!company) throw new ApiError(404, 'Company nahi mili.');
+  if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }
 
 // Punch in aur punch out dono par same rule: GPS accuracy theek ho aur office range ke andar ho.
 function verifyLocation(company, { lat, lng, accuracy }) {
   if (!company.locations.length) {
-    throw new ApiError(400, 'Office location set nahi hai. Admin se contact karein.');
+    throw new ApiError(400, 'No office location is set. Please contact your admin.');
   }
   if (accuracy > company.settings.maxGpsAccuracy) {
     throw new ApiError(
       400,
-      `GPS accuracy kharab hai (${Math.round(accuracy)}m). Khuli jagah par jaakar dobara try karein.`
+      `GPS accuracy is too low (${Math.round(accuracy)}m). Move to an open area and try again.`
     );
   }
   const geo = checkGeofence(company.locations, { lat, lng });
   if (!geo.allowed) {
-    throw new ApiError(403, `Aap office range se bahar hain (${geo.distance}m).`);
+    throw new ApiError(403, `You are outside the office range (${geo.distance}m).`);
   }
   return geo;
 }
@@ -49,13 +49,13 @@ export async function punchIn(user, position, meta) {
   const date = todayStr();
 
   if (await Attendance.exists({ userId: user._id, date })) {
-    throw new ApiError(409, 'Aaj ka punch in pehle ho chuka hai.');
+    throw new ApiError(409, 'You have already punched in today.');
   }
   try {
     return await Attendance.create({ userId: user._id, date, punchIn: buildPunch(position, geo, meta) });
   } catch (err) {
     // Do request ek saath aayein to unique index (userId + date) rokta hai.
-    if (err.code === 11000) throw new ApiError(409, 'Aaj ka punch in pehle ho chuka hai.');
+    if (err.code === 11000) throw new ApiError(409, 'You have already punched in today.');
     throw err;
   }
 }
@@ -63,8 +63,8 @@ export async function punchIn(user, position, meta) {
 export async function punchOut(user, position, meta) {
   const company = await getCompanyOrThrow();
   const record = await Attendance.findOne({ userId: user._id, date: todayStr() });
-  if (!record) throw new ApiError(400, 'Aaj punch in nahi hua hai.');
-  if (record.punchOut) throw new ApiError(409, 'Aaj ka punch out pehle ho chuka hai.');
+  if (!record) throw new ApiError(400, 'You have not punched in today.');
+  if (record.punchOut) throw new ApiError(409, 'You have already punched out today.');
 
   const geo = verifyLocation(company, position);
   record.punchOut = buildPunch(position, geo, meta);
@@ -80,7 +80,8 @@ export async function getToday(user) {
   return {
     date,
     attendance,
-    locations: company.locations.map(({ name, radius }) => ({ name, radius })),
+    // lat/lng bhi: staff ke Punch page ka map office aur uski range dikhata hai
+    locations: company.locations.map(({ name, lat, lng, radius }) => ({ name, lat, lng, radius })),
   };
 }
 
@@ -170,9 +171,9 @@ const toStaffInfo = (user) => ({
 export async function getMonthly({ requester, userId, month }) {
   let user = requester;
   if (requester.role !== ROLES.STAFF) {
-    if (!userId) throw new ApiError(400, 'userId zaroori hai.');
+    if (!userId) throw new ApiError(400, 'userId is required.');
     user = await User.findOne({ _id: userId, role: ROLES.STAFF });
-    if (!user) throw new ApiError(404, 'Staff nahi mila.');
+    if (!user) throw new ApiError(404, 'Staff member not found.');
   }
 
   const [company, records, leaves] = await Promise.all([
@@ -213,6 +214,40 @@ export async function getStaffMonthSummaries(month) {
 export async function getReport(month) {
   const { rows } = await getStaffMonthSummaries(month);
   return { month, rows: rows.map(({ user, summary }) => ({ staff: toStaffInfo(user), summary })) };
+}
+
+// Admin dashboard ke liye: aaj kitne active staff present hain, kitne leave par, kitno ne punch nahi kiya.
+export async function getTodaySummary() {
+  const company = await getCompanyOrThrow();
+  const date = todayStr();
+  const [staff, records, leaves] = await Promise.all([
+    User.find({ role: ROLES.STAFF, isActive: true }).select('_id'),
+    Attendance.find({ date }).select('userId punchOut'),
+    Leave.find({ status: LEAVE_STATUS.APPROVED, fromDate: { $lte: date }, toDate: { $gte: date } }).select('userId'),
+  ]);
+
+  const activeIds = new Set(staff.map((user) => String(user._id)));
+  const todays = records.filter((record) => activeIds.has(String(record.userId)));
+  const presentIds = new Set(todays.map((record) => String(record.userId)));
+  const onLeave = new Set(
+    leaves.map((leave) => String(leave.userId)).filter((id) => activeIds.has(id) && !presentIds.has(id))
+  ).size;
+
+  let dayType = 'WORKING';
+  if (company.settings.weekOffDays.includes(weekdayOf(date))) dayType = 'WEEK_OFF';
+  if (company.holidays.some((holiday) => holiday.date === date)) dayType = 'HOLIDAY';
+
+  return {
+    date,
+    dayType,
+    totalStaff: activeIds.size,
+    present: presentIds.size,
+    punchedOut: todays.filter((record) => record.punchOut).length,
+    onLeave,
+    notMarked: activeIds.size - presentIds.size - onLeave,
+    // 0 ho to staff punch nahi kar sakta; dashboard admin ko yaad dilata hai
+    locationsCount: company.locations.length,
+  };
 }
 
 // Cron ke liye: jin dino punch out nahi hua un par flag lagata hai. Din PRESENT hi rehta hai.

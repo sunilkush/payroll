@@ -80,7 +80,7 @@ export function computePayroll({ user, company, rates, lopDays, calendarDays, es
 
 async function getCompanyOrThrow() {
   const company = await Company.findById(getTenantId());
-  if (!company) throw new ApiError(404, 'Company nahi mili.');
+  if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }
 
@@ -115,7 +115,7 @@ const sortedRows = (period) => Payroll.find({ period }).sort({ 'staff.employeeCo
 // Mahine ki payroll banata (ya DRAFT ko dobara banata) hai. FINAL rows ko nahi chhedta.
 // Chalu mahine ki payroll DRAFT ban sakti hai (bache hue din paid maane jaate hain), aane wale mahine ki nahi.
 export async function generatePayroll(month, admin) {
-  if (month > currentMonth()) throw new ApiError(400, 'Aane wale mahine ki payroll nahi ban sakti.');
+  if (month > currentMonth()) throw new ApiError(400, 'Payroll cannot be generated for a future month.');
 
   const [{ company, rows }, rates, existing, coveredUserIds] = await Promise.all([
     getStaffMonthSummaries(month),
@@ -192,14 +192,14 @@ export async function listPayroll(month) {
 // DRAFT par admin "other deductions" (advance, fine waghera) aur remarks daal sakta hai.
 export async function updatePayroll(id, { otherDeductions, remarks }) {
   const payroll = await Payroll.findById(id);
-  if (!payroll) throw new ApiError(404, 'Payroll nahi mili.');
-  if (payroll.status === PAYROLL_STATUS.FINAL) throw new ApiError(409, 'Final payroll badli nahi ja sakti.');
+  if (!payroll) throw new ApiError(404, 'Payroll not found.');
+  if (payroll.status === PAYROLL_STATUS.FINAL) throw new ApiError(409, 'Finalized payroll cannot be changed.');
 
   if (otherDeductions !== undefined) {
     const { pf, esi } = payroll.deductions;
     const maxOther = round2(payroll.earnings.gross - pf - esi);
     if (otherDeductions > maxOther) {
-      throw new ApiError(400, `Other deduction ${maxOther} se zyada nahi ho sakta (net salary minus mein chali jayegi).`);
+      throw new ApiError(400, `Other deduction cannot be more than ${maxOther} (net salary would go negative).`);
     }
     payroll.deductions.other = otherDeductions;
     payroll.deductions.total = sum([pf, esi, otherDeductions]);
@@ -213,13 +213,13 @@ export async function updatePayroll(id, { otherDeductions, remarks }) {
 
 export async function finalizePayroll(month) {
   if (month >= currentMonth()) {
-    throw new ApiError(400, 'Mahina poora hone ke baad hi payroll final ho sakti hai.');
+    throw new ApiError(400, 'Payroll can be finalized only after the month is over.');
   }
   const result = await Payroll.updateMany(
     { period: month, status: PAYROLL_STATUS.DRAFT },
     { $set: { status: PAYROLL_STATUS.FINAL, finalizedAt: new Date() } }
   );
-  if (!result.modifiedCount) throw new ApiError(400, 'Final karne ke liye koi draft payroll nahi hai.');
+  if (!result.modifiedCount) throw new ApiError(400, 'There is no draft payroll to finalize.');
   return listPayroll(month);
 }
 
@@ -236,12 +236,12 @@ export async function getSlipData(id, requester) {
     filter.status = PAYROLL_STATUS.FINAL;
   }
   const [payroll, company] = await Promise.all([Payroll.findOne(filter), getCompanyOrThrow()]);
-  if (!payroll) throw new ApiError(404, 'Salary slip nahi mili.');
+  if (!payroll) throw new ApiError(404, 'Salary slip not found.');
   return { payroll, company };
 }
 
 export async function getExportData(month) {
   const [rows, company] = await Promise.all([sortedRows(month), getCompanyOrThrow()]);
-  if (!rows.length) throw new ApiError(404, 'Is mahine ki payroll abhi bani nahi hai.');
+  if (!rows.length) throw new ApiError(404, 'Payroll has not been generated for this month.');
   return { month, rows, totals: totalsOf(rows), company };
 }

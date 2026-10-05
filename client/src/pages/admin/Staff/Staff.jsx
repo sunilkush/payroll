@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { PlusOutlined } from '@ant-design/icons';
+import { Tag } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { listStaffApi, setStaffStatusApi } from '../../../api/staffApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
+import ListToolbar from '../../../components/ListToolbar/ListToolbar.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import Pagination from '../../../components/Pagination/Pagination.jsx';
-import SearchBar from '../../../components/SearchBar/SearchBar.jsx';
 import StatusBadge from '../../../components/StatusBadge/StatusBadge.jsx';
 import Table from '../../../components/Table/Table.jsx';
+import UserCell from '../../../components/UserCell/UserCell.jsx';
 import { formatCurrency, formatDate, grossSalary } from '../../../utils/format.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './Staff.css';
 
-const COLUMNS = ['Code', 'Name', 'Joining', 'Monthly Gross', 'PF / ESI', 'Status', 'Actions'];
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All status' },
+const COLUMNS = ['Staff', 'Code', 'Joining', 'Monthly Gross', 'PF / ESI', 'Status', 'Actions'];
+const STATUS_TABS = [
+  { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
 ];
@@ -21,6 +25,7 @@ const STATUS_OPTIONS = [
 export default function Staff() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast, confirm } = useFeedback();
 
   const [query, setQuery] = useState({ search: '', status: 'all', page: 1 });
   const [result, setResult] = useState({ items: [], total: 0, totalPages: 1 });
@@ -28,6 +33,14 @@ export default function Staff() {
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [busyId, setBusyId] = useState(null);
+
+  // StaffForm save ke baad yahan message bhejta hai: ek baar toast dikha kar hata do
+  // (warna page refresh par dobara dikhta).
+  useEffect(() => {
+    if (!location.state?.message) return;
+    toast.success(location.state.message);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location, navigate, toast]);
 
   useEffect(() => {
     let ignore = false;
@@ -46,54 +59,74 @@ export default function Staff() {
   }, [query, reloadKey]);
 
   const handleToggleStatus = async (staff) => {
-    const action = staff.isActive ? 'deactivate' : 'activate';
-    const warning = staff.isActive ? '\nYe staff login nahi kar payega.' : '';
-    if (!window.confirm(`${staff.name} ko ${action} karna hai?${warning}`)) return;
+    const ok = await confirm(
+      staff.isActive
+        ? {
+            title: `Deactivate ${staff.name}?`,
+            content: 'They will be logged out and will not be able to log in. Their attendance and payroll history is kept.',
+            okText: 'Deactivate',
+            danger: true,
+          }
+        : { title: `Activate ${staff.name}?`, content: 'They will be able to log in again.', okText: 'Activate' }
+    );
+    if (!ok) return;
 
     setBusyId(staff._id);
     try {
       await setStaffStatusApi(staff._id, !staff.isActive);
+      toast.success(`${staff.name} ${staff.isActive ? 'deactivated' : 'activated'}.`);
       setReloadKey((key) => key + 1);
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setBusyId(null);
     }
   };
 
+  const filtering = Boolean(query.search) || query.status !== 'all';
+  const addButton = (
+    <Button icon={<PlusOutlined />} onClick={() => navigate('/admin/staff/new')}>
+      Add Staff
+    </Button>
+  );
+  const empty = filtering ? (
+    'No staff match this search / filter.'
+  ) : (
+    <div className="staff__empty">
+      <p>No staff yet. Add your first staff member to start tracking attendance and payroll.</p>
+      {addButton}
+    </div>
+  );
+
   return (
     <section className="staff">
-      <PageHeader title="Staff" subtitle={`${result.total} total`}>
-        <Button onClick={() => navigate('/admin/staff/new')}>+ Add Staff</Button>
+      <PageHeader title="Staff" subtitle="Add staff, set salary structure and manage access">
+        {addButton}
       </PageHeader>
 
-      {/* StaffForm save ke baad yahan message bhejta hai */}
-      <Alert type="success">{location.state?.message}</Alert>
-
-      <SearchBar
-        placeholder="Name, email ya employee code se search karein"
-        status={query.status}
-        statusOptions={STATUS_OPTIONS}
-        onSearch={(search) => setQuery((prev) => ({ ...prev, search, page: 1 }))}
-        onStatusChange={(status) => setQuery((prev) => ({ ...prev, status, page: 1 }))}
+      <ListToolbar
+        searchPlaceholder="Search by name, email or employee code"
+        onSearch={(search) => setQuery((prev) => (prev.search === search ? prev : { ...prev, search, page: 1 }))}
+        tabs={STATUS_TABS}
+        counts={result.counts}
+        value={query.status}
+        onChange={(status) => setQuery((prev) => ({ ...prev, status, page: 1 }))}
       />
 
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'Koi staff nahi mila.'}>
+      <Table columns={COLUMNS} primary={0} loading={loading} empty={empty}>
         {result.items.map((staff) => (
           <tr key={staff._id}>
-            <td>{staff.employeeCode}</td>
             <td>
-              <Link to={`/admin/staff/${staff._id}`} className="staff__name">
-                {staff.name}
-              </Link>
-              <p className="staff__contact">{staff.email}</p>
+              <UserCell name={staff.name} sub={staff.email} to={`/admin/staff/${staff._id}`} />
             </td>
+            <td>{staff.employeeCode}</td>
             <td>{formatDate(staff.joiningDate)}</td>
-            <td>{formatCurrency(grossSalary(staff.salaryStructure))}</td>
+            <td className="staff__gross">{formatCurrency(grossSalary(staff.salaryStructure))}</td>
             <td>
-              {staff.pfApplicable ? 'Yes' : 'No'} / {staff.esiApplicable ? 'Yes' : 'No'}
+              <Tag color={staff.pfApplicable ? 'blue' : 'default'}>PF {staff.pfApplicable ? 'Yes' : 'No'}</Tag>
+              <Tag color={staff.esiApplicable ? 'blue' : 'default'}>ESI {staff.esiApplicable ? 'Yes' : 'No'}</Tag>
             </td>
             <td>
               <StatusBadge active={staff.isActive} inactiveLabel="Inactive" />
@@ -106,7 +139,7 @@ export default function Staff() {
                 <Button
                   size="sm"
                   variant={staff.isActive ? 'danger' : 'secondary'}
-                  disabled={busyId === staff._id}
+                  loading={busyId === staff._id}
                   onClick={() => handleToggleStatus(staff)}
                 >
                   {staff.isActive ? 'Deactivate' : 'Activate'}

@@ -1,0 +1,104 @@
+.chart {
+  /* Grid/flex ke andar chart apni chaudai ghata sake (warna phone par bahar nikalta hai) */
+  min-width: 0;
+}
+
+/* ---------- Tooltip ---------- */
+
+.chart-tooltip {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.chart-tooltip__label {
+  margin-bottom: var(--space-1);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.chart-tooltip__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chart-tooltip__row strong {
+  margin-left: auto;
+  padding-left: var(--space-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-tooltip__swatch,
+.chart-legend__swatch {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+}
+
+/* ---------- Legend ---------- */
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  list-style: none;
+}
+
+.chart-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chart-legend__item strong {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Donut: beech mein total ---------- */
+
+.chart-donut {
+  position: relative;
+}
+
+.chart-donut__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.chart-donut__total {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-donut__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Donut ka legend beech mein */
+.chart-donut + .chart-legend {
+  justify-content: center;
+}
+
+/* ---------- Sparkline ---------- */
+
+.chart-sparkline {
+  min-width: 0;
+  margin-top: var(--space-2);
+}

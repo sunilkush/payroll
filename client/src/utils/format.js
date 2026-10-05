@@ -22,6 +22,37 @@ export const formatCurrency = (value) => currencyFormatter.format(Number(value) 
 export const grossSalary = (structure = {}) =>
   ['basic', 'hra', 'special', 'other'].reduce((sum, key) => sum + (Number(structure[key]) || 0), 0);
 
+const shortDateFormatter = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' });
+const compactCurrencyFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+// '2026-10-05' -> '5 Oct' (charts ke axis ke liye)
+export const formatShortDate = (value) => (value ? shortDateFormatter.format(new Date(value)) : '');
+
+// 184500 -> '₹1.8L' (KPI aur chart axis ke liye)
+export const formatCompactCurrency = (value) => compactCurrencyFormatter.format(Number(value) || 0);
+
+// "5m ago", "3h ago", "Yesterday", warna date
+export function timeAgo(value, now = new Date()) {
+  const minutes = Math.round((now - new Date(value)) / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 24 * 60) return `${Math.round(minutes / 60)}h ago`;
+  if (minutes < 48 * 60) return 'Yesterday';
+  return formatShortDate(value);
+}
+
+// Din ke samay ke hisaab se: Good morning / afternoon / evening
+export function greeting(now = new Date()) {
+  const hour = now.getHours();
+  if (hour < 12) return 'Good morning';
+  return hour < 17 ? 'Good afternoon' : 'Good evening';
+}
+
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // <input type="month"> ke liye current month, 'YYYY-MM' (local time).

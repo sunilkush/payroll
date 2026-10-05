@@ -1,4 +1,7 @@
-/* .ant-layout-header ke default (gehra rang, 64px, 50px padding) ko apne navbar ke hisaab se */
+/*
+ * Top bar: safed, neeche patli line. .ant-layout-header ke default (64px, 50px padding) yahan badle hain.
+ * Mobile (base): menu button + page ka naam + icons. Desktop: breadcrumb + search box.
+ */
 .navbar.ant-layout-header {
   position: sticky;
   top: 0;
@@ -7,52 +10,102 @@
   align-items: center;
   gap: var(--space-2);
   height: var(--navbar-height);
-  padding: 0 var(--space-3) 0 var(--space-1);
+  padding: 0 var(--space-3) 0 var(--space-2);
   line-height: 1.5;
-  background: var(--color-surface);
+  background: var(--color-surface-translucent);
   border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
 }
 
-.navbar__brand {
-  padding-left: var(--space-2);
+.navbar__menu.ant-btn,
+.navbar__collapse.ant-btn {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Mobile: page ka naam */
+.navbar__title {
+  overflow: hidden;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.navbar__user {
+/* Desktop: Company / Page */
+.navbar__breadcrumb {
+  min-width: 0;
+}
+
+.navbar__current {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.navbar__tools {
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: var(--space-4);
-  margin-left: auto;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
-/* Mobile par naam drawer ke andar dikhta hai, navbar mein jagah nahi */
-.navbar__identity {
+/* Quick actions: phone par sirf "+" (gol), tablet se "+ New" */
+.navbar__new.ant-btn {
+  flex-shrink: 0;
+  width: var(--touch-target);
+  padding: 0;
+}
+
+.navbar__new-label {
   display: none;
+}
+
+.navbar__user.ant-btn {
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.navbar__avatar.ant-avatar {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* Dropdown ke upar user ka naam, email, role */
+.navbar__menu-user {
+  display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.2;
+  line-height: 1.4;
+  color: var(--color-text);
 }
 
-.navbar__name {
-  font-weight: var(--font-weight-medium);
-}
-
-.navbar__role {
+.navbar__menu-user span {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 @media (min-width: 768px) {
-  .navbar__identity {
-    display: flex;
+  .navbar__tools {
+    gap: var(--space-2);
+  }
+
+  .navbar__new.ant-btn {
+    width: auto;
+    padding: 0 var(--space-4);
+  }
+
+  .navbar__new-label {
+    display: inline;
   }
 }
 
 @media (min-width: 992px) {
   .navbar.ant-layout-header {
-    padding: 0 var(--space-6) 0 var(--space-4);
+    gap: var(--space-3);
+    height: var(--navbar-height-desktop);
+    padding: 0 var(--page-gutter) 0 var(--space-3);
   }
 }

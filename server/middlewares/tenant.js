@@ -7,14 +7,14 @@ import { runWithTenant } from '../utils/tenantContext.js';
 // Super Admin by default sab dekhta hai; x-company-id header bhej kar kisi ek
 // company ke scope mein kaam kar sakta hai.
 export const tenant = (req, res, next) => {
-  if (!req.user) return next(new ApiError(401, 'Login zaroori hai.'));
+  if (!req.user) return next(new ApiError(401, 'Please log in to continue.'));
 
   let companyId = null;
   if (req.user.role === ROLES.SUPER_ADMIN) {
     const requested = req.headers['x-company-id'];
     if (requested) {
       if (!mongoose.isValidObjectId(requested)) {
-        return next(new ApiError(400, 'x-company-id valid nahi hai.'));
+        return next(new ApiError(400, 'x-company-id is not valid.'));
       }
       companyId = new mongoose.Types.ObjectId(requested);
     }

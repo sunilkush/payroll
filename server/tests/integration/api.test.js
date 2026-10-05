@@ -120,6 +120,11 @@ describe('companies (super admin)', () => {
     assert.equal(res.status, 409);
     const list = await api.call('/companies', { token: superAdmin });
     assert.equal(list.body.data.total, 2, 'fail hui company bani nahi rehni chahiye');
+    assert.deepEqual(list.body.data.counts, { all: 2, active: 2, blocked: 0 });
+    // counts par search lagu hota hai, status filter nahi
+    const filtered = await api.call('/companies?status=blocked&search=alpha', { token: superAdmin });
+    assert.equal(filtered.body.data.total, 0);
+    assert.deepEqual(filtered.body.data.counts, { all: 1, active: 1, blocked: 0 });
   });
 
   test('ADMIN /companies nahi khol sakta -> 403', async () => {
@@ -188,6 +193,11 @@ describe('staff (admin) + tenant isolation', () => {
   test('admin ko sirf apni company ka staff dikhta hai', async () => {
     const list = await api.call('/staff', { token: A.admin });
     assert.equal(list.body.data.total, 1);
+    assert.deepEqual(list.body.data.counts, { all: 1, active: 1, inactive: 0 });
+    // counts par status filter lagu nahi hota
+    const inactive = await api.call('/staff?status=inactive', { token: A.admin });
+    assert.equal(inactive.body.data.total, 0);
+    assert.deepEqual(inactive.body.data.counts, { all: 1, active: 1, inactive: 0 });
     assert.equal(list.body.data.items[0]._id, A.staffId);
     assert.equal((await api.call(`/staff/${B.staffId}`, { token: A.admin })).status, 404);
     assert.equal((await api.call(`/staff/${B.staffId}`, { method: 'PUT', token: A.admin, body: { name: 'Hacked' } })).status, 404);
@@ -218,6 +228,14 @@ describe('attendance (geofence punch)', () => {
     assert.equal(res.body.data.company.settings.maxGpsAccuracy, 100, 'baaki settings waisi hi rehni chahiye');
     const other = await api.call('/settings', { token: B.admin });
     assert.equal(other.body.data.company.locations.length, 0, 'company B par asar nahi');
+  });
+
+  test('staff ko aaj ka status aur office ki location (map ke liye) milti hai', async () => {
+    const res = await api.call('/attendance/today', { token: A.staff });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.attendance, null);
+    assert.deepEqual(res.body.data.locations, [{ name: 'Head Office', ...OFFICE, radius: 100 }]);
+    assert.equal((await api.call('/attendance/today', { token: A.admin })).status, 403);
   });
 
   test('range ke bahar -> 403, doori ke saath', async () => {
@@ -261,6 +279,24 @@ describe('attendance (geofence punch)', () => {
     assert.equal(await markMissedPunchOuts({ includeToday: true }), 0);
     record = await Attendance.findOne({ userId: A.staffId, date: today });
     assert.ok(record.punchOut.time);
+  });
+
+  test('admin dashboard: aaj ka summary; staff -> 403; doosri company alag', async () => {
+    const res = await api.call('/attendance/today-summary', { token: A.admin });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.date, today);
+    assert.equal(res.body.data.totalStaff, 1);
+    assert.equal(res.body.data.present, 1);
+    assert.equal(res.body.data.punchedOut, 1);
+    assert.equal(res.body.data.notMarked, 0);
+    assert.equal(res.body.data.locationsCount, 1);
+    assert.ok(['WORKING', 'WEEK_OFF', 'HOLIDAY'].includes(res.body.data.dayType));
+
+    const other = await api.call('/attendance/today-summary', { token: B.admin });
+    assert.equal(other.body.data.present, 0);
+    assert.equal(other.body.data.notMarked, 1);
+    assert.equal(other.body.data.locationsCount, 0);
+    assert.equal((await api.call('/attendance/today-summary', { token: A.staff })).status, 403);
   });
 
   test('monthly report (pichhla mahina): Present / Holiday / Week Off / Absent', async () => {
@@ -427,7 +463,80 @@ describe('leave (CL/EL, balance blocking)', () => {
     assert.equal((await api.call('/leaves', { token: A.staff })).body.data.total, 3);
     const approved = await api.call('/leaves?status=APPROVED', { token: A.admin });
     assert.equal(approved.body.data.total, 1);
+    // tabs ki ginti: status filter ke bawajood sab status ki ginti aati hai
+    assert.deepEqual(approved.body.data.counts, { all: 3, PENDING: 0, APPROVED: 1, REJECTED: 1, CANCELLED: 1 });
+    assert.equal((await api.call('/leaves', { token: B.admin })).body.data.counts.all, 0, 'doosri company ki ginti alag');
     assert.equal(approved.body.data.items[0].userId.employeeCode, 'E1');
+  });
+});
+
+describe('dashboard (KPI, charts, notifications)', () => {
+  test('bina login -> 401; galat days -> 400', async () => {
+    assert.equal((await api.call('/dashboard')).status, 401);
+    assert.equal((await api.call('/dashboard?days=5', { token: A.admin })).status, 400);
+  });
+
+  test('admin: KPI, trend aur aaj ki list apni company ki', async () => {
+    const res = await api.call('/dashboard?days=7', { token: A.admin });
+    assert.equal(res.status, 200);
+    const data = res.body.data;
+    assert.equal(data.kpis.staff.value, 1);
+    assert.equal(data.kpis.staff.series.length, 6);
+    assert.equal(data.attendanceTrend.length, 7);
+    assert.equal(data.attendanceTrend.at(-1).date, today);
+    assert.equal(data.attendanceTrend.at(-1).present, 1, 'aaj staff ne punch kiya tha');
+    assert.equal(data.payrollTrend.length, 6);
+    assert.equal(data.todayAttendance.length, 1);
+    assert.equal(data.todayAttendance[0].status, 'PRESENT');
+    assert.equal(data.todayAttendance[0].staff._id, A.staffId);
+    assert.equal(data.today.present, 1);
+    assert.equal(data.kpis.pendingLeaves.value, 0);
+    assert.ok(Array.isArray(data.activity) && data.activity.some((item) => item.type === 'PUNCH_IN'));
+    assert.ok(Array.isArray(data.upcoming));
+  });
+
+  test('admin: doosri company ka data alag', async () => {
+    const data = (await api.call('/dashboard', { token: B.admin })).body.data;
+    assert.equal(data.kpis.staff.value, 1);
+    assert.equal(data.today.present, 0);
+    assert.equal(data.attendanceTrend.length, 14);
+    assert.ok(data.attendanceTrend.every((day) => day.present === 0));
+    assert.equal(data.todayAttendance[0].staff._id, B.staffId);
+  });
+
+  test('staff: apne 6 mahine, leave balance aur aaj ka punch', async () => {
+    const data = (await api.call('/dashboard', { token: A.staff })).body.data;
+    assert.equal(data.monthly.length, 6);
+    assert.equal(data.monthly.at(-2).period, prevMonth);
+    assert.equal(data.monthly.at(-2).present, presentDays.length);
+    assert.equal(data.monthly.at(-2).leave, 1);
+    assert.equal(data.monthly.at(-2).absent, 1);
+    assert.ok(data.today.punchIn && data.today.punchOut);
+    assert.ok(data.kpis.leave, 'leave ON hai to balance aata hai');
+    assert.equal(data.kpis.salary, null, 'abhi koi final slip nahi');
+    // B mein leave OFF hai
+    assert.equal((await api.call('/dashboard', { token: B.staff })).body.data.kpis.leave, null);
+  });
+
+  test('super admin: saari companies ke totals', async () => {
+    const data = (await api.call('/dashboard', { token: superAdmin })).body.data;
+    assert.equal(data.kpis.companies.value, 2);
+    assert.deepEqual(data.status, { active: 2, blocked: 0 });
+    assert.equal(data.kpis.staff.value, 2);
+    assert.equal(data.kpis.admins.value, 2);
+    assert.equal(data.companiesTrend.length, 6);
+    assert.equal(data.topCompanies.length, 2);
+    assert.deepEqual(data.withoutAdmin, []);
+  });
+
+  test('notifications: role ke hisaab se, aur haalat badalne par hat jati hain', async () => {
+    const ids = async (token) => (await api.call('/dashboard/notifications', { token })).body.data.items.map((item) => item.id);
+    // A: location hai, staff hai, pichhle mahine ki payroll abhi nahi bani
+    assert.deepEqual(await ids(A.admin), ['payroll-missing']);
+    // B: location nahi hai
+    assert.ok((await ids(B.admin)).includes('no-location'));
+    assert.deepEqual(await ids(superAdmin), []);
+    assert.equal((await api.call('/dashboard/notifications')).status, 401);
   });
 });
 

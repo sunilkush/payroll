@@ -4,7 +4,7 @@ import { currentMonth } from '../utils/dateUtil.js';
 const month = Joi.string()
   .pattern(/^\d{4}-(0[1-9]|1[0-2])$/)
   .label('Month')
-  .messages({ 'string.pattern.base': 'Month YYYY-MM format mein hona chahiye' });
+  .messages({ 'string.pattern.base': 'Month must be in YYYY-MM format' });
 
 // generate / finalize: month body mein zaroori hai
 export const payrollMonthSchema = Joi.object({ month: month.required() });

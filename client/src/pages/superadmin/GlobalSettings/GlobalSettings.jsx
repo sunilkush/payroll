@@ -3,10 +3,12 @@ import { Card } from 'antd';
 import { getGlobalSettingsApi, updateGlobalSettingsApi } from '../../../api/globalSettingsApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
+import FormActions from '../../../components/FormActions/FormActions.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './GlobalSettings.css';
 
 // group: API ka object (pf / esi). group na ho to top-level field.
@@ -17,7 +19,7 @@ const SECTIONS = [
       {
         name: 'payrollDaysBasis',
         label: 'Days basis',
-        hint: 'Per day salary = Monthly gross / itne din (har mahine fix)',
+        hint: 'Per day salary = Monthly gross / this many days (fixed every month)',
         step: '1',
       },
     ],
@@ -27,15 +29,15 @@ const SECTIONS = [
     group: 'pf',
     fields: [
       { name: 'employeeRate', label: 'Employee rate (%)' },
-      { name: 'employerRate', label: 'Employer rate (%)', hint: 'Isme se EPS nikal kar baaki EPF mein jata hai' },
+      { name: 'employerRate', label: 'Employer rate (%)', hint: 'EPS is taken out of this; the rest goes to EPF' },
       { name: 'epsRate', label: 'EPS rate (%)' },
-      { name: 'wageCeiling', label: 'Wage ceiling (Rs.)', hint: 'Company "cap at ceiling" ON rakhe to PF isi par rukta hai' },
-      { name: 'edliRate', label: 'EDLI rate (%)', hint: 'Employer ka extra, sirf report mein' },
-      { name: 'adminRate', label: 'Admin charges (%)', hint: 'Employer ka extra, sirf report mein' },
+      { name: 'wageCeiling', label: 'Wage ceiling (Rs.)', hint: 'PF stops at this amount when a company keeps "cap at ceiling" ON' },
+      { name: 'edliRate', label: 'EDLI rate (%)', hint: 'Employer extra, for reports only' },
+      { name: 'adminRate', label: 'Admin charges (%)', hint: 'Employer extra, for reports only' },
       {
         name: 'wageFloorPercent',
         label: 'PF wage floor (% of gross)',
-        hint: 'Naye Labour Codes: PF wage, gross ke is % se kam nahi maani jaati. 0 = ye rule band',
+        hint: 'New Labour Codes: PF wage is treated as at least this % of gross. 0 = rule off',
       },
     ],
   },
@@ -45,7 +47,7 @@ const SECTIONS = [
     fields: [
       { name: 'employeeRate', label: 'Employee rate (%)' },
       { name: 'employerRate', label: 'Employer rate (%)' },
-      { name: 'wageLimit', label: 'Wage limit (Rs.)', hint: 'Monthly gross is se zyada ho to ESI lagu nahi' },
+      { name: 'wageLimit', label: 'Wage limit (Rs.)', hint: 'ESI does not apply if monthly gross is above this' },
     ],
   },
 ];
@@ -80,7 +82,9 @@ function toPayload(form) {
 export default function GlobalSettings() {
   const [form, setForm] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [message, setMessage] = useState({ type: 'success', text: '' });
+  const { toast } = useFeedback();
+  // notify({ type: 'success' | 'error', text }): upar toast dikhata hai
+  const notify = ({ type, text }) => text && toast[type](text);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -97,28 +101,25 @@ export default function GlobalSettings() {
     event.preventDefault();
     setSaving(true);
     setFieldErrors({});
-    setMessage({ type: 'success', text: '' });
     try {
       const res = await updateGlobalSettingsApi(toPayload(form));
       setForm(toForm(res.data.settings));
-      setMessage({ type: 'success', text: 'Global settings save ho gayi.' });
+      notify({ type: 'success', text: 'Global settings saved.' });
     } catch (err) {
       setFieldErrors(toFieldErrors(err));
-      setMessage({ type: 'error', text: err.errors?.[0]?.message || err.message });
+      notify({ type: 'error', text: err.errors?.[0]?.message || err.message });
     } finally {
       setSaving(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   return (
     <section className="global-settings">
-      <PageHeader title="Global Settings" subtitle="PF/ESI ke rates aur ceilings, saari companies ke liye" />
-      <Alert type={message.type}>{message.text}</Alert>
+      <PageHeader title="Global Settings" subtitle="PF/ESI rates and ceilings for all companies" />
       <p className="global-settings__note">
-        Ye numbers har company ki nayi payroll par lagu hote hain. Pehle se bani payroll tab tak nahi
-        badalti jab tak admin Regenerate na kare; final ho chuki payroll kabhi nahi badalti. Rates
-        badalne se pehle apne CA se confirm kar lein.
+        These numbers apply to new payroll for every company. Existing payroll does not change until an
+        admin clicks Regenerate; finalized payroll never changes. Confirm with your CA before changing
+        the rates.
       </p>
 
       <form onSubmit={handleSubmit} noValidate>
@@ -147,11 +148,11 @@ export default function GlobalSettings() {
           </Card>
         ))}
 
-        <div className="global-settings__actions">
+        <FormActions>
           <Button type="submit" disabled={saving}>
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
-        </div>
+        </FormActions>
       </form>
     </section>
   );

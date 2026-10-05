@@ -8,7 +8,7 @@ export const personName = Joi.string().trim().min(2).max(100).label('Name');
 export const email = Joi.string().trim().lowercase().email({ tlds: { allow: false } }).label('Email');
 
 export const phone = Joi.string().trim().pattern(/^[0-9+\-\s]{7,15}$/).allow('').label('Phone').messages({
-  'string.pattern.base': 'Phone number valid nahi hai',
+  'string.pattern.base': 'Phone number is not valid',
 });
 
 export const password = Joi.string().min(8).max(72).label('Password');

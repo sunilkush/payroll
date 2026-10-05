@@ -30,12 +30,12 @@ export const createStaffSchema = Joi.object({
   }).required(),
   pfApplicable: Joi.boolean(),
   esiApplicable: Joi.boolean(),
-  uan: digits(12, 12, 'UAN', 'UAN 12 digits ka hota hai'),
-  esicNo: digits(10, 17, 'ESIC number', 'ESIC number 10 se 17 digits ka hota hai'),
+  uan: digits(12, 12, 'UAN', 'UAN must be 12 digits'),
+  esicNo: digits(10, 17, 'ESIC number', 'ESIC number must be 10 to 17 digits'),
   bankDetails: Joi.object({
-    accountNo: digits(9, 18, 'Account number', 'Account number 9 se 18 digits ka hota hai').default(''),
+    accountNo: digits(9, 18, 'Account number', 'Account number must be 9 to 18 digits').default(''),
     ifsc: Joi.string().trim().uppercase().pattern(/^[A-Z]{4}0[A-Z0-9]{6}$/).allow('').default('').label('IFSC').messages({
-      'string.pattern.base': 'IFSC valid nahi hai (jaise SBIN0001234)',
+      'string.pattern.base': 'IFSC is not valid (e.g. SBIN0001234)',
     }),
     bankName: Joi.string().trim().max(100).allow('').default('').label('Bank name'),
   }),

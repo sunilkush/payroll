@@ -4,7 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const auth = asyncHandler(async (req, res, next) => {
   const [scheme, token] = (req.headers.authorization || '').split(' ');
-  if (scheme !== 'Bearer' || !token) throw new ApiError(401, 'Login zaroori hai.');
+  if (scheme !== 'Bearer' || !token) throw new ApiError(401, 'Please log in to continue.');
 
   const { user, company } = await authenticate(token);
   req.user = user;

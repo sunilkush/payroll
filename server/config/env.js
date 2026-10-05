@@ -8,7 +8,7 @@ dotenv.config({ path: path.join(serverRoot, '.env') });
 const required = ['MONGO_URI', 'JWT_SECRET'];
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length) {
-  throw new Error(`Missing required env variables: ${missing.join(', ')} (server/.env check karo)`);
+  throw new Error(`Missing required env variables: ${missing.join(', ')} (check server/.env)`);
 }
 
 const toInt = (value, fallback) => {
@@ -22,7 +22,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Production mein kamzor secret ke saath server start hi na ho.
 if (isProduction && (process.env.JWT_SECRET.length < 32 || process.env.JWT_SECRET === 'change-me')) {
-  throw new Error('Production mein JWT_SECRET kam se kam 32 characters ka random string hona chahiye.');
+  throw new Error('In production JWT_SECRET must be a random string of at least 32 characters.');
 }
 
 export const env = {

@@ -5,6 +5,7 @@ import { createStaffApi, getStaffApi, updateStaffApi } from '../../../api/staffA
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import Checkbox from '../../../components/Checkbox/Checkbox.jsx';
+import FormActions from '../../../components/FormActions/FormActions.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
@@ -88,6 +89,8 @@ export default function StaffForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(EMPTY_FORM);
+  // Top bar mein dikhne wala naam; type karte waqt na badle isliye form se alag
+  const [savedName, setSavedName] = useState('');
   const [loading, setLoading] = useState(isEdit);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
@@ -98,7 +101,11 @@ export default function StaffForm() {
     if (!isEdit) return undefined;
     let ignore = false;
     getStaffApi(id)
-      .then((res) => !ignore && setForm(toForm(res.data.staff)))
+      .then((res) => {
+        if (ignore) return;
+        setForm(toForm(res.data.staff));
+        setSavedName(res.data.staff.name);
+      })
       .catch((err) => !ignore && setLoadError(err.message))
       .finally(() => !ignore && setLoading(false));
     return () => {
@@ -121,7 +128,7 @@ export default function StaffForm() {
       if (isEdit) await updateStaffApi(id, payload);
       else await createStaffApi(payload);
       navigate('/admin/staff', {
-        state: { message: `${form.name} ${isEdit ? 'update' : 'add'} ho gaya.` },
+        state: { message: `${form.name} ${isEdit ? 'updated' : 'added'}.` },
       });
     } catch (err) {
       setError(err.message);
@@ -146,7 +153,11 @@ export default function StaffForm() {
 
   return (
     <section className="staff-form">
-      <PageHeader title={isEdit ? 'Edit Staff' : 'Add Staff'} back={{ to: '/admin/staff', label: 'Staff' }} />
+      <PageHeader
+        detail
+        title={isEdit ? (savedName ? `Edit ${savedName}` : 'Edit staff') : 'Add staff'}
+        back={{ to: '/admin/staff', label: 'Staff' }}
+      />
 
       {loadError ? (
         <Alert>{loadError}</Alert>
@@ -159,13 +170,13 @@ export default function StaffForm() {
               {field('name', 'Full name', 'name', { required: true })}
               {field('employeeCode', 'Employee code', 'employeeCode', {
                 required: true,
-                hint: 'Company ke andar unique, jaise EMP001',
+                hint: 'Unique within the company, e.g. EMP001',
               })}
               {field('email', 'Email', 'email', {
                 type: 'email',
                 required: true,
                 autoComplete: 'off',
-                hint: 'Staff isi email se login karega',
+                hint: 'The staff member will log in with this email',
               })}
               {field('phone', 'Phone', 'phone', { type: 'tel' })}
               {field('joiningDate', 'Joining date', 'joiningDate', { type: 'date' })}
@@ -173,7 +184,7 @@ export default function StaffForm() {
                 type: 'password',
                 required: !isEdit,
                 autoComplete: 'new-password',
-                hint: isEdit ? 'Khali chhodo to password nahi badlega' : 'Kam se kam 8 characters',
+                hint: isEdit ? 'Leave blank to keep the current password' : 'At least 8 characters',
               })}
             </div>
           </Card>
@@ -209,7 +220,7 @@ export default function StaffForm() {
                   name="pfApplicable"
                   checked={form.pfApplicable}
                   onChange={handleChange}
-                  hint="Company settings mein PF ON hone par hi katega"
+                  hint="Deducted only if PF is ON in company settings"
                 />
                 {field('uan', 'UAN', 'uan', { inputMode: 'numeric', hint: '12 digits' })}
               </div>
@@ -219,7 +230,7 @@ export default function StaffForm() {
                   name="esiApplicable"
                   checked={form.esiApplicable}
                   onChange={handleChange}
-                  hint="Company settings mein ESI ON hone par hi katega"
+                  hint="Deducted only if ESI is ON in company settings"
                 />
                 {field('esicNo', 'ESIC number', 'esicNo', { inputMode: 'numeric' })}
               </div>
@@ -229,19 +240,19 @@ export default function StaffForm() {
           <Card className="staff-form__section" size="small" title="Bank Details">
             <div className="staff-form__grid">
               {field('accountNo', 'Account number', 'bankDetails.accountNo', { inputMode: 'numeric' })}
-              {field('ifsc', 'IFSC', 'bankDetails.ifsc', { hint: 'Jaise SBIN0001234' })}
+              {field('ifsc', 'IFSC', 'bankDetails.ifsc', { hint: 'e.g. SBIN0001234' })}
               {field('bankName', 'Bank name', 'bankDetails.bankName')}
             </div>
           </Card>
 
-          <div className="staff-form__actions">
+          <FormActions>
             <Button variant="secondary" onClick={() => navigate('/admin/staff')}>
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
               {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Staff'}
             </Button>
-          </div>
+          </FormActions>
         </form>
       )}
     </section>

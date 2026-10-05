@@ -1,0 +1,127 @@
+/* Mobile: ek column. Tablet: 2. Badi screen: 4. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.stat-card {
+  position: relative;
+  height: 100%;
+}
+
+.stat-card .ant-card-body {
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.stat-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.stat-card__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.stat-card__icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-md);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+}
+
+.stat-card__icon--success {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.stat-card__icon--warning {
+  color: var(--color-warning);
+  background: var(--color-warning-light);
+}
+
+.stat-card__icon--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-light);
+}
+
+.stat-card__icon--info {
+  color: var(--color-info);
+  background: var(--color-info-light);
+}
+
+.stat-card__value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.stat-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  min-height: 22px;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.stat-card__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--space-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: 999px;
+}
+
+.stat-card__delta--good {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.stat-card__delta--bad {
+  color: var(--color-danger);
+  background: var(--color-danger-light);
+}
+
+.stat-card__hint {
+  color: var(--color-text-muted);
+}
+
+/* Poora card dabane layak */
+.stat-card__link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+@media (min-width: 768px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: var(--space-6);
+  }
+}
+
+@media (min-width: 1200px) {
+  .stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

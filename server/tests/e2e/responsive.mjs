@@ -29,6 +29,8 @@ const VIEWPORTS = [
   { name: '360', width: 360, height: 740, mobile: true },
   { name: '768', width: 768, height: 1024, mobile: true },
   { name: '1366', width: 1366, height: 768, mobile: false },
+  // Content full width (container-fluid) hai, isliye badi screen par bhi dekhte hain ki khinch kar kharab na lage
+  { name: '1920', width: 1920, height: 1080, mobile: false },
 ];
 const OFFICE = { lat: 28.4595, lng: 77.0266 };
 const INSIDE = { latitude: 28.4599, longitude: 77.0266, accuracy: 20 };
@@ -40,6 +42,8 @@ if (!fs.existsSync(path.join(here, '../../../client/dist/index.html'))) {
 }
 fs.rmSync(SHOTS, { recursive: true, force: true });
 fs.mkdirSync(SHOTS, { recursive: true });
+
+const TINY_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 const failures = [];
 const fail = (where, message) => {
@@ -171,8 +175,11 @@ async function launch() {
   throw new Error('Edge ya Chrome nahi mila. BROWSER_CHANNEL set karo.');
 }
 
-async function newPage(browser, viewport, token, where) {
+// serviceWorkers 'block': layout ke checks hamesha server se aayi taaza files par chalein.
+// Sirf PWA wala check ise 'allow' karta hai.
+async function newPage(browser, viewport, token, where, serviceWorkers = 'block') {
   const context = await browser.newContext({
+    serviceWorkers,
     viewport: { width: viewport.width, height: viewport.height },
     isMobile: viewport.mobile,
     hasTouch: viewport.mobile,
@@ -181,6 +188,11 @@ async function newPage(browser, viewport, token, where) {
     permissions: ['geolocation'],
     geolocation: INSIDE,
   });
+  // Map ki tiles internet se na aayein: har tile ki jagah 1x1 ki khali image. (CSP galat ho to browser
+  // request se pehle hi rok deta hai aur console error aata hai, to wo phir bhi pakda jata hai.)
+  await context.route('https://*.tile.openstreetmap.org/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: TINY_PNG })
+  );
   if (token) await context.addInitScript((value) => localStorage.setItem('payroll_token', value), token);
   const page = await context.newPage();
   page.on('console', (message) => {
@@ -211,7 +223,8 @@ async function checkLayout(page, viewport, where, { loggedIn = true } = {}) {
       .filter((item) => item.height < 36);
     return {
       // Desktop par table apne dabbe ke andar daayein-baayein scroll na kare (columns sama jayein)
-      tableScroll: [...document.querySelectorAll('.ant-table-content')].some((table) => table.scrollWidth > table.clientWidth + 1),
+      // (dashboard ki DataTable phone par jaan-boojh kar khiskti hai, use nahi ginte)
+      tableScroll: [...document.querySelectorAll('.ant-table-content')].filter((table) => !table.closest('.data-table')).some((table) => table.scrollWidth > table.clientWidth + 1),
       overflow: document.documentElement.scrollWidth - window.innerWidth,
       sidebar: visible(document.querySelector('.app-layout__sidebar')),
       hamburger: visible(document.querySelector('.navbar__menu')),
@@ -236,6 +249,51 @@ const browser = await launch();
 let pagesChecked = 0;
 
 try {
+  // PWA: manifest + icons milte hain, service worker lagta hai, aur internet band hone par bhi app khulta hai
+  {
+    const current = 'pwa';
+    console.log('\n== PWA ==');
+    const { context, page } = await newPage(browser, VIEWPORTS[0], null, () => current, 'allow');
+    await page.goto(`${api.origin}/login`, { waitUntil: 'networkidle' });
+
+    const manifestResponse = await context.request.get(`${api.origin}/manifest.webmanifest`);
+    if (!manifestResponse.ok()) fail(current, 'manifest.webmanifest nahi mila');
+    else {
+      const manifest = await manifestResponse.json();
+      if (manifest.display !== 'standalone') fail(current, 'manifest: display standalone nahi hai');
+      for (const icon of manifest.icons ?? []) {
+        const iconResponse = await context.request.get(`${api.origin}/${icon.src}`);
+        if (!iconResponse.ok()) fail(current, `icon nahi mila: ${icon.src}`);
+      }
+      if (!(manifest.icons ?? []).some((icon) => icon.purpose === 'maskable')) fail(current, 'manifest: maskable icon nahi hai');
+    }
+    if (!(await page.locator('link[rel="manifest"]').count())) fail(current, 'index.html mein manifest ka link nahi hai');
+
+    const swResponse = await context.request.get(`${api.origin}/sw.js`);
+    if (!swResponse.ok()) fail(current, 'sw.js nahi mila');
+    else if (swResponse.headers()['cache-control'] !== 'no-cache') fail(current, 'sw.js par Cache-Control: no-cache nahi hai');
+
+    // Service worker chalu hokar page ko sambhal le, phir internet band karke dobara kholo
+    const controlled = await page
+      .evaluate(async () => {
+        await navigator.serviceWorker.ready;
+        if (!navigator.serviceWorker.controller) {
+          await new Promise((resolve) => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
+        }
+        return true;
+      })
+      .catch(() => false);
+    if (!controlled) fail(current, 'service worker chalu nahi hua');
+    else {
+      await context.setOffline(true);
+      await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => fail(current, 'offline mein page nahi khula'));
+      await page.waitForSelector('#email', { timeout: 10000 }).catch(() => fail(current, 'offline mein login page nahi dikha'));
+      await context.setOffline(false);
+    }
+    pagesChecked += 1;
+    await context.close();
+  }
+
   for (const viewport of VIEWPORTS) {
     console.log(`\n== ${viewport.name}px ==`);
 
@@ -261,7 +319,8 @@ try {
       for (const [name, url] of pages) {
         current = `${role}/${name}@${viewport.name}`;
         await page.goto(api.origin + url, { waitUntil: 'networkidle' });
-        await page.waitForSelector('.app-layout__content h1', { timeout: 10000 }).catch(() => fail(current, 'page load nahi hua (h1 nahi mila)'));
+        // Punch page par alag heading nahi hai (page ka naam top bar mein hai), isliye uska card bhi chalta hai
+        await page.waitForSelector('.app-layout__content h1, .punch-screen__card', { timeout: 10000 }).catch(() => fail(current, 'page load nahi hua'));
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-${role}-${name}`);
         pagesChecked += 1;
@@ -283,13 +342,36 @@ try {
       if (role === 'superadmin') {
         current = `superadmin/new-company-modal@${viewport.name}`;
         await page.goto(`${api.origin}/superadmin/companies`, { waitUntil: 'networkidle' });
-        await page.click('text=+ New Company');
+        await page.click('.page-header__actions button');
         await page.waitForSelector('.ant-modal-container, .ant-modal-content');
         await page.waitForTimeout(500); // modal khulne ka animation
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-superadmin-new-company-modal`);
       }
       if (role === 'admin') {
+        // Office location ka map: pin dikhe, aur map par click karne se latitude badle
+        current = `admin/map-pin@${viewport.name}`;
+        await page.goto(`${api.origin}/admin/settings`, { waitUntil: 'networkidle' });
+        const latBefore = await page.inputValue('#location-lat-0');
+        const mapCanvas = page.locator('.location-map__canvas').first();
+        await mapCanvas.scrollIntoViewIfNeeded();
+        const mapBox = await mapCanvas.boundingBox();
+        // Pin sirf maujood hi nahi, map ke dabbe ke andar bhi hona chahiye
+        const pinBox = await page.locator('.location-map__canvas .map-pin').first().boundingBox().catch(() => null);
+        const pinInside =
+          pinBox &&
+          pinBox.x >= mapBox.x &&
+          pinBox.x + pinBox.width <= mapBox.x + mapBox.width &&
+          pinBox.y >= mapBox.y &&
+          pinBox.y + pinBox.height <= mapBox.y + mapBox.height;
+        if (!pinInside) fail(current, `pin map ke andar nahi dikh raha (pin ${JSON.stringify(pinBox)})`);
+        await page.mouse.click(mapBox.x + mapBox.width * 0.25, mapBox.y + mapBox.height * 0.3);
+        await page.waitForTimeout(400);
+        const latAfter = await page.inputValue('#location-lat-0');
+        if (latAfter === latBefore) fail(current, `map par click se latitude nahi badla (${latBefore})`);
+        await checkLayout(page, viewport, current);
+        await shot(page, `${viewport.name}-admin-settings-map-pinned`, false);
+
         current = `admin/salary-slip-modal@${viewport.name}`;
         await page.goto(`${api.origin}/admin/payroll`, { waitUntil: 'networkidle' });
         await page.click('.payroll__actions >> text=View >> nth=0');
@@ -322,10 +404,58 @@ try {
         const message = () => page.locator('.punch-screen .alert').innerText({ timeout: 10000 }).catch(() => '');
         await page.goto(`${api.origin}/staff/punch`, { waitUntil: 'networkidle' });
 
+        // Map: office ka pin, staff ka neela bindu, aur range ke andar/bahar ka sahi label
+        const rangeText = () => page.locator('.punch-screen__range').innerText();
+        await page.waitForSelector('.punch-map .map-you', { timeout: 10000 }).catch(() => fail(current, 'map par staff ka neela bindu nahi aaya'));
+        if (!(await page.locator('.punch-map .map-pin').count())) fail(current, 'map par office ka pin nahi hai');
+        if (!/Inside range/.test(await rangeText())) fail(current, `range ke andar hone par galat label: "${await rangeText()}"`);
+        const mapBox = await page.locator('.punch-map').boundingBox();
+        const youBox = await page.locator('.punch-map .map-you').boundingBox();
+        if (youBox.y < mapBox.y || youBox.y + youBox.height > mapBox.y + mapBox.height) fail(current, 'neela bindu map ke bahar hai');
+        await shot(page, '360-staff-punch-map');
+        const fits = await page.evaluate(() => ({ page: document.documentElement.scrollHeight, screen: window.innerHeight, buttonBottom: document.querySelector('.punch-screen__button')?.getBoundingClientRect().bottom, mapHeight: document.querySelector('.punch-map__canvas')?.getBoundingClientRect().height }));
+        if (fits.page > fits.screen + 1) fail(current, `punch page screen mein fit nahi (page ${fits.page}px, screen ${fits.screen}px)`);
+        if (!(fits.buttonBottom <= fits.screen)) fail(current, 'Punch button bina scroll ke nahi dikh raha');
+        if (!(fits.mapHeight >= 150)) fail(current, `map bahut chhota hai (${fits.mapHeight}px)`);
+
+        // Refresh location: staff office se bahar chala gaya; button dabane par label badalna chahiye
+        // aur phir wapas andar aane par dobara
         await context.setGeolocation(OUTSIDE);
+        await page.click('.punch-screen__refresh-button');
+        await page.waitForFunction(() => /Outside range/.test(document.querySelector('.punch-screen__range')?.innerText ?? ''), null, { timeout: 10000 })
+          .catch(() => fail(current, 'Refresh location ke baad label "Outside range" nahi hua'));
+        await context.setGeolocation(INSIDE);
+        await page.click('.punch-screen__refresh-button');
+        await page.waitForFunction(() => /Inside range/.test(document.querySelector('.punch-screen__range')?.innerText ?? ''), null, { timeout: 10000 })
+          .catch(() => fail(current, 'Refresh location ke baad label "Inside range" nahi hua'));
+        if (!/GPS accuracy/.test(await page.locator('.punch-screen__refresh').innerText())) fail(current, 'GPS accuracy nahi dikh rahi');
+
+        // Map khiskana: ungli se drag karne par map hile (bindu ki jagah badle), "Recenter" aaye,
+        // aur Recenter dabane par bindu wapas apni jagah aa jaye
+        const dot = page.locator('.punch-map .map-you');
+        const dragBox = await page.locator('.punch-map__canvas').boundingBox();
+        const before = await dot.boundingBox();
+        const from = { x: dragBox.x + dragBox.width / 2, y: dragBox.y + dragBox.height / 2 };
+        await page.mouse.move(from.x, from.y);
+        await page.mouse.down();
+        await page.mouse.move(from.x - 60, from.y - 30, { steps: 6 });
+        await page.mouse.up();
+        await page.waitForTimeout(400);
+        const afterDrag = await dot.boundingBox();
+        if (Math.abs(afterDrag.x - before.x) < 20) fail(current, 'map khiskane par nahi hila');
+        await page.click('.punch-map__recenter').catch(() => fail(current, 'map khiskane ke baad Recenter button nahi aaya'));
+        await page.waitForTimeout(300);
+        const afterRecenter = await dot.boundingBox();
+        if (Math.abs(afterRecenter.x - before.x) > 3) fail(current, 'Recenter se map wapas nahi aaya');
+        if (await page.locator('.punch-map__recenter').count()) fail(current, 'Recenter ke baad button chhupna chahiye');
+        await shot(page, '360-staff-punch-map-refresh');
+
+        await context.setGeolocation(OUTSIDE);
+        await page.waitForFunction(() => /Outside range/.test(document.querySelector('.punch-screen__range')?.innerText ?? ''), null, { timeout: 10000 })
+          .catch(() => fail(current, 'range ke bahar jaane par label nahi badla'));
         await page.click('.punch-screen__button');
         const outside = await message();
-        if (!/office range se bahar/.test(outside)) fail(current, `range ke bahar ka message nahi aaya: "${outside}"`);
+        if (!/outside the office range/.test(outside)) fail(current, `range ke bahar ka message nahi aaya: "${outside}"`);
         await shot(page, '360-staff-punch-outside-range');
 
         await context.setGeolocation(INSIDE);

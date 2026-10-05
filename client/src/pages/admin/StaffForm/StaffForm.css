@@ -34,3 +34,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Content full width hai: bahut badi screen par 4 column, taaki fields khinch kar lambe na ho */
+@media (min-width: 1600px) {
+  .staff-form__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

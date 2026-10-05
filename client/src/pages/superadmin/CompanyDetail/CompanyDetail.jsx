@@ -17,8 +17,10 @@ import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import StatusBadge from '../../../components/StatusBadge/StatusBadge.jsx';
 import SummaryTiles from '../../../components/SummaryTiles/SummaryTiles.jsx';
 import Table from '../../../components/Table/Table.jsx';
+import UserCell from '../../../components/UserCell/UserCell.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { formatDate } from '../../../utils/format.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './CompanyDetail.css';
 
 const BACK = { to: '/superadmin/companies', label: 'Companies' };
@@ -29,7 +31,9 @@ export default function CompanyDetail() {
 
   const [data, setData] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [message, setMessage] = useState({ type: 'success', text: '' });
+  const { toast, confirm } = useFeedback();
+  // notify({ type: 'success' | 'error', text }): upar toast dikhata hai
+  const notify = ({ type, text }) => text && toast[type](text);
   const [busy, setBusy] = useState(false);
 
   const [details, setDetails] = useState({ name: '', address: '' });
@@ -66,13 +70,12 @@ export default function CompanyDetail() {
   // Chhote actions (status toggle waghera) ka common wrapper.
   const run = async (action, successText) => {
     setBusy(true);
-    setMessage({ type: 'success', text: '' });
     try {
       await action();
       await load();
-      setMessage({ type: 'success', text: successText });
+      notify({ type: 'success', text: successText });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      notify({ type: 'error', text: err.message });
     } finally {
       setBusy(false);
     }
@@ -98,30 +101,44 @@ export default function CompanyDetail() {
     event.preventDefault();
     setBusy(true);
     setDetailErrors({});
-    setMessage({ type: 'success', text: '' });
     try {
       await updateCompanyApi(id, details);
       await load();
-      setMessage({ type: 'success', text: 'Company details save ho gayi.' });
+      notify({ type: 'success', text: 'Company details saved.' });
     } catch (err) {
       setDetailErrors(toFieldErrors(err));
-      setMessage({ type: 'error', text: err.message });
+      notify({ type: 'error', text: err.message });
     } finally {
       setBusy(false);
     }
   };
 
-  const handleToggleCompany = () => {
-    const action = company.isActive ? 'block' : 'unblock';
-    const warning = company.isActive ? '\nIs company ke saare users login nahi kar payenge.' : '';
-    if (!window.confirm(`"${company.name}" ko ${action} karna hai?${warning}`)) return;
-    run(() => setCompanyStatusApi(id, !company.isActive), `Company ${action} ho gayi.`);
+  const handleToggleCompany = async () => {
+    const ok = await confirm(
+      company.isActive
+        ? {
+            title: `Block ${company.name}?`,
+            content: 'All users of this company will be logged out immediately and will not be able to log in.',
+            okText: 'Block',
+            danger: true,
+          }
+        : { title: `Unblock ${company.name}?`, content: 'Users of this company will be able to log in again.', okText: 'Unblock' }
+    );
+    if (ok) run(() => setCompanyStatusApi(id, !company.isActive), `Company ${company.isActive ? 'blocked' : 'unblocked'}.`);
   };
 
-  const handleToggleAdmin = (admin) => {
-    const action = admin.isActive ? 'deactivate' : 'activate';
-    if (!window.confirm(`${admin.name} ko ${action} karna hai?`)) return;
-    run(() => updateAdminApi(id, admin._id, { isActive: !admin.isActive }), `Admin ${action} ho gaya.`);
+  const handleToggleAdmin = async (admin) => {
+    const ok = await confirm(
+      admin.isActive
+        ? {
+            title: `Deactivate ${admin.name}?`,
+            content: 'This admin will be logged out and will not be able to log in.',
+            okText: 'Deactivate',
+            danger: true,
+          }
+        : { title: `Activate ${admin.name}?`, content: 'This admin will be able to log in again.', okText: 'Activate' }
+    );
+    if (ok) run(() => updateAdminApi(id, admin._id, { isActive: !admin.isActive }), `${admin.name} ${admin.isActive ? 'deactivated' : 'activated'}.`);
   };
 
   const handleAdminFormChange = (event) => {
@@ -139,10 +156,10 @@ export default function CompanyDetail() {
       } else {
         await updateAdminApi(id, modal.admin._id, { password: adminForm.adminPassword });
       }
-      const successText = modal.type === 'add' ? 'Admin add ho gaya.' : 'Password reset ho gaya.';
+      const successText = modal.type === 'add' ? 'Admin added.' : 'Password reset.';
       closeModal();
       await load();
-      setMessage({ type: 'success', text: successText });
+      notify({ type: 'success', text: successText });
     } catch (err) {
       setModalError(err.message);
       setModalFieldErrors(toFieldErrors(err));
@@ -155,14 +172,12 @@ export default function CompanyDetail() {
 
   return (
     <section className="company-detail">
-      <PageHeader title={company.name} back={BACK}>
+      <PageHeader detail title={company.name} back={BACK}>
         <StatusBadge active={company.isActive} />
         <Button variant={company.isActive ? 'danger' : 'secondary'} disabled={busy} onClick={handleToggleCompany}>
           {company.isActive ? 'Block Company' : 'Unblock Company'}
         </Button>
       </PageHeader>
-
-      <Alert type={message.type}>{message.text}</Alert>
 
       <SummaryTiles
         items={[
@@ -209,10 +224,12 @@ export default function CompanyDetail() {
         </Button>
       </div>
 
-      <Table columns={ADMIN_COLUMNS} empty="Is company ka abhi koi admin nahi hai.">
+      <Table columns={ADMIN_COLUMNS} primary={0} empty='This company has no admin yet. Use "Add Admin" so someone can manage it.'>
         {admins.map((admin) => (
           <tr key={admin._id}>
-            <td>{admin.name}</td>
+            <td>
+              <UserCell name={admin.name} />
+            </td>
             <td>{admin.email}</td>
             <td>{admin.phone || '-'}</td>
             <td>
@@ -253,7 +270,7 @@ export default function CompanyDetail() {
                 value={adminForm.adminPassword}
                 onChange={handleAdminFormChange}
                 error={modalFieldErrors.password}
-                hint="Kam se kam 8 characters"
+                hint="At least 8 characters"
                 required
                 autoFocus
               />

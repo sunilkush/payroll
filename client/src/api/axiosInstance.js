@@ -38,7 +38,7 @@ api.interceptors.response.use(
     }
     return Promise.reject({
       status,
-      message: data?.message || 'Server se connect nahi ho paya. Dobara try karein.',
+      message: data?.message || 'Could not connect to the server. Please try again.',
       errors: data?.errors || [],
     });
   }

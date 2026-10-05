@@ -6,6 +6,7 @@ import { ROLES } from '../utils/constants.js';
 import attendanceRoutes from './attendanceRoutes.js';
 import authRoutes from './authRoutes.js';
 import companyRoutes from './companyRoutes.js';
+import dashboardRoutes from './dashboardRoutes.js';
 import globalSettingsRoutes from './globalSettingsRoutes.js';
 import leaveRoutes from './leaveRoutes.js';
 import payrollRoutes from './payrollRoutes.js';
@@ -28,5 +29,7 @@ router.use('/settings', auth, tenant, authorize(ROLES.ADMIN), settingsRoutes);
 router.use('/attendance', auth, tenant, attendanceRoutes);
 router.use('/leaves', auth, tenant, leaveRoutes);
 router.use('/payroll', auth, tenant, payrollRoutes);
+// Teeno roles ke dashboards (sirf padhne wala data). Super Admin ke liye tenant scope khali rehta hai.
+router.use('/dashboard', auth, tenant, dashboardRoutes);
 
 export default router;

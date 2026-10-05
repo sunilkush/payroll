@@ -12,7 +12,7 @@ async function start() {
 
   // Deploy/restart par chalu requests poori hone do, phir DB band karo.
   const shutdown = (signal) => {
-    console.log(`${signal} mila, server band ho raha hai...`);
+    console.log(`${signal} received, shutting down...`);
     server.close(async () => {
       await disconnectDB();
       process.exit(0);
@@ -24,6 +24,6 @@ async function start() {
 }
 
 start().catch((err) => {
-  console.error('Server start nahi hua:', err.message);
+  console.error('Server failed to start:', err.message);
   process.exit(1);
 });

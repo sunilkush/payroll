@@ -1,17 +1,39 @@
 /*
- * Mobile-first: phone par card poori chaudai leta hai, button bada aur angoothe ki pahunch mein.
- * Tablet/desktop par wahi card beech mein simat jata hai.
+ * Punch page screen ki oonchai mein fit hota hai: poora page (ghadi, map, button, time) bina scroll
+ * ke dikhe. Map bachi hui jagah le leta hai, isliye lambi screen par bada aur chhoti par chhota hota hai.
+ * Bahut chhoti screen (min-height se kam) par page normal scroll karta hai, cheezein dabti nahi.
+ *
+ * Oonchai = screen - top bar - content ke upar/neeche ka gap (AppLayout.css).
  */
-.punch-screen__title {
-  margin-bottom: var(--space-3);
-  font-size: var(--font-size-xl);
+.punch-screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--navbar-height) - var(--space-4) - var(--space-4));
+  min-height: 540px;
+  /* AppLayout content ke neeche ka bada gap is page par nahi chahiye */
+  margin-bottom: calc(var(--space-4) - var(--space-8));
 }
 
-.punch-screen__card {
+.punch-screen__card.ant-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   text-align: center;
 }
 
+.punch-screen__card > .ant-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+/* ---------- Upar: date, ghadi, status (kam jagah mein) ---------- */
+
 .punch-screen__date {
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -19,11 +41,11 @@
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .punch-screen__status {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
 }
@@ -32,10 +54,53 @@
   color: var(--color-success);
 }
 
+/* ---------- Beech: "kitni door" + refresh + map (bachi hui oonchai) ---------- */
+
+.punch-screen__map {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: var(--space-3);
+}
+
+.punch-screen__range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* GPS accuracy + "Refresh location" button */
+.punch-screen__refresh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.punch-screen__hint {
+  flex: 1;
+  margin: var(--space-4) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Neeche: bada button + in/out ka time (hamesha dikhte hain) ---------- */
+
 /* Ant Design ka button, par aam button se kaafi bada */
 .punch-screen__button.ant-btn {
-  height: 72px;
-  margin-bottom: var(--space-4);
+  flex-shrink: 0;
+  height: 60px;
+  margin-bottom: var(--space-3);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   border-radius: var(--radius-md);
@@ -50,28 +115,51 @@
 
 .punch-screen__times {
   display: grid;
+  flex-shrink: 0;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
 
 .punch-screen__time.ant-card {
   background: var(--color-bg);
+  box-shadow: none;
+}
+
+.punch-screen__time .ant-card-body {
+  padding: var(--space-2) var(--space-3);
+}
+
+.punch-screen__time .ant-statistic-title {
+  margin-bottom: 0;
+  font-size: var(--font-size-xs);
 }
 
 .punch-screen__time .ant-statistic-content {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
 }
 
-.punch-screen__hint {
-  margin-top: var(--space-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
+/* Tablet se: card beech mein, thoda chauda */
 @media (min-width: 768px) {
   .punch-screen {
-    max-width: 480px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 640px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .punch-screen__card > .ant-card-body {
+    padding: var(--space-4) var(--space-6) var(--space-6);
+  }
+
+  .punch-screen__button.ant-btn {
+    height: 64px;
+  }
+}
+
+/* Desktop: top bar ooncha hai aur content ke upar ka gap bada (AppLayout.css) */
+@media (min-width: 992px) {
+  .punch-screen {
+    height: calc(100dvh - var(--navbar-height-desktop) - var(--space-6) - var(--space-4));
   }
 }

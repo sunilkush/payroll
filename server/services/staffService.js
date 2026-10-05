@@ -11,7 +11,7 @@ import { creditUser } from './leaveService.js';
 
 async function findStaffOrThrow(id) {
   const staff = await User.findOne({ _id: id, role: ROLES.STAFF });
-  if (!staff) throw new ApiError(404, 'Staff nahi mila.');
+  if (!staff) throw new ApiError(404, 'Staff member not found.');
   return staff;
 }
 
@@ -24,15 +24,26 @@ export async function listStaff({ search, status, page, limit }) {
   if (status === 'active') filter.isActive = true;
   if (status === 'inactive') filter.isActive = false;
 
-  const [items, total] = await Promise.all([
+  // Status tabs ki ginti: search lagu hota hai, status nahi (taaki har tab par apni ginti dikhe).
+  const { isActive: _status, ...searchOnly } = filter;
+  const [items, total, all, active] = await Promise.all([
     User.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
     User.countDocuments(filter),
+    User.countDocuments(searchOnly),
+    User.countDocuments({ ...searchOnly, isActive: true }),
   ]);
 
-  return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
+  return {
+    items,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+    counts: { all, active, inactive: all - active },
+  };
 }
 
 export async function createStaff(data) {

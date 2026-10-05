@@ -1,0 +1,4 @@
+/* Andar ka menu (gehra sidebar) kinare tak aur poori oonchai mein */
+.drawer .ant-drawer-body {
+  padding: 0;
+}

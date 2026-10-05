@@ -1,27 +1,418 @@
+/*
+ * Mobile (base): gehra brand header (logo + headline), uske upar chadha hua gol kinare wala form.
+ * Tablet (768px+): header beech mein, form uske upar card ki tarah.
+ * Desktop (992px+): baayein brand panel (headline, preview card, features), daayein form.
+ */
 .login {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   min-height: 100vh;
   /* Mobile browser ki address bar ke saath bhi poori screen (jahan support ho) */
   min-height: 100dvh;
-  padding: var(--space-3);
+  background: var(--color-surface);
 }
 
-.login__card {
-  width: 100%;
-  max-width: 380px;
+/* ================= Brand ================= */
+
+.login__brand {
+  position: relative;
+  /* glow dabbe ke bahar na dikhe */
+  overflow: hidden;
+  padding: var(--space-6) var(--space-6) calc(var(--space-8) + var(--space-6));
+  color: var(--color-text-inverse);
+  background: linear-gradient(145deg, var(--color-navy) 0%, var(--color-navy-light) 60%, var(--color-primary) 100%);
+}
+
+/* Peeche ki dhundhli roshni */
+.login__glow {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.login__glow--one {
+  top: -120px;
+  right: -80px;
+  background: var(--color-accent);
+}
+
+.login__glow--two {
+  bottom: -140px;
+  left: -100px;
+  background: var(--color-primary);
+}
+
+/* Glow ke upar ka content */
+.login__logo,
+.login__hero,
+.login__preview,
+.login__features {
+  position: relative;
+}
+
+.login__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.login__logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-inverse);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
+}
+
+.login__logo-text {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.01em;
+}
+
+.login__hero {
+  margin-top: var(--space-6);
+}
+
+/* Phone par sirf headline: form jaldi dikhna chahiye */
+.login__pill,
+.login__lead,
+.login__preview,
+.login__features {
+  display: none;
+}
+
+.login__headline {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.login__headline-accent {
+  color: var(--color-accent-light);
+}
+
+.login__pill {
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 999px;
+}
+
+.login__lead {
+  margin-top: var(--space-3);
+  color: var(--color-on-dark-muted);
+}
+
+/* ---------- Preview card ("glass") ---------- */
+
+.login__preview {
+  max-width: 360px;
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(12px);
+  animation: login-float 6s ease-in-out infinite;
+}
+
+.login__preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--color-on-dark-muted);
+}
+
+.login__preview-chip {
+  padding: 0 var(--space-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-success);
+  background: var(--color-success-light);
+  border-radius: 999px;
+}
+
+.login__preview-time {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.login__preview-place {
+  font-size: var(--font-size-sm);
+  color: var(--color-on-dark-muted);
+}
+
+.login__preview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: space-between;
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-glass-border);
+}
+
+.login__preview-stat dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-on-dark-muted);
+}
+
+.login__preview-stat dd {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+}
+
+@keyframes login-float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login__preview {
+    animation: none;
+  }
+}
+
+/* ---------- Feature chips ---------- */
+
+.login__features {
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login__feature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-on-dark-muted);
+}
+
+.login__feature-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-inverse);
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+}
+
+/* ================= Form ================= */
+
+.login__main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /* Form ka dabba brand header par thoda chadha hua */
+  margin-top: calc(var(--space-6) * -1);
+  padding: var(--space-8) var(--space-6) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.login__form {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .login__title {
   font-size: var(--font-size-xl);
-  color: var(--color-primary);
-  text-align: center;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .login__subtitle {
-  margin-bottom: var(--space-6);
+  margin: var(--space-1) 0 var(--space-6);
+  color: var(--color-text-muted);
+}
+
+/* Bade, gol kinare wale inputs */
+.login__input.ant-input-affix-wrapper {
+  height: 48px;
+  background: var(--color-bg);
+  border-color: transparent;
+  border-radius: var(--radius-md);
+}
+
+.login__input.ant-input-affix-wrapper:hover,
+.login__input.ant-input-affix-wrapper-focused {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+}
+
+.login__input-icon {
+  color: var(--color-text-muted);
+}
+
+.login__submit.ant-btn {
+  height: 50px;
+  margin-top: var(--space-2);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.login__submit.ant-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-accent));
+}
+
+.login__help {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-align: center;
+}
+
+.login__footer {
+  margin-top: auto;
+  padding-top: var(--space-6);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ================= Tablet ================= */
+
+@media (min-width: 768px) {
+  .login {
+    background: var(--color-bg);
+  }
+
+  .login__brand {
+    padding: var(--space-8) var(--space-8) calc(var(--space-8) * 3.5);
+    text-align: center;
+  }
+
+  .login__logo {
+    justify-content: center;
+  }
+
+  .login__hero {
+    max-width: 560px;
+    margin: var(--space-6) auto 0;
+  }
+
+  .login__pill {
+    display: inline-flex;
+  }
+
+  .login__lead {
+    display: block;
+  }
+
+  .login__headline {
+    font-size: var(--font-size-2xl);
+    line-height: 1.15;
+  }
+
+  .login__main {
+    flex: none;
+    width: 100%;
+    max-width: 480px;
+    margin: calc(var(--space-8) * -2.5) auto var(--space-8);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  .login__footer {
+    margin-top: 0;
+  }
+}
+
+/* ================= Desktop ================= */
+
+@media (min-width: 992px) {
+  .login {
+    flex-direction: row;
+    background: var(--color-surface);
+  }
+
+  .login__brand {
+    display: flex;
+    flex: 0 0 46%;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--space-6);
+    padding: var(--space-8) calc(var(--space-8) * 1.75);
+    text-align: left;
+  }
+
+  .login__glow {
+    width: 420px;
+    height: 420px;
+    filter: blur(100px);
+  }
+
+  .login__logo {
+    justify-content: flex-start;
+  }
+
+  .login__hero {
+    max-width: none;
+    margin: 0;
+  }
+
+  .login__preview {
+    display: block;
+  }
+
+  .login__features {
+    display: grid;
+  }
+
+  .login__main {
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    max-width: none;
+    margin: 0;
+    padding: var(--space-8);
+    /* Form ke peeche halka sa rang, taaki khali safed na lage */
+    background:
+      radial-gradient(circle at 85% 10%, var(--color-primary-light), transparent 40%),
+      var(--color-surface);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login__form {
+    margin: auto;
+  }
+
+  .login__footer {
+    margin-top: 0;
+    padding-top: 0;
+  }
 }

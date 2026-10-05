@@ -1,0 +1,42 @@
+.location-map {
+  margin-bottom: var(--space-3);
+}
+
+.location-map__search {
+  margin-bottom: var(--space-2);
+}
+
+.location-map__error {
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+/* Mobile: thoda chhota taaki map ke upar-neeche page scroll karne ki jagah rahe. Tablet se: bada. */
+.location-map__canvas {
+  width: 100%;
+  height: 260px;
+  /* Leaflet ke apne layers ka z-index 400+ hota hai; ise ek dabbe mein rakhte hain
+     taaki map sticky top bar / drawer ke upar na aa jaye */
+  position: relative;
+  z-index: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.location-map__hint {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Yahan pin kheencha ja sakta hai (pin ki shakal: components/MapPin/mapPin.css) */
+.location-map__canvas .map-pin {
+  cursor: grab;
+}
+
+@media (min-width: 768px) {
+  .location-map__canvas {
+    height: 340px;
+  }
+}

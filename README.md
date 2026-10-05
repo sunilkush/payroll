@@ -1,6 +1,6 @@
-# Payroll Web Application
+# PayRoster
 
-Multi-tenant payroll app: React (Vite) + Node/Express (MVC) + MongoDB + JWT.
+Multi-tenant attendance + payroll app (installable PWA): React (Vite) + Node/Express (MVC) + MongoDB + JWT.
 Poora plan aur project rules: `Payroll_App_Plan.docx`.
 
 Roles: **Super Admin** (companies, global PF/ESI rates), **Company Admin** (staff, attendance,
@@ -28,6 +28,13 @@ npm run dev:server                    # http://localhost:5000
 npm run dev:client                    # doosre terminal mein, http://localhost:5173
 ```
 
+App ko bhara hua dekhna ho to demo data daal sakte ho (2 companies, staff, pichhle mahine ki
+attendance, leaves aur payroll; sab nakli):
+
+```bash
+npm run seed:demo                     # logins aur password script ke end mein print hote hain
+```
+
 Shuru karne ka order: Super Admin login -> company + admin banao -> admin login -> Settings mein
 office location (aur chaho to Leave / PF / ESI ON) -> staff add karo -> staff login karke punch kare.
 
@@ -43,6 +50,25 @@ npm test                # server ke saare tests (unit + API)
   Asli database ko nahi chhute. Doosra DB dena ho to `TEST_MONGO_URI` set karo (naam `_test` par
   khatam hona zaroori hai).
 
+## Design system
+
+Modern SaaS dashboard style: halka gray background, safed cards (patla border, bahut halki parchhai,
+12px gol kone), ek hi primary rang (indigo), Inter font (body 14px), 8px spacing. Sab kuch
+`client/src/styles/variables.css` mein hai; wahan badalne se poora app badalta hai.
+
+- **Sidebar:** halka, group-wise menu (Overview / People / Finance / Configuration), chhota (sirf
+  icons) ho sakta hai, neeche user ki profile. Phone/tablet par drawer.
+- **Top bar:** breadcrumb, global search (Ctrl+K; pages, aur admin ke liye staff / Super Admin ke liye
+  companies), "+ New" quick actions, notifications ki ghanti, user menu.
+- **Dashboards** (teeno roles): KPI cards (pichhle period se tulna + sparkline), charts, aaj ki
+  sortable table, pending requests, aane wale din, activity. Data ek hi read-only API se aata hai:
+  `GET /api/v1/dashboard` (role ke hisaab se) aur `GET /api/v1/dashboard/notifications`.
+
+Dashboard ke reusable components: `StatCard` / `StatGrid`, `ChartCard`, `Charts` (`AreaTrend`,
+`BarTrend`, `Donut`, `Sparkline`; Recharts par), `DataTable` (search + sorting + pagination, phone par
+daayein-baayein khiskti hai), `ListCard`, `EmptyState`, `WelcomeHeader`, `DashboardRow`,
+`GlobalSearch`, `NotificationPanel`.
+
 ## UI: Ant Design
 
 UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke saath-saath
@@ -50,7 +76,10 @@ UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke
 
 | Hamara component | Andar Ant Design ka |
 |---|---|
-| `Button`, `FormField`, `Checkbox`, `SearchBar`, `MonthPicker` | Button, Input / Select / TextArea, Checkbox, DatePicker |
+| `Button`, `FormField`, `Checkbox`, `MonthPicker` | Button, Input / Select / TextArea, Checkbox, DatePicker |
+| `ListToolbar` (type karte hi search + ginti wale status tabs) | Input, Segmented |
+| `UserCell` (avatar + naam + chhoti line) | Avatar |
+| `FormActions` (lambe form ka neeche chipka Save bar) | - |
 | `Modal`, `Drawer`, `Alert`, `Badge`, `Loader`, `Pagination` | Modal, Drawer, Alert, Tag, Spin, Pagination |
 | `Table` | Desktop: Table. Mobile/tablet: Card + Descriptions |
 | `AppLayout`, `Navbar`, `NavMenu` | Layout, Sider, Menu |
@@ -60,6 +89,9 @@ UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke
   (`styles/theme.js`) wahin se padhta hai, isliye wahan rang badalne se poora app badalta hai.
 - **Inline style ab bhi nahi** (Rule 2). Ant Design component ko badalna ho to us page/component ki
   `.css` file mein class se badlo.
+- **Feedback ka ek hi tareeka:** `useFeedback()` (`utils/useFeedback.js`) se `toast.success(...)` /
+  `toast.error(...)` aur `await confirm({ title, content, okText, danger })`. Browser ke
+  `window.confirm` / `alert` use mat karo.
 - Naya page banate waqt table ke liye hamara `Table` hi use karo (seedha Ant Design ka nahi),
   warna phone par cards nahi banenge.
 
@@ -73,6 +105,9 @@ Har page pehle phone ke liye banta hai, phir badi screen ke liye badalta hai. Br
 | Mobile (360px se) | Hamburger + drawer menu, tables ki jagah cards, forms ek column |
 | Tablet (768px se) | Hamburger + drawer, cards 2 ek line mein, forms 2 column |
 | Desktop (992px se, Ant Design ka `lg`) | Baayein sidebar, asli tables |
+
+Content **full width (container-fluid)** hai: koi max chaudai nahi, sirf kinare ka gap. Isliye badi
+screen (1600px+) par forms mein zyada columns ho jate hain, aur check 1920px par bhi chalta hai.
 
 CSS likhne ka tareeka: pehle mobile ka style, phir `@media (min-width: ...)` se badi screen
 (`max-width` nahi). Tables ke liye kuch alag nahi karna: `Table` component phone par apne aap
@@ -92,6 +127,26 @@ aate hain: naya page banane ke baad unhe ek baar aankh se zaroor dekho, layout "
 script nahi bata sakti.
 
 Naya page jodo to use `server/tests/e2e/responsive.mjs` ki `ROLES` list mein bhi daal do.
+
+**Tables mein pagination:** `Table` component 10 se zyada rows hone par apne aap pagination dikhata
+hai (`pageSize` prop se badal sakte ho). Staff, Companies aur Leave jaisi lambi lists server se
+page-wise aati hain aur apna `<Pagination>` alag lagati hain.
+
+## PWA (install hone wala app)
+
+Client ek Progressive Web App hai (`vite-plugin-pwa`, config `client/vite.config.js` mein):
+
+- Phone par browser ke menu se **"Add to Home screen" / "Install app"**; desktop par address bar ka
+  install icon. App phir apni window mein, bina browser bar ke khulta hai.
+- App ka dhancha (HTML, JS, CSS, fonts, icons) phone mein cache hota hai, isliye turant khulta hai
+  aur internet na ho tab bhi khul jata hai (upar "You are offline" ki patti aati hai).
+- **API ka data cache nahi hota**: salary, attendance aur punch hamesha server se. Offline mein punch
+  nahi hota.
+- Naya build deploy hone par app agli baar khulte hi apne aap update ho jata hai.
+- Service worker sirf build mein banta hai (`npm run build`), `npm run dev:client` mein nahi. Install
+  ke liye **HTTPS** zaroori hai (localhost par bina HTTPS ke chalta hai).
+- Icons `client/public/pwa-*.png`. Logo badlo to: `cd server && node scripts/makeIcons.mjs`.
+- App ka naam: `client/src/utils/appInfo.js`, `client/index.html` aur manifest (`vite.config.js`).
 
 ## Naya protected route kaise jode
 
@@ -177,6 +232,11 @@ git pull && npm run install:all && npm run build && pm2 restart payroll
 - **Server ka time** kuch bhi ho, attendance ki date aur cron `APP_TIMEZONE` se chalte hain.
 - **PF/ESI rates** Super Admin ki Global Settings mein hain. Live jaane se pehle CA se confirm karo,
   khaaskar "PF wage floor (% of gross)".
+- **Office location ka map** (admin Settings) OpenStreetMap se aata hai: map ki tiles
+  `tile.openstreetmap.org` se aur place search `nominatim.openstreetmap.org` se. Dono free hain aur
+  API key nahi chahiye, lekin server ke bahar internet zaroori hai, aur ye sirf halke use ke liye hain
+  (bahut zyada users hon to apna tile/search provider lagana hoga). In dono ko `server/app.js` ke
+  Content-Security-Policy mein ijazat di gayi hai.
 - **Fake GPS** web browser par poori tarah nahi ruk sakta. Har punch ke saath IP aur device save
   hota hai, shak hone par wahi dekho.
 

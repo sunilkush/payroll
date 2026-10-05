@@ -30,6 +30,18 @@ const MONTH_NAMES = [
 // '2026-10' -> 'October 2026'
 export const monthLabel = (month) => `${MONTH_NAMES[Number(month.slice(5)) - 1]} ${month.slice(0, 4)}`;
 
+// '2026-10' -> 'Oct' (charts ke axis ke liye)
+export const shortMonthLabel = (month) => MONTH_NAMES[Number(month.slice(5)) - 1].slice(0, 3);
+
+// Aakhri `count` mahine, purane se naye: lastMonths(3, '2026-10') -> ['2026-08', '2026-09', '2026-10']
+export function lastMonths(count, month = currentMonth()) {
+  const year = Number(month.slice(0, 4));
+  const index = Number(month.slice(5)) - 1;
+  return Array.from({ length: count }, (_, i) =>
+    new Date(Date.UTC(year, index - (count - 1 - i), 1)).toISOString().slice(0, 7)
+  );
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const toUtcMs = (dateStr) => Date.parse(`${dateStr}T00:00:00Z`);
 
@@ -38,6 +50,9 @@ export const isValidDateStr = (value) =>
   /^\d{4}-\d{2}-\d{2}$/.test(value) &&
   !Number.isNaN(toUtcMs(value)) &&
   new Date(toUtcMs(value)).toISOString().slice(0, 10) === value;
+
+// addDays('2026-10-01', -1) -> '2026-09-30'
+export const addDays = (dateStr, days) => new Date(toUtcMs(dateStr) + days * DAY_MS).toISOString().slice(0, 10);
 
 // from se to tak ki saari dates (dono shamil).
 export function datesBetween(from, to) {

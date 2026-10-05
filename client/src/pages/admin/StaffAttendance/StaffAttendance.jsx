@@ -15,6 +15,7 @@ export default function StaffAttendance() {
   return (
     <section>
       <PageHeader
+        detail
         title={staff ? staff.name : 'Attendance'}
         subtitle={staff?.employeeCode}
         back={{ to: `/admin/attendance?month=${month}`, label: 'Attendance Report' }}

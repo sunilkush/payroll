@@ -3,7 +3,7 @@ import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 
 export const notFound = (req, res, next) => {
-  next(new ApiError(404, `Route nahi mila: ${req.method} ${req.originalUrl}`));
+  next(new ApiError(404, `Route not found: ${req.method} ${req.originalUrl}`));
 };
 
 function normalize(err) {
@@ -18,11 +18,11 @@ function normalize(err) {
   }
   if (err.code === 11000) {
     const fields = Object.keys(err.keyPattern || {}).filter((f) => f !== 'companyId');
-    const details = fields.map((field) => ({ field, message: 'Ye pehle se use ho raha hai' }));
-    return new ApiError(409, `${fields.join(', ') || 'Record'} pehle se maujood hai.`, details);
+    const details = fields.map((field) => ({ field, message: 'This is already in use' }));
+    return new ApiError(409, `${fields.join(', ') || 'Record'} already exists.`, details);
   }
   if (err.type === 'entity.parse.failed') {
-    return new ApiError(400, 'Request body valid JSON nahi hai.');
+    return new ApiError(400, 'Request body is not valid JSON.');
   }
   return null;
 }
@@ -35,7 +35,7 @@ export const errorHandler = (err, req, res, next) => {
   const statusCode = known?.statusCode ?? 500;
   res.status(statusCode).json({
     success: false,
-    message: known?.message ?? 'Server error. Thodi der baad try karein.',
+    message: known?.message ?? 'Server error. Please try again later.',
     ...(known?.details && { errors: known.details }),
     ...(!known && !env.isProduction && { stack: err.stack }),
   });

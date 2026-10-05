@@ -1,14 +1,5 @@
-.staff__contact {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.staff__name {
+.staff__gross {
   font-weight: var(--font-weight-medium);
-}
-
-.staff__name:hover {
-  text-decoration: underline;
 }
 
 .staff__row-actions {
@@ -18,8 +9,16 @@
   gap: var(--space-2);
 }
 
+.staff__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 @media (min-width: 992px) {
   .staff__row-actions {
+    flex-wrap: nowrap;
     justify-content: flex-start;
   }
 }

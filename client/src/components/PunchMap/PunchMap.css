@@ -1,0 +1,91 @@
+/*
+ * Map apne dabbe ki bachi hui oonchai le leta hai (flex), isliye Punch page par screen jitni lambi ho
+ * map utna bada hota hai. Kam se kam 150px, taaki chhoti screen par bhi kaam ka rahe.
+ */
+.punch-map {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.punch-map__frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 150px;
+}
+
+.punch-map__canvas {
+  flex: 1;
+  /* Leaflet ke layers ka z-index 400+ hota hai; ek dabbe mein rakhte hain taaki top bar ke upar na aaye */
+  position: relative;
+  z-index: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* "Recenter": map ke upar-daayein, map khiskane ke baad hi dikhta hai */
+.punch-map__recenter.ant-btn {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  box-shadow: var(--shadow-md);
+}
+
+/* Office ka naam + range, pin ke upar (Leaflet ke tooltip ko apne rang mein) */
+.punch-map__label.leaflet-tooltip {
+  padding: 0 var(--space-2);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------- Legend: Office / range ka gola / You ---------- */
+
+.punch-map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  list-style: none;
+}
+
+.punch-map__legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.punch-map__key {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.punch-map__key--office {
+  background: var(--color-danger);
+}
+
+/* Map ke gole jaisa: kati hui neeli rekha, halka bharaav */
+.punch-map__key--range {
+  background: var(--color-primary-light);
+  border: 2px dashed var(--color-primary);
+}
+
+.punch-map__key--you {
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}

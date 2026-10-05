@@ -13,6 +13,7 @@ router.post('/punch-in', staffOnly, validate(punchSchema), attendanceController.
 router.post('/punch-out', staffOnly, validate(punchSchema), attendanceController.punchOut);
 router.get('/today', staffOnly, attendanceController.today);
 
+router.get('/today-summary', adminOnly, attendanceController.todaySummary);
 router.get('/report', adminOnly, validate(reportQuerySchema, 'query'), attendanceController.report);
 // Staff: apna mahina. Admin: ?userId= se kisi staff ka mahina.
 router.get(

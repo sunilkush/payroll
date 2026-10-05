@@ -5,7 +5,7 @@ import { pagination } from './common.js';
 
 const dateStr = Joi.string()
   .custom((value, helpers) => (isValidDateStr(value) ? value : helpers.error('date.invalid')))
-  .messages({ 'date.invalid': '{{#label}} valid date nahi hai' });
+  .messages({ 'date.invalid': '{{#label}} is not a valid date' });
 
 export const applyLeaveSchema = Joi.object({
   type: Joi.string().valid(...LEAVE_TYPES).required().label('Leave type'),
