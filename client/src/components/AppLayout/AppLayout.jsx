@@ -6,6 +6,7 @@ import Drawer from '../Drawer/Drawer.jsx';
 import ErrorBoundary from '../ErrorBoundary/ErrorBoundary.jsx';
 import Navbar from '../Navbar/Navbar.jsx';
 import NavMenu from '../NavMenu/NavMenu.jsx';
+import OfflineBanner from '../OfflineBanner/OfflineBanner.jsx';
 import './AppLayout.css';
 
 const COLLAPSED_KEY = 'payroll_sidebar_collapsed';
@@ -58,6 +59,7 @@ export default function AppLayout() {
           onMenuClick={() => setMenuOpen(true)}
           onToggleCollapse={toggleCollapse}
         />
+        <OfflineBanner />
         <Layout.Content className="app-layout__content">
           <ErrorBoundary resetKey={pathname}>
             <Outlet />

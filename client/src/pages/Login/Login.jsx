@@ -15,6 +15,7 @@ import Button from '../../components/Button/Button.jsx';
 import FormField from '../../components/FormField/FormField.jsx';
 import Loader from '../../components/Loader/Loader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { APP_NAME } from '../../utils/appInfo.js';
 import { ROLE_HOME } from '../../utils/roles.js';
 import './Login.css';
 
@@ -79,7 +80,7 @@ export default function Login() {
           <span className="login__logo-mark" aria-hidden="true">
             P
           </span>
-          <span className="login__logo-text">Payroll</span>
+          <span className="login__logo-text">{APP_NAME}</span>
         </div>
 
         <div className="login__hero">
@@ -164,7 +165,7 @@ export default function Login() {
 
           <p className="login__help">Forgot your password? Ask your admin to reset it.</p>
         </form>
-        <p className="login__footer">&copy; {new Date().getFullYear()} Payroll</p>
+        <p className="login__footer">&copy; {new Date().getFullYear()} {APP_NAME}</p>
       </main>
     </div>
   );

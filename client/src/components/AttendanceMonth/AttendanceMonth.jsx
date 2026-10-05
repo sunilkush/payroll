@@ -51,7 +51,8 @@ export default function AttendanceMonth({ month, userId, onLoad }) {
     <div className="attendance-month">
       <SummaryTiles items={attendanceSummaryItems(data.summary)} />
       {/* Jis din punch nahi hua us din ke punch cells khali rehte hain; phone ke card mein khali cell dikhta hi nahi. */}
-      <Table columns={COLUMNS} dense empty="No days to show for this month yet.">
+      {/* key: mahina badalne par pagination pehle page se shuru ho */}
+      <Table key={month} columns={COLUMNS} dense empty="No days to show for this month yet.">
         {days.map((day) => (
           <tr key={day.date}>
             <td>

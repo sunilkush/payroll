@@ -3,6 +3,7 @@ import { Avatar, Button, Menu, Tooltip } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLogout } from '../../context/useLogout.js';
+import { APP_NAME } from '../../utils/appInfo.js';
 import { activeLink, filterByFeatures, initials, ROLE_HOME, ROLE_NAV, roleLine } from '../../utils/roles.js';
 import './NavMenu.css';
 
@@ -36,7 +37,7 @@ export default function NavMenu({ collapsed = false, onClose }) {
             P
           </span>
           <span className="nav-menu__brand">
-            <span className="nav-menu__logo-text">Payroll</span>
+            <span className="nav-menu__logo-text">{APP_NAME}</span>
             <span className="nav-menu__company">{company?.name ?? 'All companies'}</span>
           </span>
         </Link>

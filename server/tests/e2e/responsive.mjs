@@ -175,8 +175,11 @@ async function launch() {
   throw new Error('Edge ya Chrome nahi mila. BROWSER_CHANNEL set karo.');
 }
 
-async function newPage(browser, viewport, token, where) {
+// serviceWorkers 'block': layout ke checks hamesha server se aayi taaza files par chalein.
+// Sirf PWA wala check ise 'allow' karta hai.
+async function newPage(browser, viewport, token, where, serviceWorkers = 'block') {
   const context = await browser.newContext({
+    serviceWorkers,
     viewport: { width: viewport.width, height: viewport.height },
     isMobile: viewport.mobile,
     hasTouch: viewport.mobile,
@@ -246,6 +249,51 @@ const browser = await launch();
 let pagesChecked = 0;
 
 try {
+  // PWA: manifest + icons milte hain, service worker lagta hai, aur internet band hone par bhi app khulta hai
+  {
+    const current = 'pwa';
+    console.log('\n== PWA ==');
+    const { context, page } = await newPage(browser, VIEWPORTS[0], null, () => current, 'allow');
+    await page.goto(`${api.origin}/login`, { waitUntil: 'networkidle' });
+
+    const manifestResponse = await context.request.get(`${api.origin}/manifest.webmanifest`);
+    if (!manifestResponse.ok()) fail(current, 'manifest.webmanifest nahi mila');
+    else {
+      const manifest = await manifestResponse.json();
+      if (manifest.display !== 'standalone') fail(current, 'manifest: display standalone nahi hai');
+      for (const icon of manifest.icons ?? []) {
+        const iconResponse = await context.request.get(`${api.origin}/${icon.src}`);
+        if (!iconResponse.ok()) fail(current, `icon nahi mila: ${icon.src}`);
+      }
+      if (!(manifest.icons ?? []).some((icon) => icon.purpose === 'maskable')) fail(current, 'manifest: maskable icon nahi hai');
+    }
+    if (!(await page.locator('link[rel="manifest"]').count())) fail(current, 'index.html mein manifest ka link nahi hai');
+
+    const swResponse = await context.request.get(`${api.origin}/sw.js`);
+    if (!swResponse.ok()) fail(current, 'sw.js nahi mila');
+    else if (swResponse.headers()['cache-control'] !== 'no-cache') fail(current, 'sw.js par Cache-Control: no-cache nahi hai');
+
+    // Service worker chalu hokar page ko sambhal le, phir internet band karke dobara kholo
+    const controlled = await page
+      .evaluate(async () => {
+        await navigator.serviceWorker.ready;
+        if (!navigator.serviceWorker.controller) {
+          await new Promise((resolve) => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
+        }
+        return true;
+      })
+      .catch(() => false);
+    if (!controlled) fail(current, 'service worker chalu nahi hua');
+    else {
+      await context.setOffline(true);
+      await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => fail(current, 'offline mein page nahi khula'));
+      await page.waitForSelector('#email', { timeout: 10000 }).catch(() => fail(current, 'offline mein login page nahi dikha'));
+      await context.setOffline(false);
+    }
+    pagesChecked += 1;
+    await context.close();
+  }
+
   for (const viewport of VIEWPORTS) {
     console.log(`\n== ${viewport.name}px ==`);
 

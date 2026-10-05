@@ -5,6 +5,18 @@
   margin-top: var(--space-4);
 }
 
+/* "11-20 of 42": phone par jagah kam hai, wahan sirf page ke number */
+.pagination .ant-pagination-total-text {
+  display: none;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .pagination .ant-pagination-total-text {
+    display: inline-block;
+  }
+}
+
 @media (min-width: 992px) {
   .pagination {
     justify-content: flex-end;

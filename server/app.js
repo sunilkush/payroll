@@ -9,6 +9,7 @@ import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import { httpsRedirect } from './middlewares/httpsRedirect.js';
 
 const app = express();
+const NO_CACHE_FILES = new Set(['sw.js', 'registerSW.js', 'manifest.webmanifest']);
 
 app.set('trust proxy', env.trustProxy);
 if (env.forceHttps) app.use(httpsRedirect);
@@ -36,7 +37,16 @@ app.use('/api/v1', routes);
 // jata hai taaki page refresh par React Router ke routes chalein.
 if (env.serveClient) {
   const clientDist = path.resolve(serverRoot, '../client/dist');
-  app.use(express.static(clientDist, { index: false, maxAge: '1h' }));
+  app.use(
+    express.static(clientDist, {
+      index: false,
+      maxAge: '1h',
+      // PWA: service worker aur manifest hamesha taaze jayein, warna naya build phone tak der se pahunchta hai
+      setHeaders(res, filePath) {
+        if (NO_CACHE_FILES.has(path.basename(filePath))) res.setHeader('Cache-Control', 'no-cache');
+      },
+    })
+  );
   app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
 }
 

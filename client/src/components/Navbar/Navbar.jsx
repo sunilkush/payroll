@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useCurrentPageDetail } from '../../context/PageDetailContext.jsx';
 import { useLogout } from '../../context/useLogout.js';
+import { APP_NAME } from '../../utils/appInfo.js';
 import {
   activeLink,
   filterByFeatures,
@@ -28,14 +29,14 @@ export default function Navbar({ desktop, collapsed, onMenuClick, onToggleCollap
   const logout = useLogout();
 
   const section = activeLink(filterByFeatures(ROLE_NAV[user.role], company), pathname);
-  const title = section?.label ?? 'Payroll';
+  const title = section?.label ?? APP_NAME;
   // Detail page ka khaas naam (company / staff ka naam, "Add staff"); page khud deta hai
   const detail = useCurrentPageDetail();
   const actions = filterByFeatures(ROLE_ACTIONS[user.role], company);
 
-  // Browser tab ka title: "Staff · Payroll"
+  // Browser tab ka title: "Staff · PayRoster"
   useEffect(() => {
-    document.title = section ? `${section.label} · Payroll` : 'Payroll';
+    document.title = section ? `${section.label} · ${APP_NAME}` : APP_NAME;
   }, [section]);
 
   const actionMenu = {
@@ -89,7 +90,7 @@ export default function Navbar({ desktop, collapsed, onMenuClick, onToggleCollap
         <Breadcrumb
           className="navbar__breadcrumb"
           items={[
-            { title: <Link to={ROLE_HOME[user.role]}>{company?.name ?? 'Payroll'}</Link> },
+            { title: <Link to={ROLE_HOME[user.role]}>{company?.name ?? APP_NAME}</Link> },
             detail && section
               ? { title: <Link to={section.to}>{title}</Link> }
               : { title: <span className="navbar__current">{title}</span> },

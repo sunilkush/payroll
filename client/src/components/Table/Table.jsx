@@ -1,5 +1,6 @@
-import { Children, isValidElement } from 'react';
+import { Children, isValidElement, useState } from 'react';
 import { Card, Descriptions, Empty, Grid, Skeleton, Table as AntTable } from 'antd';
+import Pagination from '../Pagination/Pagination.jsx';
 import './Table.css';
 
 // Usage: <Table columns={['Name', 'Email']} empty="Koi record nahi">{rows}</Table>
@@ -15,16 +16,27 @@ import './Table.css';
 //   empty     jab koi row na ho tab ka text (ya koi bhi JSX, jaise button ke saath)
 //   primary   us column ka index jo mobile card ka heading bane (jaise naam wala column)
 //   dense     card mein values 2 column mein (lambi lists ke liye, jaise mahine ki attendance)
+//   pageSize  ek page par kitni rows (default 10). Rows is se zyada hon to neeche pagination aata hai.
+//             Jo pages server se page-wise data late hain wo apna <Pagination> alag se lagate hain.
 // Jis cell mein kuch nahi hai wo card mein dikhta hi nahi.
 
 const isEmptyCell = (children) =>
   Children.toArray(children).every((child) => typeof child === 'string' && child.trim() === '');
 
-export default function Table({ columns, empty = 'No records found.', loading = false, primary, dense = false, children }) {
+export default function Table({
+  columns,
+  empty = 'No records found.',
+  loading = false,
+  primary,
+  dense = false,
+  pageSize = 10,
+  children,
+}) {
   const desktop = Boolean(Grid.useBreakpoint().lg);
+  const [page, setPage] = useState(1);
 
   // <tr><td>...</td></tr>  ->  [{ key, cells: [{ className, content }, ...] }]
-  const rows = Children.toArray(children)
+  const allRows = Children.toArray(children)
     .filter(isValidElement)
     .map((row, rowIndex) => ({
       key: row.key ?? rowIndex,
@@ -33,23 +45,34 @@ export default function Table({ columns, empty = 'No records found.', loading = 
         .map((cell) => ({ className: cell.props.className, content: cell.props.children })),
     }));
 
+  // Pagination: rows kam ho jayein (filter / mahina badla) to aakhri bache page par aa jao
+  const paged = pageSize > 0 && allRows.length > pageSize;
+  const currentPage = paged ? Math.min(page, Math.ceil(allRows.length / pageSize)) : 1;
+  const rows = paged ? allRows.slice((currentPage - 1) * pageSize, currentPage * pageSize) : allRows;
+  const pagination = paged && (
+    <Pagination page={currentPage} total={allRows.length} pageSize={pageSize} onChange={setPage} />
+  );
+
   const emptyNode = <Empty description={empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />;
 
   if (desktop) {
     return (
-      <AntTable
-        className="table"
-        size="middle"
-        pagination={false}
-        loading={loading}
-        dataSource={rows}
-        locale={{ emptyText: loading ? ' ' : emptyNode }}
-        columns={columns.map((title, index) => ({
-          title,
-          key: title,
-          render: (_, row) => <div className={row.cells[index]?.className}>{row.cells[index]?.content}</div>,
-        }))}
-      />
+      <>
+        <AntTable
+          className="table"
+          size="middle"
+          pagination={false}
+          loading={loading}
+          dataSource={rows}
+          locale={{ emptyText: loading ? ' ' : emptyNode }}
+          columns={columns.map((title, index) => ({
+            title,
+            key: title,
+            render: (_, row) => <div className={row.cells[index]?.className}>{row.cells[index]?.content}</div>,
+          }))}
+        />
+        {pagination}
+      </>
     );
   }
 
@@ -68,6 +91,7 @@ export default function Table({ columns, empty = 'No records found.', loading = 
   if (!rows.length) return <div className="table__empty">{emptyNode}</div>;
 
   return (
+    <>
     <div className={`table table--cards${dense ? ' table--dense' : ''}`}>
       {rows.map((row) => (
         <Card
@@ -92,5 +116,7 @@ export default function Table({ columns, empty = 'No records found.', loading = 
         </Card>
       ))}
     </div>
+    {pagination}
+    </>
   );
 }

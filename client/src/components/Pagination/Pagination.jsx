@@ -1,13 +1,25 @@
 import { Pagination as AntPagination } from 'antd';
 import './Pagination.css';
 
-export default function Pagination({ page, totalPages, onChange }) {
-  if (totalPages <= 1) return null;
+// Do tarah se chalta hai:
+//   <Pagination page totalPages onChange />        server ne kul pages bataye (Staff, Companies...)
+//   <Pagination page total pageSize onChange />    kul rows pata hain; "11-20 of 42" bhi dikhta hai
+export default function Pagination({ page, totalPages, total, pageSize, onChange }) {
+  const counted = total !== undefined;
+  const pages = counted ? Math.ceil(total / pageSize) : totalPages;
+  if (pages <= 1) return null;
 
   return (
     <nav className="pagination" aria-label="Pagination">
-      {/* Server hamein kul pages deta hai, isliye pageSize 1 rakh kar total = totalPages */}
-      <AntPagination current={page} total={totalPages} pageSize={1} showSizeChanger={false} onChange={onChange} />
+      <AntPagination
+        current={page}
+        // Sirf kul pages pata hon to pageSize 1 rakh kar total = totalPages
+        total={counted ? total : totalPages}
+        pageSize={counted ? pageSize : 1}
+        showSizeChanger={false}
+        showTotal={counted ? (count, [from, to]) => `${from}-${to} of ${count}` : undefined}
+        onChange={onChange}
+      />
     </nav>
   );
 }

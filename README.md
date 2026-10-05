@@ -1,6 +1,6 @@
-# Payroll Web Application
+# PayRoster
 
-Multi-tenant payroll app: React (Vite) + Node/Express (MVC) + MongoDB + JWT.
+Multi-tenant attendance + payroll app (installable PWA): React (Vite) + Node/Express (MVC) + MongoDB + JWT.
 Poora plan aur project rules: `Payroll_App_Plan.docx`.
 
 Roles: **Super Admin** (companies, global PF/ESI rates), **Company Admin** (staff, attendance,
@@ -127,6 +127,26 @@ aate hain: naya page banane ke baad unhe ek baar aankh se zaroor dekho, layout "
 script nahi bata sakti.
 
 Naya page jodo to use `server/tests/e2e/responsive.mjs` ki `ROLES` list mein bhi daal do.
+
+**Tables mein pagination:** `Table` component 10 se zyada rows hone par apne aap pagination dikhata
+hai (`pageSize` prop se badal sakte ho). Staff, Companies aur Leave jaisi lambi lists server se
+page-wise aati hain aur apna `<Pagination>` alag lagati hain.
+
+## PWA (install hone wala app)
+
+Client ek Progressive Web App hai (`vite-plugin-pwa`, config `client/vite.config.js` mein):
+
+- Phone par browser ke menu se **"Add to Home screen" / "Install app"**; desktop par address bar ka
+  install icon. App phir apni window mein, bina browser bar ke khulta hai.
+- App ka dhancha (HTML, JS, CSS, fonts, icons) phone mein cache hota hai, isliye turant khulta hai
+  aur internet na ho tab bhi khul jata hai (upar "You are offline" ki patti aati hai).
+- **API ka data cache nahi hota**: salary, attendance aur punch hamesha server se. Offline mein punch
+  nahi hota.
+- Naya build deploy hone par app agli baar khulte hi apne aap update ho jata hai.
+- Service worker sirf build mein banta hai (`npm run build`), `npm run dev:client` mein nahi. Install
+  ke liye **HTTPS** zaroori hai (localhost par bina HTTPS ke chalta hai).
+- Icons `client/public/pwa-*.png`. Logo badlo to: `cd server && node scripts/makeIcons.mjs`.
+- App ka naam: `client/src/utils/appInfo.js`, `client/index.html` aur manifest (`vite.config.js`).
 
 ## Naya protected route kaise jode
 

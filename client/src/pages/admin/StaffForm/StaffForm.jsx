@@ -89,6 +89,8 @@ export default function StaffForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(EMPTY_FORM);
+  // Top bar mein dikhne wala naam; type karte waqt na badle isliye form se alag
+  const [savedName, setSavedName] = useState('');
   const [loading, setLoading] = useState(isEdit);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
@@ -99,7 +101,11 @@ export default function StaffForm() {
     if (!isEdit) return undefined;
     let ignore = false;
     getStaffApi(id)
-      .then((res) => !ignore && setForm(toForm(res.data.staff)))
+      .then((res) => {
+        if (ignore) return;
+        setForm(toForm(res.data.staff));
+        setSavedName(res.data.staff.name);
+      })
       .catch((err) => !ignore && setLoadError(err.message))
       .finally(() => !ignore && setLoading(false));
     return () => {
@@ -149,7 +155,7 @@ export default function StaffForm() {
     <section className="staff-form">
       <PageHeader
         detail
-        title={isEdit ? (form.name ? `Edit ${form.name}` : 'Edit staff') : 'Add staff'}
+        title={isEdit ? (savedName ? `Edit ${savedName}` : 'Edit staff') : 'Add staff'}
         back={{ to: '/admin/staff', label: 'Staff' }}
       />
 
