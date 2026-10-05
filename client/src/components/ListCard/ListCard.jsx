@@ -1,17 +1,21 @@
 import { RightOutlined } from '@ant-design/icons';
-import { Card, Empty } from 'antd';
 import { Link } from 'react-router-dom';
+import ChartCard from '../ChartCard/ChartCard.jsx';
 import './ListCard.css';
 
-// Dashboard ki chhoti list (jaise pending leave requests). Rows ke liye <ListRow> use karo.
-// action: { to, label } - card ke upar daayein "View all" jaisa link.
-export default function ListCard({ title, action, empty = 'Nothing here yet.', children }) {
+// Dashboard ki chhoti list (pending requests, aane wale din, activity). Rows ke liye <ListRow> use karo.
+//   action   { to, label } - upar daayein "View all" jaisa link
+//   empty    rows na hon to ye text
+//   loading  skeleton
+export default function ListCard({ title, subtitle, action, empty = 'Nothing here yet.', loading = false, children }) {
   const rows = [children].flat().filter(Boolean);
 
   return (
-    <Card
-      className="list-card"
+    <ChartCard
       title={title}
+      subtitle={subtitle}
+      loading={loading}
+      empty={rows.length ? undefined : empty}
       extra={
         action && (
           <Link to={action.to} className="list-card__action">
@@ -20,20 +24,18 @@ export default function ListCard({ title, action, empty = 'Nothing here yet.', c
         )
       }
     >
-      {rows.length ? (
-        <ul className="list-card__list">{rows}</ul>
-      ) : (
-        <Empty description={empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      )}
-    </Card>
+      <ul className="list-card__list">{rows}</ul>
+    </ChartCard>
   );
 }
 
-// Ek row: icon (optional), title + meta, daayein taraf kuch (badge / amount). to ho to poori row link hai.
-export function ListRow({ icon, title, meta, right, to }) {
+// Ek row: icon (optional), title + meta, daayein taraf kuch (badge / amount / time).
+//   tone  icon ke dabbe ka rang: primary | success | warning | danger | muted
+//   to    ho to poori row link hai
+export function ListRow({ icon, tone = 'primary', title, meta, right, to }) {
   return (
     <li className="list-card__row">
-      {icon && <span className="list-card__icon">{icon}</span>}
+      {icon && <span className={`list-card__icon list-card__icon--${tone}`}>{icon}</span>}
       <div className="list-card__text">
         <p className="list-card__title">{title}</p>
         {meta && <p className="list-card__meta">{meta}</p>}

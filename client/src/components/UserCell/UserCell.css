@@ -1,0 +1,45 @@
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  color: inherit;
+}
+
+.user-cell__avatar.ant-avatar {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.user-cell__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.user-cell__name {
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.user-cell__extra {
+  margin-left: var(--space-2);
+  font-weight: var(--font-weight-normal);
+}
+
+.user-cell__sub {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.user-cell--link:hover {
+  color: inherit;
+}
+
+.user-cell--link:hover .user-cell__name {
+  color: var(--color-primary);
+}

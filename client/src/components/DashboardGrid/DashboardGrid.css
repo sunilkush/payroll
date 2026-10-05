@@ -1,13 +1,39 @@
-.dashboard-grid {
+.dashboard-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
-@media (min-width: 992px) {
-  .dashboard-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.dashboard-row__main,
+.dashboard-row__side {
+  min-width: 0;
+}
+
+/* Side mein ek se zyada cards hon to unke beech gap */
+.dashboard-row__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .dashboard-row {
     gap: var(--space-6);
-    align-items: start;
+    margin-bottom: var(--space-6);
+  }
+
+  .dashboard-row__side {
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-row {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .dashboard-row--full {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

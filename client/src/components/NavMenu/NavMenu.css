@@ -1,31 +1,9 @@
-/* Gehra sidebar: upar logo, beech mein menu, neeche user ka card. Poori oonchai leta hai. */
+/* Halka sidebar: upar logo, beech mein group-wise menu, neeche user ki profile. Poori oonchai leta hai. */
 .nav-menu {
-  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
-  color: var(--color-text-inverse);
-  background: linear-gradient(180deg, var(--color-navy) 0%, var(--color-navy-light) 160%);
-}
-
-/* Upar-daayein halki roshni (login / dashboard banner jaisi) */
-.nav-menu::before {
-  position: absolute;
-  top: -80px;
-  right: -80px;
-  width: 200px;
-  height: 200px;
-  pointer-events: none;
-  content: '';
-  background: var(--color-accent);
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.4;
-}
-
-.nav-menu > * {
-  position: relative;
+  background: var(--color-surface);
 }
 
 /* ---------- Logo ---------- */
@@ -37,17 +15,19 @@
   justify-content: space-between;
   height: var(--navbar-height);
   padding: 0 var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .nav-menu__logo {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  color: var(--color-text-inverse);
+  min-width: 0;
+  color: var(--color-text);
 }
 
 .nav-menu__logo:hover {
-  color: var(--color-text-inverse);
+  color: var(--color-text);
 }
 
 .nav-menu__logo-mark {
@@ -55,70 +35,76 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  font-size: var(--font-size-lg);
+  width: 32px;
+  height: 32px;
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  border-radius: var(--radius-md);
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+.nav-menu__brand {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .nav-menu__logo-text {
-  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
+}
+
+.nav-menu__company {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-menu__close.ant-btn,
 .nav-menu__logout.ant-btn {
   flex-shrink: 0;
-  color: var(--color-on-dark-muted);
-}
-
-.nav-menu__close.ant-btn:hover,
-.nav-menu__logout.ant-btn:hover {
-  color: var(--color-text-inverse);
-  background: var(--color-glass);
-}
-
-/* ---------- Company ---------- */
-
-.nav-menu__company {
-  flex-shrink: 0;
-  margin: var(--space-2) var(--space-3) var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-on-dark-muted);
-  background: var(--color-glass);
-  border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
 }
 
 /* ---------- Menu ---------- */
 
 .nav-menu__list.ant-menu {
   flex: 1;
+  padding: var(--space-2) 0;
   overflow-y: auto;
   border-inline-end: none;
 }
 
-/* ---------- User (neeche) ---------- */
+/* Group ke naam: chhote, capital, halke */
+.nav-menu__list .ant-menu-item-group-title {
+  padding: var(--space-3) var(--space-6) var(--space-1);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nav-menu__list .ant-menu-item-selected {
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---------- User profile (neeche) ---------- */
 
 .nav-menu__user {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: var(--space-3);
-  margin: var(--space-3);
-  padding: var(--space-2);
-  background: var(--color-glass);
-  border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
 .nav-menu__avatar.ant-avatar {
   flex-shrink: 0;
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .nav-menu__identity {
@@ -126,22 +112,38 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  line-height: 1.25;
+  line-height: 1.3;
+}
+
+.nav-menu__name,
+.nav-menu__role {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-menu__name {
-  overflow: hidden;
   font-weight: var(--font-weight-medium);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .nav-menu__role {
-  overflow: hidden;
-  font-size: var(--font-size-sm);
-  color: var(--color-on-dark-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Chhota sidebar (sirf icons) ---------- */
+
+.nav-menu--collapsed .nav-menu__brand,
+.nav-menu--collapsed .nav-menu__identity,
+.nav-menu--collapsed .nav-menu__logout {
+  display: none;
+}
+
+.nav-menu--collapsed .nav-menu__top,
+.nav-menu--collapsed .nav-menu__user {
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 /* Sidebar ka logo wala hissa top bar jitna ooncha, taaki dono ek line mein dikhein */
@@ -149,28 +151,4 @@
   .nav-menu__top {
     height: var(--navbar-height-desktop);
   }
-}
-
-/* ---------- Chhota sidebar (sirf icons) ---------- */
-
-.nav-menu--collapsed .nav-menu__logo-text,
-.nav-menu--collapsed .nav-menu__company,
-.nav-menu--collapsed .nav-menu__identity,
-.nav-menu--collapsed .nav-menu__logout {
-  display: none;
-}
-
-.nav-menu--collapsed .nav-menu__top {
-  justify-content: center;
-  padding: 0;
-}
-
-.nav-menu--collapsed .nav-menu__list.ant-menu {
-  margin-top: var(--space-3);
-}
-
-.nav-menu--collapsed .nav-menu__user {
-  justify-content: center;
-  background: transparent;
-  border-color: transparent;
 }

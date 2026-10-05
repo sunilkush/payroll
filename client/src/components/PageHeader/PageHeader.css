@@ -2,28 +2,27 @@
   margin-bottom: var(--space-4);
 }
 
+/* Na back link, na subtitle, na actions: sirf chhupa hua heading hai, jagah nahi leni */
+.page-header--empty {
+  margin-bottom: 0;
+}
+
 .page-header__back {
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+  min-height: 32px;
   margin-bottom: var(--space-1);
   font-size: var(--font-size-sm);
 }
 
-/* Mobile: title upar, actions uske neeche poori chaudai mein */
+/* Mobile: parichay upar, actions uske neeche. Tablet se: ek line mein. */
 .page-header__row {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.page-header__title {
-  font-size: var(--font-size-xl);
-  line-height: 1.25;
-}
-
 .page-header__subtitle {
-  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -43,7 +42,9 @@
     gap: var(--space-4);
   }
 
+  /* Subtitle na ho to bhi actions daayein rahein */
   .page-header__actions {
     justify-content: flex-end;
+    margin-left: auto;
   }
 }

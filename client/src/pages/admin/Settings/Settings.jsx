@@ -4,6 +4,7 @@ import { getSettingsApi, updateSettingsApi } from '../../../api/settingsApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import Checkbox from '../../../components/Checkbox/Checkbox.jsx';
+import FormActions from '../../../components/FormActions/FormActions.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import LocationMap from '../../../components/LocationMap/LocationMap.jsx';
@@ -12,6 +13,7 @@ import { useAuth } from '../../../context/AuthContext.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { WEEKDAYS } from '../../../utils/format.js';
 import { getCurrentPosition } from '../../../utils/geolocation.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './Settings.css';
 
 const NEW_LOCATION = { name: '', lat: '', lng: '', radius: '100' };
@@ -68,7 +70,9 @@ export default function Settings() {
   const { refresh } = useAuth();
   const [form, setForm] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [message, setMessage] = useState({ type: 'success', text: '' });
+  const { toast } = useFeedback();
+  // notify({ type: 'success' | 'error', text }): upar toast dikhata hai
+  const notify = ({ type, text }) => text && toast[type](text);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [locatingIndex, setLocatingIndex] = useState(null);
@@ -99,16 +103,15 @@ export default function Settings() {
 
   const handleUseMyLocation = async (index) => {
     setLocatingIndex(index);
-    setMessage({ type: 'success', text: '' });
     try {
       const position = await getCurrentPosition();
       updateItem('locations', index, { lat: position.lat.toFixed(6), lng: position.lng.toFixed(6) });
-      setMessage({
+      notify({
         type: 'success',
         text: `Location captured (accuracy ${Math.round(position.accuracy)}m). Remember to save.`,
       });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      notify({ type: 'error', text: err.message });
     } finally {
       setLocatingIndex(null);
     }
@@ -125,27 +128,23 @@ export default function Settings() {
     event.preventDefault();
     setSaving(true);
     setFieldErrors({});
-    setMessage({ type: 'success', text: '' });
     try {
       const res = await updateSettingsApi(toPayload(form));
       setForm(toForm(res.data.company));
-      setMessage({ type: 'success', text: 'Settings saved.' });
+      notify({ type: 'success', text: 'Settings saved.' });
       // Navbar/dashboard ke links (jaise Leaves) nayi settings ke hisaab se dikhein.
       await refresh();
     } catch (err) {
       setFieldErrors(toFieldErrors(err));
-      setMessage({ type: 'error', text: err.errors?.[0]?.message || err.message });
+      notify({ type: 'error', text: err.errors?.[0]?.message || err.message });
     } finally {
       setSaving(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   return (
     <section className="settings">
       <PageHeader title="Settings" />
-      <Alert type={message.type}>{message.text}</Alert>
-
       <form onSubmit={handleSubmit} noValidate>
         <Card className="settings__section" size="small" title="Office Locations">
           <p className="settings__help">
@@ -369,11 +368,11 @@ export default function Settings() {
           />
         </Card>
 
-        <div className="settings__actions">
+        <FormActions>
           <Button type="submit" disabled={saving}>
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
-        </div>
+        </FormActions>
       </form>
     </section>
   );

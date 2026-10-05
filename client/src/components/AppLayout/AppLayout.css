@@ -2,12 +2,12 @@
   min-height: 100vh;
 }
 
-/* Desktop ka sidebar: poori oonchai, page scroll hone par bhi apni jagah */
+/* Desktop ka sidebar: poori oonchai, page scroll hone par bhi apni jagah, daayein patli line */
 .app-layout__sidebar.ant-layout-sider {
   position: sticky;
   top: 0;
   height: 100vh;
-  box-shadow: var(--shadow-md);
+  border-right: 1px solid var(--color-border);
 }
 
 .app-layout__main {

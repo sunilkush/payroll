@@ -10,6 +10,7 @@ import Pagination from '../../../components/Pagination/Pagination.jsx';
 import Table from '../../../components/Table/Table.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { formatDate } from '../../../utils/format.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './MyLeaves.css';
 
 const COLUMNS = ['Type', 'From', 'To', 'Days', 'Reason', 'Status', 'Actions'];
@@ -21,7 +22,9 @@ export default function MyLeaves() {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState({ items: [], totalPages: 1 });
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState({ type: 'success', text: '' });
+  const { toast, confirm } = useFeedback();
+  // notify({ type: 'success' | 'error', text }): upar toast dikhata hai
+  const notify = ({ type, text }) => text && toast[type](text);
   const [busyId, setBusyId] = useState(null);
 
   const [showApply, setShowApply] = useState(false);
@@ -36,7 +39,7 @@ export default function MyLeaves() {
       setBalance(balanceRes.data.balance);
       setResult(listRes.data);
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      notify({ type: 'error', text: err.message });
     } finally {
       setLoading(false);
     }
@@ -71,7 +74,7 @@ export default function MyLeaves() {
     try {
       const res = await applyLeaveApi(form);
       closeApply();
-      setMessage({
+      notify({
         type: 'success',
         text: `Applied for ${res.data.leave.days} day(s) of ${form.type}. The balance stays blocked until an admin approves it.`,
       });
@@ -86,14 +89,21 @@ export default function MyLeaves() {
   };
 
   const handleCancel = async (leave) => {
-    if (!window.confirm('Cancel this leave request? The balance will be returned.')) return;
+    const ok = await confirm({
+      title: 'Cancel this leave request?',
+      content: `${leave.days} day(s) of ${leave.type} will be returned to your balance.`,
+      okText: 'Cancel request',
+      cancelText: 'Keep it',
+      danger: true,
+    });
+    if (!ok) return;
     setBusyId(leave._id);
     try {
       await cancelLeaveApi(leave._id);
-      setMessage({ type: 'success', text: 'Leave cancelled.' });
+      notify({ type: 'success', text: 'Leave cancelled.' });
       await load();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      notify({ type: 'error', text: err.message });
     } finally {
       setBusyId(null);
     }
@@ -106,8 +116,6 @@ export default function MyLeaves() {
           + Apply Leave
         </Button>
       </PageHeader>
-
-      <Alert type={message.type}>{message.text}</Alert>
 
       {balance && (
         <div className="my-leaves__balances">
@@ -127,7 +135,7 @@ export default function MyLeaves() {
         </div>
       )}
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'No leave applied yet.'}>
+      <Table columns={COLUMNS} loading={loading} empty='No leave applied yet. Use "Apply Leave" to request one.'>
         {result.items.map((leave) => (
           <tr key={leave._id}>
             <td>{leave.type}</td>

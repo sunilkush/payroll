@@ -1,0 +1,62 @@
+/*
+ * Office ka pin: laal boond jiska nok neeche hai. Leaflet is element ko map par jagah dene ke liye khud
+ * transform lagata hai, isliye is par rotate/transform NAHI lagate (warna pin galat jagah chala jata hai).
+ * Boond ::before par bani hai aur beech ka safed bindu ::after par.
+ */
+.map-pin::before {
+  position: absolute;
+  /* 20px ka chaukor, ghumane par uska nichla kona pin ke nok (dabbe ke neeche-beech) par aata hai */
+  bottom: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  content: '';
+  background: var(--color-danger);
+  border: 2px solid var(--color-surface);
+  border-radius: 50% 50% 50% 0;
+  box-shadow: var(--shadow-md);
+  rotate: -45deg;
+}
+
+.map-pin::after {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  content: '';
+  background: var(--color-surface);
+  border-radius: 50%;
+}
+
+/* OpenStreetMap ka credit: map ke neeche, chhota aur halka */
+.map-credit {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.map-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* "Aap yahan hain": neela bindu, safed kinara, halki failti hui lehar */
+.map-you {
+  background: var(--color-primary);
+  border: 3px solid var(--color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--color-primary);
+  animation: map-you-pulse 2s ease-out infinite;
+}
+
+@keyframes map-you-pulse {
+  to {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-you {
+    animation: none;
+  }
+}

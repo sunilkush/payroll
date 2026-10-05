@@ -5,6 +5,7 @@ import { createStaffApi, getStaffApi, updateStaffApi } from '../../../api/staffA
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import Checkbox from '../../../components/Checkbox/Checkbox.jsx';
+import FormActions from '../../../components/FormActions/FormActions.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
@@ -146,7 +147,11 @@ export default function StaffForm() {
 
   return (
     <section className="staff-form">
-      <PageHeader title={isEdit ? 'Edit Staff' : 'Add Staff'} back={{ to: '/admin/staff', label: 'Staff' }} />
+      <PageHeader
+        detail
+        title={isEdit ? (form.name ? `Edit ${form.name}` : 'Edit staff') : 'Add staff'}
+        back={{ to: '/admin/staff', label: 'Staff' }}
+      />
 
       {loadError ? (
         <Alert>{loadError}</Alert>
@@ -234,14 +239,14 @@ export default function StaffForm() {
             </div>
           </Card>
 
-          <div className="staff-form__actions">
+          <FormActions>
             <Button variant="secondary" onClick={() => navigate('/admin/staff')}>
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
               {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Staff'}
             </Button>
-          </div>
+          </FormActions>
         </form>
       )}
     </section>

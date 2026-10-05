@@ -1,0 +1,51 @@
+/* Mobile: search upar, status tabs neeche poori chaudai mein. Tablet se: ek line mein. */
+.list-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.list-toolbar__search-icon {
+  color: var(--color-text-muted);
+}
+
+/* Tabs barabar chaudai ke; zyada hon (jaise leave ke 5) to phone par daayein-baayein khiskte hain */
+.list-toolbar__tabs.ant-segmented {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.list-toolbar__tabs .ant-segmented-group {
+  width: 100%;
+}
+
+.list-toolbar__tabs .ant-segmented-item {
+  flex: 1 0 auto;
+}
+
+@media (min-width: 768px) {
+  .list-toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .list-toolbar__search {
+    flex: 1;
+  }
+
+  .list-toolbar__tabs.ant-segmented {
+    width: auto;
+  }
+}
+
+@media (min-width: 992px) {
+  .list-toolbar__search {
+    flex: none;
+    width: 360px;
+  }
+
+  .list-toolbar__tabs.ant-segmented {
+    margin-left: auto;
+  }
+}

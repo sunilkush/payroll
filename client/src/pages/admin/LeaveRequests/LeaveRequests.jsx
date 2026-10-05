@@ -1,25 +1,41 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Select } from 'antd';
+import { Tag } from 'antd';
 import { approveLeaveApi, listLeavesApi, rejectLeaveApi } from '../../../api/leaveApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
-import LeaveStatus, { LEAVE_STATUS_OPTIONS } from '../../../components/LeaveStatus/LeaveStatus.jsx';
+import LeaveStatus from '../../../components/LeaveStatus/LeaveStatus.jsx';
+import ListToolbar from '../../../components/ListToolbar/ListToolbar.jsx';
 import Modal from '../../../components/Modal/Modal.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import Pagination from '../../../components/Pagination/Pagination.jsx';
 import Table from '../../../components/Table/Table.jsx';
+import UserCell from '../../../components/UserCell/UserCell.jsx';
 import { formatDate } from '../../../utils/format.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './LeaveRequests.css';
 
-const COLUMNS = ['Staff', 'Type', 'Dates', 'Days', 'Reason', 'Status', 'Actions'];
+const COLUMNS = ['Staff', 'Leave', 'Dates', 'Reason', 'Status', 'Actions'];
+const STATUS_TABS = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'REJECTED', label: 'Rejected' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'all', label: 'All' },
+];
+const EMPTY_TEXT = {
+  PENDING: 'No pending requests. You are all caught up.',
+  all: 'No leave requests yet.',
+};
 
 export default function LeaveRequests() {
+  const { toast, confirm } = useFeedback();
+
   const [query, setQuery] = useState({ status: 'PENDING', page: 1 });
   const [result, setResult] = useState({ items: [], total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState({ type: 'success', text: '' });
-  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState(null);
 
   // Reject se pehle reason poochne wala modal
   const [rejecting, setRejecting] = useState(null);
@@ -30,8 +46,9 @@ export default function LeaveRequests() {
     try {
       const res = await listLeavesApi(query);
       setResult(res.data);
+      setError('');
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -46,59 +63,70 @@ export default function LeaveRequests() {
     setNote('');
   }, []);
 
-  const run = async (action, successText) => {
-    setBusy(true);
+  const run = async (leave, action, successText) => {
+    setBusyId(leave._id);
     try {
       await action();
-      setMessage({ type: 'success', text: successText });
+      toast.success(successText);
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      toast.error(err.message);
     } finally {
-      setBusy(false);
+      setBusyId(null);
       await load();
     }
   };
 
-  const handleApprove = (leave) => {
-    const name = leave.userId?.name ?? 'Staff';
-    if (!window.confirm(`Approve ${leave.days} day(s) of ${leave.type} for ${name}?`)) return;
-    run(() => approveLeaveApi(leave._id), 'Leave approved.');
+  const handleApprove = async (leave) => {
+    const name = leave.userId?.name ?? 'this staff member';
+    const ok = await confirm({
+      title: `Approve leave for ${name}?`,
+      content: `${leave.days} day(s) of ${leave.type}, ${formatDate(leave.fromDate)}${
+        leave.toDate !== leave.fromDate ? ` to ${formatDate(leave.toDate)}` : ''
+      }. Approved leave is paid and cannot be undone here.`,
+      okText: 'Approve',
+    });
+    if (ok) run(leave, () => approveLeaveApi(leave._id), `Leave approved for ${name}.`);
   };
 
   const handleReject = async (event) => {
     event.preventDefault();
     const leave = rejecting;
     closeReject();
-    await run(() => rejectLeaveApi(leave._id, note), 'Leave rejected. The balance has been returned to the staff member.');
+    await run(leave, () => rejectLeaveApi(leave._id, note), 'Leave rejected. The balance has been returned.');
   };
 
   return (
     <section className="leave-requests">
-      <PageHeader title="Leave Requests" subtitle={`${result.total} requests`}>
-        <Select
-          className="leave-requests__filter"
-          aria-label="Status filter"
-          options={LEAVE_STATUS_OPTIONS}
-          value={query.status}
-          onChange={(status) => setQuery({ status, page: 1 })}
-        />
-      </PageHeader>
+      <PageHeader title="Leave Requests" subtitle="Approve or reject CL / EL requests from staff" />
 
-      <Alert type={message.type}>{message.text}</Alert>
+      <ListToolbar
+        tabs={STATUS_TABS}
+        counts={result.counts}
+        value={query.status}
+        onChange={(status) => setQuery({ status, page: 1 })}
+      />
 
-      <Table columns={COLUMNS} empty={loading ? 'Loading...' : 'No leave requests.'}>
+      <Alert>{error}</Alert>
+
+      <Table
+        columns={COLUMNS}
+        primary={0}
+        loading={loading}
+        empty={EMPTY_TEXT[query.status] ?? 'No requests with this status.'}
+      >
         {result.items.map((leave) => (
           <tr key={leave._id}>
             <td>
-              <span className="leave-requests__name">{leave.userId?.name ?? '-'}</span>
-              <p className="leave-requests__muted">{leave.userId?.employeeCode}</p>
+              <UserCell name={leave.userId?.name ?? 'Unknown'} sub={leave.userId?.employeeCode} />
             </td>
-            <td>{leave.type}</td>
+            <td>
+              <Tag color="blue">{leave.type}</Tag>
+              {leave.days} day(s)
+            </td>
             <td>
               {formatDate(leave.fromDate)}
               {leave.toDate !== leave.fromDate && ` - ${formatDate(leave.toDate)}`}
             </td>
-            <td>{leave.days}</td>
             <td>
               {leave.reason}
               {leave.actionNote && <p className="leave-requests__muted">Note: {leave.actionNote}</p>}
@@ -109,10 +137,10 @@ export default function LeaveRequests() {
             <td>
               {leave.status === 'PENDING' && (
                 <div className="leave-requests__actions">
-                  <Button size="sm" disabled={busy} onClick={() => handleApprove(leave)}>
+                  <Button size="sm" loading={busyId === leave._id} onClick={() => handleApprove(leave)}>
                     Approve
                   </Button>
-                  <Button size="sm" variant="danger" disabled={busy} onClick={() => setRejecting(leave)}>
+                  <Button size="sm" variant="danger" disabled={busyId === leave._id} onClick={() => setRejecting(leave)}>
                     Reject
                   </Button>
                 </div>
@@ -129,8 +157,11 @@ export default function LeaveRequests() {
       />
 
       {rejecting && (
-        <Modal title={`Reject Leave: ${rejecting.userId?.name ?? ''}`} onClose={closeReject}>
+        <Modal title={`Reject leave: ${rejecting.userId?.name ?? ''}`} onClose={closeReject}>
           <form onSubmit={handleReject}>
+            <p className="leave-requests__muted">
+              {rejecting.days} day(s) of {rejecting.type}. The blocked balance goes back to the staff member.
+            </p>
             <FormField
               label="Reason (visible to the staff member)"
               name="note"
@@ -142,7 +173,7 @@ export default function LeaveRequests() {
             />
             <div className="leave-requests__modal-actions">
               <Button variant="secondary" onClick={closeReject}>
-                Close
+                Cancel
               </Button>
               <Button type="submit" variant="danger">
                 Reject Leave

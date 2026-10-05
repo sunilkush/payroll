@@ -1,14 +1,13 @@
-.leave-requests__filter {
-  width: 160px;
-}
-
-.leave-requests__name {
-  font-weight: var(--font-weight-medium);
-}
-
 .leave-requests__muted {
+  margin-bottom: var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+/* Table ke andar "Note:" wali line ke neeche gap nahi chahiye */
+td .leave-requests__muted,
+.ant-descriptions .leave-requests__muted {
+  margin-bottom: 0;
 }
 
 .leave-requests__actions,
@@ -25,6 +24,7 @@
 
 @media (min-width: 992px) {
   .leave-requests__actions {
+    flex-wrap: nowrap;
     justify-content: flex-start;
   }
 }

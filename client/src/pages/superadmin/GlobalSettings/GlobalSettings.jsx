@@ -3,10 +3,12 @@ import { Card } from 'antd';
 import { getGlobalSettingsApi, updateGlobalSettingsApi } from '../../../api/globalSettingsApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
+import FormActions from '../../../components/FormActions/FormActions.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './GlobalSettings.css';
 
 // group: API ka object (pf / esi). group na ho to top-level field.
@@ -80,7 +82,9 @@ function toPayload(form) {
 export default function GlobalSettings() {
   const [form, setForm] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [message, setMessage] = useState({ type: 'success', text: '' });
+  const { toast } = useFeedback();
+  // notify({ type: 'success' | 'error', text }): upar toast dikhata hai
+  const notify = ({ type, text }) => text && toast[type](text);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -97,24 +101,21 @@ export default function GlobalSettings() {
     event.preventDefault();
     setSaving(true);
     setFieldErrors({});
-    setMessage({ type: 'success', text: '' });
     try {
       const res = await updateGlobalSettingsApi(toPayload(form));
       setForm(toForm(res.data.settings));
-      setMessage({ type: 'success', text: 'Global settings saved.' });
+      notify({ type: 'success', text: 'Global settings saved.' });
     } catch (err) {
       setFieldErrors(toFieldErrors(err));
-      setMessage({ type: 'error', text: err.errors?.[0]?.message || err.message });
+      notify({ type: 'error', text: err.errors?.[0]?.message || err.message });
     } finally {
       setSaving(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   return (
     <section className="global-settings">
       <PageHeader title="Global Settings" subtitle="PF/ESI rates and ceilings for all companies" />
-      <Alert type={message.type}>{message.text}</Alert>
       <p className="global-settings__note">
         These numbers apply to new payroll for every company. Existing payroll does not change until an
         admin clicks Regenerate; finalized payroll never changes. Confirm with your CA before changing
@@ -147,11 +148,11 @@ export default function GlobalSettings() {
           </Card>
         ))}
 
-        <div className="global-settings__actions">
+        <FormActions>
           <Button type="submit" disabled={saving}>
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
-        </div>
+        </FormActions>
       </form>
     </section>
   );

@@ -17,11 +17,13 @@ import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import SalarySlip from '../../../components/SalarySlip/SalarySlip.jsx';
 import SummaryTiles from '../../../components/SummaryTiles/SummaryTiles.jsx';
 import Table from '../../../components/Table/Table.jsx';
+import UserCell from '../../../components/UserCell/UserCell.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { currentMonth, formatCurrency, formatMonth } from '../../../utils/format.js';
+import { useFeedback } from '../../../utils/useFeedback.js';
 import './Payroll.css';
 
-const COLUMNS = ['Code', 'Staff', 'Days', 'Earned Gross', 'PF', 'ESI', 'Other', 'Net Salary', 'Status', 'Actions'];
+const COLUMNS = ['Staff', 'Days', 'Earned Gross', 'PF', 'ESI', 'Other', 'Net Salary', 'Status', 'Actions'];
 
 const totalsItems = (totals) => [
   { label: 'Earned Gross', value: formatCurrency(totals.earnedGross) },
@@ -35,7 +37,9 @@ const totalsItems = (totals) => [
 export default function Payroll() {
   const [month, setMonth] = useState(currentMonth);
   const [data, setData] = useState(null);
-  const [message, setMessage] = useState({ type: 'success', text: '' });
+  const { toast, confirm } = useFeedback();
+  // notify({ type: 'success' | 'error', text }): upar toast dikhata hai
+  const notify = ({ type, text }) => text && toast[type](text);
   const [busy, setBusy] = useState(false);
 
   // Screen par slip dekhne wala modal
@@ -51,10 +55,9 @@ export default function Payroll() {
   useEffect(() => {
     let ignore = false;
     setData(null);
-    setMessage({ type: 'success', text: '' });
     listPayrollApi(month)
       .then((res) => !ignore && setData(res.data))
-      .catch((err) => !ignore && setMessage({ type: 'error', text: err.message }));
+      .catch((err) => !ignore && notify({ type: 'error', text: err.message }));
     return () => {
       ignore = true;
     };
@@ -69,13 +72,12 @@ export default function Payroll() {
   // Generate / finalize / download ka common wrapper. action naya data lautaye to table update hoti hai.
   const run = async (action, successText) => {
     setBusy(true);
-    setMessage({ type: 'success', text: '' });
     try {
       const res = await action();
       if (res?.data?.rows) setData(res.data);
-      if (successText) setMessage({ type: 'success', text: successText });
+      if (successText) notify({ type: 'success', text: successText });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      notify({ type: 'error', text: err.message });
     } finally {
       setBusy(false);
     }
@@ -83,10 +85,13 @@ export default function Payroll() {
 
   const handleGenerate = () => run(() => generatePayrollApi(month), 'Payroll generated.');
 
-  const handleFinalize = () => {
-    const warning = `Finalize payroll for ${formatMonth(month)}?\nOnce final it cannot be changed, and staff will be able to see their salary slips.`;
-    if (!window.confirm(warning)) return;
-    run(() => finalizePayrollApi(month), 'Payroll finalized.');
+  const handleFinalize = async () => {
+    const ok = await confirm({
+      title: `Finalize payroll for ${formatMonth(month)}?`,
+      content: 'Once final it cannot be changed or regenerated, and staff will be able to see their salary slips.',
+      okText: 'Finalize',
+    });
+    if (ok) run(() => finalizePayrollApi(month), `Payroll for ${formatMonth(month)} finalized.`);
   };
 
   const openEdit = (payroll) => {
@@ -137,8 +142,6 @@ export default function Payroll() {
         )}
       </PageHeader>
 
-      <Alert type={message.type}>{message.text}</Alert>
-
       {data?.hasDraft && !data.monthCompleted && (
         <p className="payroll__note">
           This month is still running, so the payroll is a draft: the remaining days are counted as paid.
@@ -156,12 +159,15 @@ export default function Payroll() {
 
       <Table
         columns={COLUMNS}
-        empty={data ? 'Payroll has not been generated for this month. Click "Generate Payroll".' : 'Loading...'}
+        primary={0}
+        loading={!data}
+        empty='Payroll has not been generated for this month. Click "Generate Payroll".'
       >
         {rows.map((payroll) => (
           <tr key={payroll._id}>
-            <td>{payroll.staff.employeeCode}</td>
-            <td>{payroll.staff.name}</td>
+            <td>
+              <UserCell name={payroll.staff.name} sub={payroll.staff.employeeCode} />
+            </td>
             <td>
               {payroll.payableDays}
               {payroll.lopDays > 0 && <span className="payroll__lop"> (LOP {payroll.lopDays})</span>}

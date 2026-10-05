@@ -41,7 +41,12 @@ export default function MySalary() {
       <PageHeader title="My Salary" subtitle="Finalized salary slips" />
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} empty={rows ? 'No salary slips yet.' : 'Loading...'}>
+      <Table
+        columns={COLUMNS}
+        primary={0}
+        loading={!rows}
+        empty="No salary slips yet. They appear here once your admin finalizes the month's payroll."
+      >
         {(rows ?? []).map((payroll) => (
           <tr key={payroll._id}>
             <td>{formatMonth(payroll.period)}</td>

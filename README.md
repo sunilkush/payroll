@@ -50,6 +50,25 @@ npm test                # server ke saare tests (unit + API)
   Asli database ko nahi chhute. Doosra DB dena ho to `TEST_MONGO_URI` set karo (naam `_test` par
   khatam hona zaroori hai).
 
+## Design system
+
+Modern SaaS dashboard style: halka gray background, safed cards (patla border, bahut halki parchhai,
+12px gol kone), ek hi primary rang (indigo), Inter font (body 14px), 8px spacing. Sab kuch
+`client/src/styles/variables.css` mein hai; wahan badalne se poora app badalta hai.
+
+- **Sidebar:** halka, group-wise menu (Overview / People / Finance / Configuration), chhota (sirf
+  icons) ho sakta hai, neeche user ki profile. Phone/tablet par drawer.
+- **Top bar:** breadcrumb, global search (Ctrl+K; pages, aur admin ke liye staff / Super Admin ke liye
+  companies), "+ New" quick actions, notifications ki ghanti, user menu.
+- **Dashboards** (teeno roles): KPI cards (pichhle period se tulna + sparkline), charts, aaj ki
+  sortable table, pending requests, aane wale din, activity. Data ek hi read-only API se aata hai:
+  `GET /api/v1/dashboard` (role ke hisaab se) aur `GET /api/v1/dashboard/notifications`.
+
+Dashboard ke reusable components: `StatCard` / `StatGrid`, `ChartCard`, `Charts` (`AreaTrend`,
+`BarTrend`, `Donut`, `Sparkline`; Recharts par), `DataTable` (search + sorting + pagination, phone par
+daayein-baayein khiskti hai), `ListCard`, `EmptyState`, `WelcomeHeader`, `DashboardRow`,
+`GlobalSearch`, `NotificationPanel`.
+
 ## UI: Ant Design
 
 UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke saath-saath
@@ -57,7 +76,10 @@ UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke
 
 | Hamara component | Andar Ant Design ka |
 |---|---|
-| `Button`, `FormField`, `Checkbox`, `SearchBar`, `MonthPicker` | Button, Input / Select / TextArea, Checkbox, DatePicker |
+| `Button`, `FormField`, `Checkbox`, `MonthPicker` | Button, Input / Select / TextArea, Checkbox, DatePicker |
+| `ListToolbar` (type karte hi search + ginti wale status tabs) | Input, Segmented |
+| `UserCell` (avatar + naam + chhoti line) | Avatar |
+| `FormActions` (lambe form ka neeche chipka Save bar) | - |
 | `Modal`, `Drawer`, `Alert`, `Badge`, `Loader`, `Pagination` | Modal, Drawer, Alert, Tag, Spin, Pagination |
 | `Table` | Desktop: Table. Mobile/tablet: Card + Descriptions |
 | `AppLayout`, `Navbar`, `NavMenu` | Layout, Sider, Menu |
@@ -67,6 +89,9 @@ UI [Ant Design](https://ant.design) (v6) se bani hai. Pages seedhe Ant Design ke
   (`styles/theme.js`) wahin se padhta hai, isliye wahan rang badalne se poora app badalta hai.
 - **Inline style ab bhi nahi** (Rule 2). Ant Design component ko badalna ho to us page/component ki
   `.css` file mein class se badlo.
+- **Feedback ka ek hi tareeka:** `useFeedback()` (`utils/useFeedback.js`) se `toast.success(...)` /
+  `toast.error(...)` aur `await confirm({ title, content, okText, danger })`. Browser ke
+  `window.confirm` / `alert` use mat karo.
 - Naya page banate waqt table ke liye hamara `Table` hi use karo (seedha Ant Design ka nahi),
   warna phone par cards nahi banenge.
 

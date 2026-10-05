@@ -1,0 +1,47 @@
+.chart-card {
+  height: 100%;
+  /* Grid ke andar chart / table card ko chauda na kare */
+  min-width: 0;
+}
+
+.chart-card .ant-card-body {
+  padding: var(--space-4);
+}
+
+/* Mobile: heading ke neeche filter. Tablet se: ek line mein. */
+.chart-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.chart-card__heading {
+  min-width: 0;
+}
+
+.chart-card__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.chart-card__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .chart-card .ant-card-body {
+    padding: var(--space-6);
+  }
+
+  .chart-card__header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .chart-card__extra {
+    flex-shrink: 0;
+  }
+}

@@ -80,7 +80,8 @@ export async function getToday(user) {
   return {
     date,
     attendance,
-    locations: company.locations.map(({ name, radius }) => ({ name, radius })),
+    // lat/lng bhi: staff ke Punch page ka map office aur uski range dikhata hai
+    locations: company.locations.map(({ name, lat, lng, radius }) => ({ name, lat, lng, radius })),
   };
 }
 

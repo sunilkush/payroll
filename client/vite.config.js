@@ -21,6 +21,12 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
             return 'react';
           }
+          // Charts (dashboard) aur maps (settings / punch) alag: jo page inhe use nahi karta
+          // uske liye ye cache se bahar bhi rahein to app ki baaki files chhoti rehti hain.
+          if (/[\\/]node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor|internmap|decimal\.js-light|es-toolkit|immer|reselect|redux|@reduxjs)[\\/]/.test(id)) {
+            return 'charts';
+          }
+          if (/[\\/]node_modules[\\/]leaflet[\\/]/.test(id)) return 'maps';
           return 'vendor'; // antd, icons, dayjs, axios
         },
       },

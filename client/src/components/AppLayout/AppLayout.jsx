@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Grid, Layout } from 'antd';
 import { Outlet, useLocation } from 'react-router-dom';
+import { PageDetailProvider } from '../../context/PageDetailContext.jsx';
 import Drawer from '../Drawer/Drawer.jsx';
 import ErrorBoundary from '../ErrorBoundary/ErrorBoundary.jsx';
 import Navbar from '../Navbar/Navbar.jsx';
@@ -8,7 +9,7 @@ import NavMenu from '../NavMenu/NavMenu.jsx';
 import './AppLayout.css';
 
 const COLLAPSED_KEY = 'payroll_sidebar_collapsed';
-const SIDEBAR_WIDTH = 248;
+const SIDEBAR_WIDTH = 256;
 const SIDEBAR_COLLAPSED_WIDTH = 72;
 
 // Login ke baad ka dhancha (Ant Design Layout).
@@ -35,10 +36,11 @@ export default function AppLayout() {
   };
 
   return (
+    <PageDetailProvider>
     <Layout hasSider className="app-layout">
       {desktop && (
         <Layout.Sider
-          theme="dark"
+          theme="light"
           width={SIDEBAR_WIDTH}
           collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
           collapsed={collapsed}
@@ -67,5 +69,6 @@ export default function AppLayout() {
         <NavMenu onClose={closeMenu} />
       </Drawer>
     </Layout>
+    </PageDetailProvider>
   );
 }

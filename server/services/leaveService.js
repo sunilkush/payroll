@@ -202,6 +202,15 @@ export async function listLeaves({ requester, status, page, limit }) {
     await getLeaveCompanyOrThrow();
     filter.userId = requester._id;
   }
+  // Status tabs ki ginti (status filter lagne se pehle): { all, PENDING, APPROVED, REJECTED, CANCELLED }
+  const byStatus = await Leave.aggregate([{ $match: { ...filter } }, { $group: { _id: '$status', count: { $sum: 1 } } }]);
+  const counts = { all: 0 };
+  for (const value of Object.values(LEAVE_STATUS)) counts[value] = 0;
+  for (const row of byStatus) {
+    counts[row._id] = row.count;
+    counts.all += row.count;
+  }
+
   if (status !== 'all') filter.status = status;
 
   const [items, total] = await Promise.all([
@@ -212,5 +221,5 @@ export async function listLeaves({ requester, status, page, limit }) {
       .limit(limit),
     Leave.countDocuments(filter),
   ]);
-  return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
+  return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)), counts };
 }

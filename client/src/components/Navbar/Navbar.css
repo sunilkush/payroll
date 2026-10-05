@@ -1,6 +1,6 @@
 /*
- * Top bar: halka transparent (peeche ka content dhundhla dikhta hai), neeche patli line ki jagah
- * halki parchhai. .ant-layout-header ke default (64px, 50px padding) yahan badle hain.
+ * Top bar: safed, neeche patli line. .ant-layout-header ke default (64px, 50px padding) yahan badle hain.
+ * Mobile (base): menu button + page ka naam + icons. Desktop: breadcrumb + search box.
  */
 .navbar.ant-layout-header {
   position: sticky;
@@ -10,117 +10,75 @@
   align-items: center;
   gap: var(--space-2);
   height: var(--navbar-height);
-  padding: 0 var(--space-2) 0 var(--space-1);
+  padding: 0 var(--space-3) 0 var(--space-2);
   line-height: 1.5;
   background: var(--color-surface-translucent);
-  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(12px);
 }
 
-/* Hamburger / sidebar chhota-bada karne ka button: gol kinare wala halka dabba */
 .navbar__menu.ant-btn,
 .navbar__collapse.ant-btn {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
 }
 
-.navbar__menu.ant-btn:hover,
-.navbar__collapse.ant-btn:hover {
+/* Mobile: page ka naam */
+.navbar__title {
+  overflow: hidden;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Desktop: Company / Page */
+.navbar__breadcrumb {
+  min-width: 0;
+}
+
+.navbar__current {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.navbar__tools {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Quick actions: phone par sirf "+" (gol), tablet se "+ New" */
+.navbar__new.ant-btn {
+  flex-shrink: 0;
+  width: var(--touch-target);
+  padding: 0;
+}
+
+.navbar__new-label {
+  display: none;
+}
+
+.navbar__user.ant-btn {
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.navbar__avatar.ant-avatar {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   color: var(--color-primary);
   background: var(--color-primary-light);
 }
 
-/* Chalu section ka naam + company */
-.navbar__section {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-  margin-left: var(--space-1);
-  line-height: 1.25;
-}
-
-.navbar__section-name {
-  overflow: hidden;
-  font-weight: var(--font-weight-bold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.navbar__section-company {
-  overflow: hidden;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Aaj ki date ka chip: sirf desktop par (phone par jagah nahi) */
-.navbar__date {
-  display: none;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  background: var(--color-bg);
-  border-radius: 999px;
-}
-
-/* User: gol "pill". Mobile par sirf avatar; tablet se naam bhi */
-.navbar__user.ant-btn {
-  flex-shrink: 0;
-  gap: var(--space-2);
-  height: var(--touch-target);
-  padding: 0 var(--space-1);
-  border-radius: 999px;
-}
-
-.navbar__user.ant-btn:hover {
-  background: var(--color-bg);
-}
-
-.navbar__avatar.ant-avatar {
-  font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-}
-
-.navbar__identity,
-.navbar__caret {
-  display: none;
-}
-
-.navbar__identity {
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.2;
-}
-
-.navbar__name {
-  font-weight: var(--font-weight-medium);
-}
-
-.navbar__role {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.navbar__caret {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-/* Dropdown ke upar user ka naam + email */
+/* Dropdown ke upar user ka naam, email, role */
 .navbar__menu-user {
   display: flex;
   flex-direction: column;
-  line-height: 1.3;
+  line-height: 1.4;
   color: var(--color-text);
 }
 
@@ -130,17 +88,17 @@
 }
 
 @media (min-width: 768px) {
-  .navbar__user.ant-btn {
-    padding: 0 var(--space-3) 0 var(--space-1);
-    border: 1px solid var(--color-border);
+  .navbar__tools {
+    gap: var(--space-2);
   }
 
-  .navbar__identity {
-    display: flex;
+  .navbar__new.ant-btn {
+    width: auto;
+    padding: 0 var(--space-4);
   }
 
-  .navbar__caret {
-    display: inline-flex;
+  .navbar__new-label {
+    display: inline;
   }
 }
 
@@ -148,14 +106,6 @@
   .navbar.ant-layout-header {
     gap: var(--space-3);
     height: var(--navbar-height-desktop);
-    padding: 0 var(--space-6) 0 var(--space-4);
-  }
-
-  .navbar__date {
-    display: inline-flex;
-  }
-
-  .navbar__section-name {
-    font-size: var(--font-size-lg);
+    padding: 0 var(--page-gutter) 0 var(--space-3);
   }
 }

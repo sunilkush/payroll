@@ -220,7 +220,8 @@ async function checkLayout(page, viewport, where, { loggedIn = true } = {}) {
       .filter((item) => item.height < 36);
     return {
       // Desktop par table apne dabbe ke andar daayein-baayein scroll na kare (columns sama jayein)
-      tableScroll: [...document.querySelectorAll('.ant-table-content')].some((table) => table.scrollWidth > table.clientWidth + 1),
+      // (dashboard ki DataTable phone par jaan-boojh kar khiskti hai, use nahi ginte)
+      tableScroll: [...document.querySelectorAll('.ant-table-content')].filter((table) => !table.closest('.data-table')).some((table) => table.scrollWidth > table.clientWidth + 1),
       overflow: document.documentElement.scrollWidth - window.innerWidth,
       sidebar: visible(document.querySelector('.app-layout__sidebar')),
       hamburger: visible(document.querySelector('.navbar__menu')),
@@ -270,7 +271,8 @@ try {
       for (const [name, url] of pages) {
         current = `${role}/${name}@${viewport.name}`;
         await page.goto(api.origin + url, { waitUntil: 'networkidle' });
-        await page.waitForSelector('.app-layout__content h1', { timeout: 10000 }).catch(() => fail(current, 'page load nahi hua (h1 nahi mila)'));
+        // Punch page par alag heading nahi hai (page ka naam top bar mein hai), isliye uska card bhi chalta hai
+        await page.waitForSelector('.app-layout__content h1, .punch-screen__card', { timeout: 10000 }).catch(() => fail(current, 'page load nahi hua'));
         await checkLayout(page, viewport, current);
         await shot(page, `${viewport.name}-${role}-${name}`);
         pagesChecked += 1;
@@ -307,7 +309,7 @@ try {
         await mapCanvas.scrollIntoViewIfNeeded();
         const mapBox = await mapCanvas.boundingBox();
         // Pin sirf maujood hi nahi, map ke dabbe ke andar bhi hona chahiye
-        const pinBox = await page.locator('.location-map__pin').first().boundingBox().catch(() => null);
+        const pinBox = await page.locator('.location-map__canvas .map-pin').first().boundingBox().catch(() => null);
         const pinInside =
           pinBox &&
           pinBox.x >= mapBox.x &&
@@ -354,7 +356,55 @@ try {
         const message = () => page.locator('.punch-screen .alert').innerText({ timeout: 10000 }).catch(() => '');
         await page.goto(`${api.origin}/staff/punch`, { waitUntil: 'networkidle' });
 
+        // Map: office ka pin, staff ka neela bindu, aur range ke andar/bahar ka sahi label
+        const rangeText = () => page.locator('.punch-screen__range').innerText();
+        await page.waitForSelector('.punch-map .map-you', { timeout: 10000 }).catch(() => fail(current, 'map par staff ka neela bindu nahi aaya'));
+        if (!(await page.locator('.punch-map .map-pin').count())) fail(current, 'map par office ka pin nahi hai');
+        if (!/Inside range/.test(await rangeText())) fail(current, `range ke andar hone par galat label: "${await rangeText()}"`);
+        const mapBox = await page.locator('.punch-map').boundingBox();
+        const youBox = await page.locator('.punch-map .map-you').boundingBox();
+        if (youBox.y < mapBox.y || youBox.y + youBox.height > mapBox.y + mapBox.height) fail(current, 'neela bindu map ke bahar hai');
+        await shot(page, '360-staff-punch-map');
+        const fits = await page.evaluate(() => ({ page: document.documentElement.scrollHeight, screen: window.innerHeight, buttonBottom: document.querySelector('.punch-screen__button')?.getBoundingClientRect().bottom, mapHeight: document.querySelector('.punch-map__canvas')?.getBoundingClientRect().height }));
+        if (fits.page > fits.screen + 1) fail(current, `punch page screen mein fit nahi (page ${fits.page}px, screen ${fits.screen}px)`);
+        if (!(fits.buttonBottom <= fits.screen)) fail(current, 'Punch button bina scroll ke nahi dikh raha');
+        if (!(fits.mapHeight >= 150)) fail(current, `map bahut chhota hai (${fits.mapHeight}px)`);
+
+        // Refresh location: staff office se bahar chala gaya; button dabane par label badalna chahiye
+        // aur phir wapas andar aane par dobara
         await context.setGeolocation(OUTSIDE);
+        await page.click('.punch-screen__refresh-button');
+        await page.waitForFunction(() => /Outside range/.test(document.querySelector('.punch-screen__range')?.innerText ?? ''), null, { timeout: 10000 })
+          .catch(() => fail(current, 'Refresh location ke baad label "Outside range" nahi hua'));
+        await context.setGeolocation(INSIDE);
+        await page.click('.punch-screen__refresh-button');
+        await page.waitForFunction(() => /Inside range/.test(document.querySelector('.punch-screen__range')?.innerText ?? ''), null, { timeout: 10000 })
+          .catch(() => fail(current, 'Refresh location ke baad label "Inside range" nahi hua'));
+        if (!/GPS accuracy/.test(await page.locator('.punch-screen__refresh').innerText())) fail(current, 'GPS accuracy nahi dikh rahi');
+
+        // Map khiskana: ungli se drag karne par map hile (bindu ki jagah badle), "Recenter" aaye,
+        // aur Recenter dabane par bindu wapas apni jagah aa jaye
+        const dot = page.locator('.punch-map .map-you');
+        const dragBox = await page.locator('.punch-map__canvas').boundingBox();
+        const before = await dot.boundingBox();
+        const from = { x: dragBox.x + dragBox.width / 2, y: dragBox.y + dragBox.height / 2 };
+        await page.mouse.move(from.x, from.y);
+        await page.mouse.down();
+        await page.mouse.move(from.x - 60, from.y - 30, { steps: 6 });
+        await page.mouse.up();
+        await page.waitForTimeout(400);
+        const afterDrag = await dot.boundingBox();
+        if (Math.abs(afterDrag.x - before.x) < 20) fail(current, 'map khiskane par nahi hila');
+        await page.click('.punch-map__recenter').catch(() => fail(current, 'map khiskane ke baad Recenter button nahi aaya'));
+        await page.waitForTimeout(300);
+        const afterRecenter = await dot.boundingBox();
+        if (Math.abs(afterRecenter.x - before.x) > 3) fail(current, 'Recenter se map wapas nahi aaya');
+        if (await page.locator('.punch-map__recenter').count()) fail(current, 'Recenter ke baad button chhupna chahiye');
+        await shot(page, '360-staff-punch-map-refresh');
+
+        await context.setGeolocation(OUTSIDE);
+        await page.waitForFunction(() => /Outside range/.test(document.querySelector('.punch-screen__range')?.innerText ?? ''), null, { timeout: 10000 })
+          .catch(() => fail(current, 'range ke bahar jaane par label nahi badla'));
         await page.click('.punch-screen__button');
         const outside = await message();
         if (!/outside the office range/.test(outside)) fail(current, `range ke bahar ka message nahi aaya: "${outside}"`);

@@ -1,4 +1,4 @@
-/* Colors, fonts aur spacing sirf yahan define honge (Rule 2). */
+/* Design system: colors, fonts, spacing aur shape sirf yahan define hote hain (Rule 2). */
 
 /*
  * Breakpoints (Rule 10: mobile-first). CSS variables media query mein nahi chalte, isliye
@@ -6,7 +6,7 @@
  *
  *   base (koi media query nahi)   mobile, 360px se
  *   @media (min-width: 768px)     tablet: forms 2 column, table ke cards 2 ek line mein
- *   @media (min-width: 992px)    desktop layout: sidebar dikhta hai, hamburger chhup jata hai,
+ *   @media (min-width: 992px)     desktop layout: sidebar dikhta hai, hamburger chhup jata hai,
  *                                 cards ki jagah asli table
  *   @media (min-width: 1366px)    badi screen: forms/dashboard mein zyada columns
  *   @media (min-width: 1600px)    bahut badi screen (content full width hai, isliye aur columns)
@@ -15,26 +15,36 @@
  * Har page 360px, 768px aur 1366px par test hona zaroori hai: npm run test:responsive
  */
 :root {
-  /* Colors */
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-primary-light: #dbeafe;
-  --color-bg: #f3f4f6;
+  /* ---- Colors: ek hi primary (indigo), halka gray background, safed cards ---- */
+  --color-primary: #4f46e5;
+  --color-primary-dark: #4338ca;
+  --color-primary-light: #eef2ff;
+  --color-bg: #f6f7f9;
   --color-surface: #ffffff;
-  --color-surface-translucent: rgba(255, 255, 255, 0.82);
+  --color-surface-muted: #f9fafb;
+  --color-surface-translucent: rgba(255, 255, 255, 0.86);
   --color-border: #e5e7eb;
   --color-text: #111827;
+  --color-text-secondary: #374151;
   --color-text-muted: #6b7280;
   --color-text-inverse: #ffffff;
   --color-overlay: rgba(17, 24, 39, 0.5);
+  /* Status */
   --color-success: #16a34a;
   --color-success-light: #dcfce7;
   --color-warning: #b45309;
   --color-warning-light: #fef3c7;
   --color-danger: #dc2626;
   --color-danger-light: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-light: #dbeafe;
+  /* Charts: primary + do shant rang, isse zyada nahi */
+  --color-chart-1: var(--color-primary);
+  --color-chart-2: #94a3b8;
+  --color-chart-3: #f59e0b;
+  --color-chart-grid: #eef0f3;
 
-  /* Brand panel (login): gehra neela background, uske upar halke "glass" dabbe */
+  /* Login ka brand panel (sirf wahin gehra background hai) */
   --color-navy: #0b1437;
   --color-navy-light: #1e3a8a;
   --color-accent: #8b5cf6;
@@ -44,18 +54,19 @@
   --color-glass-border: rgba(255, 255, 255, 0.16);
   --color-on-dark-muted: rgba(255, 255, 255, 0.72);
 
-  /* Typography */
-  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 2.5rem;
+  /* ---- Typography: Inter. Body 14px, secondary 13px ---- */
+  --font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-size-xs: 0.75rem; /* 12px: labels, chart axis */
+  --font-size-sm: 0.8125rem; /* 13px: secondary text */
+  --font-size-md: 0.875rem; /* 14px: body, card title */
+  --font-size-lg: 1.125rem; /* 18px: section title */
+  --font-size-xl: 1.5rem; /* 24px: page title (tablet se 28px) */
+  --font-size-2xl: 2.25rem; /* bade number (punch ghadi, login headline) */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
-  --font-weight-bold: 700;
+  --font-weight-bold: 600;
 
-  /* Spacing */
+  /* ---- Spacing: 8px system (4 sirf chhote gap ke liye) ---- */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -63,27 +74,33 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  /* Shape */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 20px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  /* ---- Shape: gol cards, patla border, bahut halki parchhai ---- */
+  --radius-sm: 8px; /* buttons, inputs, tags */
+  --radius-md: 12px; /* cards */
+  --radius-lg: 16px; /* bade panels, modals */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08);
 
-  /* Layout */
+  /* ---- Layout ---- */
   --navbar-height: 56px;
   --navbar-height-desktop: 64px;
-  --sidebar-width: 232px;
+  --sidebar-width: 256px;
   --drawer-width: 280px;
   /* Ungli se dabane layak kam se kam size (buttons, inputs, menu links) */
-  --touch-target: 44px;
+  --touch-target: 40px;
   /* Page ke kinare ka gap: mobile par chhota, tablet se bada */
-  --page-gutter: var(--space-3);
+  --page-gutter: var(--space-4);
 }
 
 @media (min-width: 768px) {
   :root {
     --font-size-xl: 1.75rem;
     --page-gutter: var(--space-6);
+  }
+}
+
+@media (min-width: 1366px) {
+  :root {
+    --page-gutter: var(--space-8);
   }
 }

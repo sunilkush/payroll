@@ -1,0 +1,26 @@
+.form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  /* Page ke kinare tak faile (content ke gutter ke barabar bahar) */
+  margin: var(--space-4) calc(var(--page-gutter) * -1) calc(var(--space-8) * -1);
+  padding: var(--space-3) var(--page-gutter);
+  background: var(--color-surface-translucent);
+  border-top: 1px solid var(--color-border);
+  backdrop-filter: blur(12px);
+}
+
+/* Phone par buttons barabar chaudai ke, ungli se dabane mein aasaan */
+.form-actions .ant-btn {
+  flex: 1;
+}
+
+@media (min-width: 768px) {
+  .form-actions .ant-btn {
+    flex: none;
+    min-width: 140px;
+  }
+}

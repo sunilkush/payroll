@@ -1,0 +1,77 @@
+/* Popover ke andar ki list. Phone par screen ki chaudai mein fit. */
+.notification-panel {
+  width: min(320px, calc(100vw - 2 * var(--space-6)));
+}
+
+.notification-panel__title {
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.notification-panel__empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  color: var(--color-text-muted);
+}
+
+.notification-panel__list {
+  margin: 0 calc(var(--space-2) * -1);
+  padding: 0;
+  list-style: none;
+}
+
+.notification-panel__item {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2);
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+}
+
+.notification-panel__item:hover {
+  background: var(--color-bg);
+}
+
+/* Rang wala bindu: kitna zaroori hai */
+.notification-panel__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  background: var(--color-info);
+  border-radius: 50%;
+}
+
+.notification-panel__dot--warning {
+  background: var(--color-chart-3);
+}
+
+.notification-panel__dot--danger {
+  background: var(--color-danger);
+}
+
+.notification-panel__dot--success {
+  background: var(--color-success);
+}
+
+.notification-panel__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.notification-panel__item-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.notification-panel__item-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

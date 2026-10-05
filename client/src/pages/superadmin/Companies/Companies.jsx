@@ -1,39 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
-import { PlusOutlined, SearchOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
-import { App, Avatar, Input, Popconfirm, Segmented, Tag } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { PlusOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { App, Popconfirm, Tag } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import { createCompanyApi, listCompaniesApi, setCompanyStatusApi } from '../../../api/companyApi.js';
 import AdminForm, { EMPTY_ADMIN, toAdminPayload } from '../../../components/AdminForm/AdminForm.jsx';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
+import ListToolbar from '../../../components/ListToolbar/ListToolbar.jsx';
 import Modal from '../../../components/Modal/Modal.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import Pagination from '../../../components/Pagination/Pagination.jsx';
 import StatusBadge from '../../../components/StatusBadge/StatusBadge.jsx';
 import Table from '../../../components/Table/Table.jsx';
+import UserCell from '../../../components/UserCell/UserCell.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { formatDate } from '../../../utils/format.js';
 import './Companies.css';
 
 const COLUMNS = ['Company', 'Admins', 'Staff', 'Status', 'Created', 'Actions'];
 const EMPTY_FORM = { name: '', address: '', ...EMPTY_ADMIN };
-const SEARCH_DELAY_MS = 350;
-
-// "Shree Balaji Engineering" -> "SB"
-const initials = (name) =>
-  name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? '')
-    .join('');
+const STATUS_TABS = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'blocked', label: 'Blocked' },
+];
 
 export default function Companies() {
   const { message } = App.useApp();
   const navigate = useNavigate();
 
   const [query, setQuery] = useState({ search: '', status: 'all', page: 1 });
-  const [searchText, setSearchText] = useState('');
+  // Badalne par toolbar (search box) khali ho jata hai
+  const [toolbarKey, setToolbarKey] = useState(0);
   const [result, setResult] = useState({ items: [], total: 0, totalPages: 1, counts: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,15 +60,6 @@ export default function Companies() {
       ignore = true;
     };
   }, [query, reloadKey]);
-
-  // Type karte hi search: aakhri akshar ke thodi der baad hi server ko bhejte hain.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const search = searchText.trim();
-      setQuery((prev) => (prev.search === search ? prev : { ...prev, search, page: 1 }));
-    }, SEARCH_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [searchText]);
 
   const handleToggleStatus = async (company) => {
     setBusyId(company._id);
@@ -105,7 +95,7 @@ export default function Companies() {
       message.success(`${form.name} created. The admin can now log in.`);
       closeCreate();
       // Nayi company list mein sabse upar dikhe
-      setSearchText('');
+      setToolbarKey((key) => key + 1);
       setQuery({ search: '', status: 'all', page: 1 });
       setReloadKey((key) => key + 1);
     } catch (err) {
@@ -116,15 +106,7 @@ export default function Companies() {
     }
   };
 
-  // counts na mile (jaise backend purana chal raha ho) to tabs bina ginti ke dikhte hain, page nahi girta.
-  const { counts } = result;
-  const withCount = (label, key) => (counts ? `${label} (${counts[key]})` : label);
   const filtering = Boolean(query.search) || query.status !== 'all';
-  const statusTabs = [
-    { value: 'all', label: withCount('All', 'all') },
-    { value: 'active', label: withCount('Active', 'active') },
-    { value: 'blocked', label: withCount('Blocked', 'blocked') },
-  ];
 
   const newCompanyButton = (
     <Button icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
@@ -148,23 +130,16 @@ export default function Companies() {
         {newCompanyButton}
       </PageHeader>
 
-      <div className="companies__toolbar">
-        <Input
-          className="companies__search"
-          placeholder="Search by company name"
-          aria-label="Search by company name"
-          prefix={<SearchOutlined className="companies__search-icon" />}
-          allowClear
-          value={searchText}
-          onChange={(event) => setSearchText(event.target.value)}
-        />
-        <Segmented
-          className="companies__tabs"
-          options={statusTabs}
-          value={query.status}
-          onChange={(status) => setQuery((prev) => ({ ...prev, status, page: 1 }))}
-        />
-      </div>
+      {/* counts na mile (jaise backend purana chal raha ho) to tabs bina ginti ke dikhte hain */}
+      <ListToolbar
+        key={toolbarKey}
+        searchPlaceholder="Search by company name"
+        onSearch={(search) => setQuery((prev) => (prev.search === search ? prev : { ...prev, search, page: 1 }))}
+        tabs={STATUS_TABS}
+        counts={result.counts}
+        value={query.status}
+        onChange={(status) => setQuery((prev) => ({ ...prev, status, page: 1 }))}
+      />
 
       <Alert>{error}</Alert>
 
@@ -172,15 +147,7 @@ export default function Companies() {
         {result.items.map((company) => (
           <tr key={company._id}>
             <td>
-              <Link to={`/superadmin/companies/${company._id}`} className="companies__company">
-                <Avatar shape="square" size={44} className="companies__avatar">
-                  {initials(company.name)}
-                </Avatar>
-                <span className="companies__text">
-                  <span className="companies__name">{company.name}</span>
-                  {company.address && <span className="companies__address">{company.address}</span>}
-                </span>
-              </Link>
+              <UserCell square name={company.name} sub={company.address} to={`/superadmin/companies/${company._id}`} />
             </td>
             <td>
               <Tag icon={<UserOutlined />} color={company.adminCount ? 'blue' : 'warning'}>

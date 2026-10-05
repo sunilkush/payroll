@@ -5,6 +5,7 @@ import {
   DashboardOutlined,
   EnvironmentOutlined,
   FileTextOutlined,
+  PlusOutlined,
   SettingOutlined,
   TeamOutlined,
   WalletOutlined,
@@ -24,28 +25,48 @@ export const ROLE_HOME = Object.freeze({
 });
 
 // Sidebar / drawer ke links. Naya module bane to yahan jodo.
-// icon: Ant Design ka icon component.
-// feature: company ki wo setting jo ON ho tabhi link dikhe (jaise leaveEnabled).
+//   group    sidebar mein kis heading ke neeche aaye
+//   icon     Ant Design ka icon component
+//   feature  company ki wo setting jo ON ho tabhi link dikhe (jaise leaveEnabled)
 export const ROLE_NAV = Object.freeze({
   [ROLES.SUPER_ADMIN]: [
-    { to: '/superadmin', label: 'Dashboard', icon: DashboardOutlined, end: true },
-    { to: '/superadmin/companies', label: 'Companies', icon: BankOutlined },
-    { to: '/superadmin/settings', label: 'Global Settings', icon: SettingOutlined },
+    { to: '/superadmin', label: 'Dashboard', icon: DashboardOutlined, group: 'Overview', end: true },
+    { to: '/superadmin/companies', label: 'Companies', icon: BankOutlined, group: 'Manage' },
+    { to: '/superadmin/settings', label: 'Global Settings', icon: SettingOutlined, group: 'Configuration' },
   ],
   [ROLES.ADMIN]: [
-    { to: '/admin', label: 'Dashboard', icon: DashboardOutlined, end: true },
-    { to: '/admin/staff', label: 'Staff', icon: TeamOutlined },
-    { to: '/admin/attendance', label: 'Attendance', icon: ClockCircleOutlined },
-    { to: '/admin/leaves', label: 'Leaves', icon: CalendarOutlined, feature: 'leaveEnabled' },
-    { to: '/admin/payroll', label: 'Payroll', icon: WalletOutlined },
-    { to: '/admin/settings', label: 'Settings', icon: SettingOutlined },
+    { to: '/admin', label: 'Dashboard', icon: DashboardOutlined, group: 'Overview', end: true },
+    { to: '/admin/staff', label: 'Staff', icon: TeamOutlined, group: 'People' },
+    { to: '/admin/attendance', label: 'Attendance', icon: ClockCircleOutlined, group: 'People' },
+    { to: '/admin/leaves', label: 'Leaves', icon: CalendarOutlined, group: 'People', feature: 'leaveEnabled' },
+    { to: '/admin/payroll', label: 'Payroll', icon: WalletOutlined, group: 'Finance' },
+    { to: '/admin/settings', label: 'Settings', icon: SettingOutlined, group: 'Configuration' },
   ],
   [ROLES.STAFF]: [
-    { to: '/staff', label: 'Dashboard', icon: DashboardOutlined, end: true },
-    { to: '/staff/punch', label: 'Punch', icon: EnvironmentOutlined },
-    { to: '/staff/attendance', label: 'My Attendance', icon: ClockCircleOutlined },
-    { to: '/staff/leaves', label: 'My Leaves', icon: CalendarOutlined, feature: 'leaveEnabled' },
-    { to: '/staff/salary', label: 'My Salary', icon: FileTextOutlined },
+    { to: '/staff', label: 'Dashboard', icon: DashboardOutlined, group: 'Overview', end: true },
+    { to: '/staff/punch', label: 'Punch', icon: EnvironmentOutlined, group: 'My work' },
+    { to: '/staff/attendance', label: 'My Attendance', icon: ClockCircleOutlined, group: 'My work' },
+    { to: '/staff/leaves', label: 'My Leaves', icon: CalendarOutlined, group: 'My work', feature: 'leaveEnabled' },
+    { to: '/staff/salary', label: 'My Salary', icon: FileTextOutlined, group: 'Pay' },
+  ],
+});
+
+// Top bar ke "+" (quick actions) menu ke kaam. Sabse pehla sabse aam kaam hai.
+export const ROLE_ACTIONS = Object.freeze({
+  [ROLES.SUPER_ADMIN]: [
+    { to: '/superadmin/companies', label: 'New company', icon: PlusOutlined },
+    { to: '/superadmin/settings', label: 'Update PF / ESI rates', icon: SettingOutlined },
+  ],
+  [ROLES.ADMIN]: [
+    { to: '/admin/staff/new', label: 'Add staff', icon: PlusOutlined },
+    { to: '/admin/payroll', label: 'Run payroll', icon: WalletOutlined },
+    { to: '/admin/leaves', label: 'Review leave requests', icon: CalendarOutlined, feature: 'leaveEnabled' },
+    { to: '/admin/attendance', label: 'Attendance report', icon: ClockCircleOutlined },
+  ],
+  [ROLES.STAFF]: [
+    { to: '/staff/punch', label: 'Punch in / out', icon: EnvironmentOutlined },
+    { to: '/staff/leaves', label: 'Apply for leave', icon: CalendarOutlined, feature: 'leaveEnabled' },
+    { to: '/staff/salary', label: 'View salary slips', icon: FileTextOutlined },
   ],
 });
 

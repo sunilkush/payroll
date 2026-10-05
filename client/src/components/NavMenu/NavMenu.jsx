@@ -6,7 +6,7 @@ import { useLogout } from '../../context/useLogout.js';
 import { activeLink, filterByFeatures, initials, ROLE_HOME, ROLE_NAV, roleLine } from '../../utils/roles.js';
 import './NavMenu.css';
 
-// Sidebar ka poora content: logo, company, menu (icons ke saath) aur (drawer mein) neeche user ka card.
+// Sidebar ka poora content: logo, group-wise menu (icons ke saath) aur neeche user ki profile.
 // Desktop ke sidebar aur mobile ke drawer dono mein yahi lagta hai.
 //   collapsed  desktop par sidebar chhota (sirf icons) ho
 //   onClose    drawer mein: upar band karne ka button dikhta hai
@@ -17,8 +17,16 @@ export default function NavMenu({ collapsed = false, onClose }) {
 
   const links = filterByFeatures(ROLE_NAV[user.role], company);
   const active = activeLink(links, pathname);
-  const inDrawer = Boolean(onClose);
   const role = roleLine(user);
+
+  // [{ group, links }] - links ke order mein, group ke naam ke saath
+  const groups = [];
+  for (const link of links) {
+    const last = groups.at(-1);
+    if (last?.group === link.group) last.links.push(link);
+    else groups.push({ group: link.group, links: [link] });
+  }
+  const toItem = (link) => ({ key: link.to, icon: <link.icon />, label: <Link to={link.to}>{link.label}</Link> });
 
   return (
     <nav className={`nav-menu${collapsed ? ' nav-menu--collapsed' : ''}`} aria-label="Main">
@@ -27,7 +35,10 @@ export default function NavMenu({ collapsed = false, onClose }) {
           <span className="nav-menu__logo-mark" aria-hidden="true">
             P
           </span>
-          <span className="nav-menu__logo-text">Payroll</span>
+          <span className="nav-menu__brand">
+            <span className="nav-menu__logo-text">Payroll</span>
+            <span className="nav-menu__company">{company?.name ?? 'All companies'}</span>
+          </span>
         </Link>
         {onClose && (
           <Button
@@ -40,41 +51,35 @@ export default function NavMenu({ collapsed = false, onClose }) {
         )}
       </div>
 
-      <p className="nav-menu__company">{company?.name ?? 'All companies'}</p>
-
       <Menu
-        theme="dark"
         mode="inline"
         className="nav-menu__list"
         inlineCollapsed={collapsed}
         selectedKeys={active ? [active.to] : []}
-        items={links.map((link) => ({
-          key: link.to,
-          icon: <link.icon />,
-          label: <Link to={link.to}>{link.label}</Link>,
-        }))}
+        // Chhote sidebar mein group ke naam nahi samate, isliye wahan seedhi list
+        items={
+          collapsed
+            ? links.map(toItem)
+            : groups.map(({ group, links: groupLinks }) => ({ type: 'group', key: group, label: group, children: groupLinks.map(toItem) }))
+        }
       />
 
-      {/* User ka card sirf drawer (phone/tablet) mein: desktop par naam aur Logout top bar mein hain,
-          wahi cheez do jagah nahi dikhani. */}
-      {inDrawer && (
-        <div className="nav-menu__user">
-          <Avatar className="nav-menu__avatar">{initials(user.name)}</Avatar>
-          <div className="nav-menu__identity">
-            <span className="nav-menu__name">{user.name}</span>
-            {role && <span className="nav-menu__role">{role}</span>}
-          </div>
-          <Tooltip title="Logout" placement="right">
-            <Button
-              type="text"
-              className="nav-menu__logout"
-              aria-label="Logout"
-              icon={<LogoutOutlined />}
-              onClick={logout}
-            />
-          </Tooltip>
+      <div className="nav-menu__user">
+        <Avatar className="nav-menu__avatar">{initials(user.name)}</Avatar>
+        <div className="nav-menu__identity">
+          <span className="nav-menu__name">{user.name}</span>
+          <span className="nav-menu__role">{role ?? user.email}</span>
         </div>
-      )}
+        <Tooltip title="Logout" placement="right">
+          <Button
+            type="text"
+            className="nav-menu__logout"
+            aria-label="Logout"
+            icon={<LogoutOutlined />}
+            onClick={logout}
+          />
+        </Tooltip>
+      </div>
     </nav>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Input } from 'antd';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import MapCredit from '../MapPin/MapCredit.jsx';
+import { MAP_OPTIONS, OFFICE_PIN, PIN_ZOOM, rangeCircleStyle, TILE_OPTIONS, TILE_URL } from '../MapPin/mapPin.js';
 import './LocationMap.css';
 
 // Map (Leaflet + OpenStreetMap) jisse admin office ki location pin kar sakta hai.
@@ -12,12 +13,8 @@ import './LocationMap.css';
 
 const INDIA_CENTER = [22.5, 79];
 const INDIA_ZOOM = 4;
-const PIN_ZOOM = 17;
-const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
 
-// Pin CSS se bana hai (LocationMap.css), taaki Leaflet ki marker images bundle na karni padein.
-const PIN_ICON = L.divIcon({ className: 'location-map__pin', iconSize: [28, 28], iconAnchor: [14, 28] });
 
 function toPosition(lat, lng) {
   if (lat === '' || lng === '' || lat === undefined || lng === undefined) return null;
@@ -41,12 +38,13 @@ export default function LocationMap({ lat, lng, radius, onPick }) {
   // Map ek baar banta hai
   useEffect(() => {
     const map = L.map(containerRef.current, {
+      ...MAP_OPTIONS,
       center: INDIA_CENTER,
       zoom: INDIA_ZOOM,
       // Page scroll karte waqt map zoom na hone lage; zoom ke liye +/- buttons hain
       scrollWheelZoom: false,
     });
-    L.tileLayer(TILE_URL, { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+    L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(map);
     map.on('click', (event) => onPickRef.current(event.latlng.lat, event.latlng.lng));
     mapRef.current = map;
 
@@ -74,14 +72,13 @@ export default function LocationMap({ lat, lng, radius, onPick }) {
     }
 
     if (!markerRef.current) {
-      const color = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
-      const marker = L.marker(position, { draggable: true, icon: PIN_ICON }).addTo(map);
+      const marker = L.marker(position, { draggable: true, icon: OFFICE_PIN }).addTo(map);
       marker.on('dragend', () => {
         const point = marker.getLatLng();
         onPickRef.current(point.lat, point.lng);
       });
       markerRef.current = marker;
-      circleRef.current = L.circle(position, { radius: meters, color, weight: 2, fillOpacity: 0.15 }).addTo(map);
+      circleRef.current = L.circle(position, { radius: meters, ...rangeCircleStyle() }).addTo(map);
       // Pehli baar: itna zoom ki poora gola dikhe
       if (meters) map.fitBounds(circleRef.current.getBounds(), { maxZoom: PIN_ZOOM, padding: [24, 24] });
       else map.setView(position, PIN_ZOOM);
@@ -130,7 +127,8 @@ export default function LocationMap({ lat, lng, radius, onPick }) {
       {searchError && <p className="location-map__error">{searchError}</p>}
       <div ref={containerRef} className="location-map__canvas" role="application" aria-label="Office location map" />
       <p className="location-map__hint">
-        Click the map or drag the pin to set the office location. The circle shows the punch range.
+        Click the map or drag the pin to set the office location. Staff can punch only inside the dashed
+        circle (the radius above). <MapCredit />
       </p>
     </div>
   );

@@ -1,0 +1,43 @@
+.data-table {
+  min-width: 0;
+}
+
+.data-table__search {
+  margin-bottom: var(--space-3);
+}
+
+.data-table__search-icon {
+  color: var(--color-text-muted);
+}
+
+/* Header: chhota, halka */
+.data-table .ant-table-thead > tr > th {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/* Gol dabba: pehle / aakhri header cell ke kone */
+.data-table .ant-table {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.data-table .ant-table-container,
+.data-table .ant-table-content {
+  border-radius: var(--radius-md);
+}
+
+.data-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+.data-table .ant-table-cell {
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .data-table__search {
+    max-width: 280px;
+  }
+}
