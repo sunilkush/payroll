@@ -98,10 +98,11 @@ function moveDays(leave, changes) {
 
 // ---------- Apply ----------
 
-export async function applyLeave(user, { type, fromDate, toDate, reason }) {
+export async function applyLeave(user, { type, fromDate, toDate, halfDay, reason }) {
   const company = await getLeaveCompanyOrThrow();
 
   if (toDate < fromDate) throw new ApiError(400, 'To date cannot be before from date.');
+  if (halfDay && fromDate !== toDate) throw new ApiError(400, 'A half day leave must be for a single date.');
   if (fromDate.slice(0, 4) !== toDate.slice(0, 4)) {
     throw new ApiError(400, 'A request must be within one calendar year. Please submit two separate requests.');
   }
@@ -118,8 +119,8 @@ export async function applyLeave(user, { type, fromDate, toDate, reason }) {
   const workingDates = dates.filter(
     (date) => !holidays.has(date) && !company.settings.weekOffDays.includes(weekdayOf(date))
   );
-  const days = workingDates.length;
-  if (!days) throw new ApiError(400, 'There are no working days in these dates.');
+  if (!workingDates.length) throw new ApiError(400, 'There are no working days in these dates.');
+  const days = halfDay ? 0.5 : workingDates.length;
 
   const overlapping = await Leave.exists({
     userId: user._id,
@@ -129,7 +130,8 @@ export async function applyLeave(user, { type, fromDate, toDate, reason }) {
   });
   if (overlapping) throw new ApiError(409, 'You already have leave on these dates.');
 
-  if (await Attendance.exists({ userId: user._id, date: { $in: workingDates } })) {
+  // Half day mein baaki aadha din kaam hota hai, isliye us din punch hona theek hai.
+  if (!halfDay && (await Attendance.exists({ userId: user._id, date: { $in: workingDates } }))) {
     throw new ApiError(400, 'Your attendance is already marked on one of these dates.');
   }
 
@@ -148,7 +150,7 @@ export async function applyLeave(user, { type, fromDate, toDate, reason }) {
   }
 
   try {
-    const leave = await Leave.create({ userId: user._id, type, fromDate, toDate, year, days, reason });
+    const leave = await Leave.create({ userId: user._id, type, fromDate, toDate, halfDay, year, days, reason });
     return { leave, balance };
   } catch (err) {
     await moveDays({ userId: user._id, year, type }, { available: days, pending: -days });

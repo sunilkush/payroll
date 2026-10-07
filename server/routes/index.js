@@ -1,15 +1,19 @@
 import { Router } from 'express';
 import { auth } from '../middlewares/auth.js';
 import { authorize } from '../middlewares/authorize.js';
+import { requireSales } from '../middlewares/requireSales.js';
 import { tenant } from '../middlewares/tenant.js';
 import { ROLES } from '../utils/constants.js';
 import attendanceRoutes from './attendanceRoutes.js';
 import authRoutes from './authRoutes.js';
+import clientRoutes from './clientRoutes.js';
 import companyRoutes from './companyRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import globalSettingsRoutes from './globalSettingsRoutes.js';
 import leaveRoutes from './leaveRoutes.js';
+import meetingRoutes from './meetingRoutes.js';
 import payrollRoutes from './payrollRoutes.js';
+import punchCorrectionRoutes from './punchCorrectionRoutes.js';
 import settingsRoutes from './settingsRoutes.js';
 import staffRoutes from './staffRoutes.js';
 
@@ -28,7 +32,11 @@ router.use('/settings', auth, tenant, authorize(ROLES.ADMIN), settingsRoutes);
 // In modules mein staff aur admin dono ke routes hain, role check har route par hai.
 router.use('/attendance', auth, tenant, attendanceRoutes);
 router.use('/leaves', auth, tenant, leaveRoutes);
+router.use('/punch-corrections', auth, tenant, punchCorrectionRoutes);
 router.use('/payroll', auth, tenant, payrollRoutes);
+// Sales meetings: company mein module ON ho tabhi (requireSales). Clients sirf admin sambhalta hai.
+router.use('/clients', auth, tenant, authorize(ROLES.ADMIN), requireSales, clientRoutes);
+router.use('/meetings', auth, tenant, requireSales, meetingRoutes);
 // Teeno roles ke dashboards (sirf padhne wala data). Super Admin ke liye tenant scope khali rehta hai.
 router.use('/dashboard', auth, tenant, dashboardRoutes);
 

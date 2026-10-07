@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { LEAVE_STATUS, LEAVE_TYPES } from '../utils/constants.js';
+import { HALF_DAY_SESSIONS, LEAVE_STATUS, LEAVE_TYPES } from '../utils/constants.js';
 import { tenantPlugin } from './plugins/tenantPlugin.js';
 
 const dateStr = { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ };
@@ -12,7 +12,9 @@ const leaveSchema = new mongoose.Schema(
     fromDate: dateStr,
     toDate: dateStr,
     year: { type: Number, required: true }, // isi saal ke LeaveBalance se katti hai
-    days: { type: Number, required: true, min: 1 }, // sirf working days (week off/holiday nahi ginte)
+    // Half day leave ek hi din ki hoti hai (fromDate = toDate) aur 0.5 din ginti hai.
+    halfDay: { type: String, enum: HALF_DAY_SESSIONS },
+    days: { type: Number, required: true, min: 0.5 }, // sirf working days (week off/holiday nahi ginte)
     reason: { type: String, required: true, trim: true },
     status: { type: String, enum: Object.values(LEAVE_STATUS), default: LEAVE_STATUS.PENDING },
     actionBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

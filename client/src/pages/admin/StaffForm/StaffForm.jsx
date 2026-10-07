@@ -9,6 +9,7 @@ import FormActions from '../../../components/FormActions/FormActions.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { formatCurrency, grossSalary } from '../../../utils/format.js';
 import './StaffForm.css';
@@ -26,6 +27,7 @@ const EMPTY_FORM = {
   other: '',
   pfApplicable: false,
   esiApplicable: false,
+  isSalesManager: false,
   uan: '',
   esicNo: '',
   accountNo: '',
@@ -53,6 +55,7 @@ const toForm = (staff) => ({
   other: String(staff.salaryStructure?.other ?? ''),
   pfApplicable: staff.pfApplicable,
   esiApplicable: staff.esiApplicable,
+  isSalesManager: Boolean(staff.isSalesManager),
   uan: staff.uan ?? '',
   esicNo: staff.esicNo ?? '',
   accountNo: staff.bankDetails?.accountNo ?? '',
@@ -78,6 +81,7 @@ const toPayload = (form) => ({
   },
   pfApplicable: form.pfApplicable,
   esiApplicable: form.esiApplicable,
+  isSalesManager: form.isSalesManager,
   uan: form.uan,
   esicNo: form.esicNo,
   bankDetails: { accountNo: form.accountNo, ifsc: form.ifsc, bankName: form.bankName },
@@ -87,6 +91,7 @@ export default function StaffForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const { company } = useAuth();
 
   const [form, setForm] = useState(EMPTY_FORM);
   // Top bar mein dikhne wala naam; type karte waqt na badle isliye form se alag
@@ -236,6 +241,18 @@ export default function StaffForm() {
               </div>
             </div>
           </Card>
+
+          {company?.salesEnabled && (
+            <Card className="staff-form__section" size="small" title="Sales">
+              <Checkbox
+                label="Sales manager"
+                name="isSalesManager"
+                checked={form.isSalesManager}
+                onChange={handleChange}
+                hint="Client meetings can be assigned to this staff member"
+              />
+            </Card>
+          )}
 
           <Card className="staff-form__section" size="small" title="Bank Details">
             <div className="staff-form__grid">

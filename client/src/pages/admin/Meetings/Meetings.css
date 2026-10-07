@@ -1,0 +1,25 @@
+/* Filters: mobile par 2 column, badi screen par ek line mein */
+.meetings__filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-3);
+}
+
+.meetings__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .meetings__filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1366px) {
+  .meetings__filters {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

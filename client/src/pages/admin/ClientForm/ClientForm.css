@@ -1,0 +1,26 @@
+/* Har section Ant Design ka Card hai. Mobile: fields ek column mein, tablet se 2. */
+.client-form__section {
+  margin-bottom: var(--space-4);
+}
+
+.client-form__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--space-6);
+}
+
+.client-form__help {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.client-form__section .location-map {
+  margin-bottom: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .client-form__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

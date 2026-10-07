@@ -2,6 +2,7 @@ import Badge from '../Badge/Badge.jsx';
 
 const STATUS = {
   PRESENT: { label: 'Present', tone: 'success' },
+  HALF_DAY: { label: 'Half Day', tone: 'warning' },
   LEAVE: { label: 'Leave', tone: 'info' },
   ABSENT: { label: 'Absent', tone: 'danger' },
   WEEK_OFF: { label: 'Week Off', tone: 'muted' },

@@ -15,6 +15,25 @@ export const todayStr = () => toDateStr(new Date());
 
 export const currentMonth = () => todayStr().slice(0, 7);
 
+const zoneFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: env.timezone,
+  hourCycle: 'h23',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+});
+
+// App timezone ki date + 'HH:mm' -> asli waqt. Asia/Kolkata mein zonedTime('2026-10-05', '09:30') -> 04:00 UTC
+export function zonedTime(dateStr, time) {
+  const asUtc = Date.parse(`${dateStr}T${time}:00Z`);
+  const parts = Object.fromEntries(zoneFormatter.formatToParts(asUtc).map((part) => [part.type, part.value]));
+  const shown = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  return new Date(asUtc - (shown - asUtc));
+}
+
 // month: 'YYYY-MM' -> us mahine ki saari dates
 export function daysOfMonth(month) {
   const [year, monthNumber] = month.split('-').map(Number);

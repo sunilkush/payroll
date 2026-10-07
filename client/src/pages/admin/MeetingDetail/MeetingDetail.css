@@ -1,0 +1,26 @@
+.meeting-detail .meeting-qr,
+.meeting-detail__section {
+  margin-bottom: var(--space-4);
+}
+
+.meeting-detail__muted {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Audit history ki aakhri line ke neeche Timeline ka khali gap nahi chahiye */
+.meeting-detail__section .ant-timeline {
+  margin-top: var(--space-2);
+}
+
+.meeting-detail__section .ant-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.meeting-detail__modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}

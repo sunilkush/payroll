@@ -36,6 +36,8 @@ const userSchema = new mongoose.Schema(
       ifsc: { type: String, trim: true, uppercase: true },
       bankName: { type: String, trim: true },
     },
+    // Sales meetings sirf isi staff ko assign hoti hain (company mein sales module ON ho tab).
+    isSalesManager: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
   },
   {

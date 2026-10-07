@@ -15,7 +15,8 @@
   color: var(--color-danger);
 }
 
-.form-field__select {
+.form-field__select,
+.form-field__picker {
   width: 100%;
 }
 

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
@@ -32,6 +33,11 @@ export const env = {
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+  // Sales meeting ke QR token isi se bante hain. Na diya ho to JWT_SECRET se nikalta hai
+  // (tab JWT_SECRET badalne par purane QR bekaar ho jate hain).
+  qrSecret:
+    process.env.QR_SECRET ||
+    crypto.createHmac('sha256', process.env.JWT_SECRET).update('meeting-qr-v1').digest('hex'),
   bcryptRounds: toInt(process.env.BCRYPT_ROUNDS, 10),
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   timezone: process.env.APP_TIMEZONE || 'Asia/Kolkata',

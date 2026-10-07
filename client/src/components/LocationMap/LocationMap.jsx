@@ -23,7 +23,8 @@ function toPosition(lat, lng) {
   return valid ? position : null;
 }
 
-export default function LocationMap({ lat, lng, radius, onPick }) {
+// hint: map ke neeche ki line (office ke alawa kisi aur cheez ki location ke liye, jaise client).
+export default function LocationMap({ lat, lng, radius, onPick, hint }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -127,8 +128,9 @@ export default function LocationMap({ lat, lng, radius, onPick }) {
       {searchError && <p className="location-map__error">{searchError}</p>}
       <div ref={containerRef} className="location-map__canvas" role="application" aria-label="Office location map" />
       <p className="location-map__hint">
-        Click the map or drag the pin to set the office location. Staff can punch only inside the dashed
-        circle (the radius above). <MapCredit />
+        {hint ??
+          'Click the map or drag the pin to set the office location. Staff can punch only inside the dashed circle (the radius above).'}{' '}
+        <MapCredit />
       </p>
     </div>
   );

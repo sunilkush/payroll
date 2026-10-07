@@ -3,7 +3,7 @@ import { applyLeaveApi, cancelLeaveApi, getLeaveBalanceApi, listLeavesApi } from
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
-import LeaveStatus, { LEAVE_TYPE_LABEL } from '../../../components/LeaveStatus/LeaveStatus.jsx';
+import LeaveStatus, { HALF_DAY_LABEL, LEAVE_TYPE_LABEL } from '../../../components/LeaveStatus/LeaveStatus.jsx';
 import Modal from '../../../components/Modal/Modal.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import Pagination from '../../../components/Pagination/Pagination.jsx';
@@ -15,7 +15,11 @@ import './MyLeaves.css';
 
 const COLUMNS = ['Type', 'From', 'To', 'Days', 'Reason', 'Status', 'Actions'];
 const TYPE_OPTIONS = Object.entries(LEAVE_TYPE_LABEL).map(([value, label]) => ({ value, label }));
-const EMPTY_FORM = { type: 'CL', fromDate: '', toDate: '', reason: '' };
+const DURATION_OPTIONS = [
+  { value: '', label: 'Full day' },
+  ...Object.entries(HALF_DAY_LABEL).map(([value, label]) => ({ value, label: `Half day (${label.toLowerCase()})` })),
+];
+const EMPTY_FORM = { type: 'CL', halfDay: '', fromDate: '', toDate: '', reason: '' };
 
 export default function MyLeaves() {
   const [balance, setBalance] = useState(null);
@@ -62,6 +66,8 @@ export default function MyLeaves() {
       const next = { ...prev, [name]: value };
       // From date chunte hi To date bhi wahi ho jaye (ek din ki leave sabse aam hai).
       if (name === 'fromDate' && (!prev.toDate || prev.toDate < value)) next.toDate = value;
+      // Half day ek hi din ki hoti hai.
+      if (next.halfDay) next.toDate = next.fromDate;
       return next;
     });
   };
@@ -138,7 +144,10 @@ export default function MyLeaves() {
       <Table columns={COLUMNS} loading={loading} empty='No leave applied yet. Use "Apply Leave" to request one.'>
         {result.items.map((leave) => (
           <tr key={leave._id}>
-            <td>{leave.type}</td>
+            <td>
+              {leave.type}
+              {leave.halfDay && <span className="my-leaves__half"> ({HALF_DAY_LABEL[leave.halfDay]})</span>}
+            </td>
             <td>{formatDate(leave.fromDate)}</td>
             <td>{formatDate(leave.toDate)}</td>
             <td>{leave.days}</td>
@@ -176,9 +185,18 @@ export default function MyLeaves() {
               hint={`Available: ${balance[form.type].available}`}
               required
             />
-            <div className="my-leaves__dates">
+            <FormField
+              label="Duration"
+              name="halfDay"
+              options={DURATION_OPTIONS}
+              value={form.halfDay}
+              onChange={handleChange}
+              error={fieldErrors.halfDay}
+              hint={form.halfDay ? 'Counts as 0.5 day. Punch in as usual for the half you work.' : undefined}
+            />
+            <div className={form.halfDay ? undefined : 'my-leaves__dates'}>
               <FormField
-                label="From"
+                label={form.halfDay ? 'Date' : 'From'}
                 name="fromDate"
                 type="date"
                 value={form.fromDate}
@@ -186,16 +204,18 @@ export default function MyLeaves() {
                 error={fieldErrors.fromDate}
                 required
               />
-              <FormField
-                label="To"
-                name="toDate"
-                type="date"
-                min={form.fromDate}
-                value={form.toDate}
-                onChange={handleChange}
-                error={fieldErrors.toDate}
-                required
-              />
+              {!form.halfDay && (
+                <FormField
+                  label="To"
+                  name="toDate"
+                  type="date"
+                  min={form.fromDate}
+                  value={form.toDate}
+                  onChange={handleChange}
+                  error={fieldErrors.toDate}
+                  required
+                />
+              )}
             </div>
             <FormField
               label="Reason"

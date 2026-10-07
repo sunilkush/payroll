@@ -39,6 +39,9 @@ const toForm = (company) => ({
   pfEnabled: company.settings.pfEnabled,
   pfCapAtCeiling: company.settings.pfCapAtCeiling,
   esiEnabled: company.settings.esiEnabled,
+  salesEnabled: company.settings.salesEnabled,
+  requireVisitPhoto: company.settings.requireVisitPhoto,
+  meetingCheckInGraceMin: String(company.settings.meetingCheckInGraceMin),
 });
 
 const toNumber = (value) => (value === '' ? undefined : Number(value));
@@ -63,6 +66,9 @@ const toPayload = (form) => ({
     pfEnabled: form.pfEnabled,
     pfCapAtCeiling: form.pfCapAtCeiling,
     esiEnabled: form.esiEnabled,
+    salesEnabled: form.salesEnabled,
+    requireVisitPhoto: form.requireVisitPhoto,
+    meetingCheckInGraceMin: toNumber(form.meetingCheckInGraceMin),
   },
 });
 
@@ -338,6 +344,41 @@ export default function Settings() {
                 name="allowPastLeave"
                 checked={form.allowPastLeave}
                 onChange={(event) => setField('allowPastLeave', event.target.checked)}
+              />
+            </>
+          )}
+        </Card>
+
+        <Card className="settings__section" size="small" title="Sales Meetings">
+          <Checkbox
+            label="Sales meetings enabled"
+            name="salesEnabled"
+            checked={form.salesEnabled}
+            onChange={(event) => setField('salesEnabled', event.target.checked)}
+            hint="Create client meetings and assign them to sales managers. Mark who is a sales manager on the staff form."
+          />
+          {form.salesEnabled && (
+            <>
+              <div className="settings__grid">
+                <FormField
+                  label="Check-in window (minutes)"
+                  name="meetingCheckInGraceMin"
+                  type="number"
+                  min="0"
+                  max="240"
+                  value={form.meetingCheckInGraceMin}
+                  onChange={(event) => setField('meetingCheckInGraceMin', event.target.value)}
+                  error={fieldErrors['settings.meetingCheckInGraceMin']}
+                  hint="A sales manager can check in this many minutes before the start time, until this many minutes after the end time."
+                  required
+                />
+              </div>
+              <Checkbox
+                label="Visit photo required"
+                name="requireVisitPhoto"
+                checked={form.requireVisitPhoto}
+                onChange={(event) => setField('requireVisitPhoto', event.target.checked)}
+                hint="The sales manager must take a photo at the client's location to complete a meeting."
               />
             </>
           )}

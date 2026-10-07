@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { isValidDateStr } from '../utils/dateUtil.js';
 
 // Kai validators mein use hone wale fields.
 export const objectId = Joi.string().hex().length(24);
@@ -12,6 +13,17 @@ export const phone = Joi.string().trim().pattern(/^[0-9+\-\s]{7,15}$/).allow('')
 });
 
 export const password = Joi.string().min(8).max(72).label('Password');
+
+// 'YYYY-MM-DD' aur asli date (2026-02-30 jaisi nahi).
+export const dateStr = Joi.string()
+  .custom((value, helpers) => (isValidDateStr(value) ? value : helpers.error('date.invalid')))
+  .messages({ 'date.invalid': '{{#label}} is not a valid date' });
+
+// 'HH:mm' (24 ghante), app timezone mein. Khali string ko "diya hi nahi" maante hain.
+export const timeStr = Joi.string()
+  .pattern(/^([01]\d|2[0-3]):[0-5]\d$/)
+  .empty('')
+  .messages({ 'string.pattern.base': '{{#label}} must be in HH:mm format' });
 
 export const pagination = {
   page: Joi.number().integer().min(1).default(1),

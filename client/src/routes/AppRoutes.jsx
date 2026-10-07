@@ -14,7 +14,14 @@ import StaffForm from '../pages/admin/StaffForm/StaffForm.jsx';
 import Attendance from '../pages/admin/Attendance/Attendance.jsx';
 import StaffAttendance from '../pages/admin/StaffAttendance/StaffAttendance.jsx';
 import LeaveRequests from '../pages/admin/LeaveRequests/LeaveRequests.jsx';
+import PunchCorrections from '../pages/admin/PunchCorrections/PunchCorrections.jsx';
+import Clients from '../pages/admin/Clients/Clients.jsx';
+import ClientForm from '../pages/admin/ClientForm/ClientForm.jsx';
+import Meetings from '../pages/admin/Meetings/Meetings.jsx';
+import MeetingForm from '../pages/admin/MeetingForm/MeetingForm.jsx';
+import MeetingDetail from '../pages/admin/MeetingDetail/MeetingDetail.jsx';
 import Settings from '../pages/admin/Settings/Settings.jsx';
+import MyCorrections from '../pages/staff/MyCorrections/MyCorrections.jsx';
 import MyLeaves from '../pages/staff/MyLeaves/MyLeaves.jsx';
 import MySalary from '../pages/staff/MySalary/MySalary.jsx';
 import Payroll from '../pages/admin/Payroll/Payroll.jsx';
@@ -51,6 +58,14 @@ export default function AppRoutes() {
           <Route path="/admin/staff/:id" element={<StaffForm key="edit" />} />
           <Route path="/admin/attendance" element={<Attendance />} />
           <Route path="/admin/attendance/:userId" element={<StaffAttendance />} />
+          <Route path="/admin/corrections" element={<PunchCorrections />} />
+          <Route path="/admin/clients" element={<Clients />} />
+          <Route path="/admin/clients/new" element={<ClientForm />} />
+          <Route path="/admin/clients/:id" element={<ClientForm key="edit" />} />
+          <Route path="/admin/meetings" element={<Meetings />} />
+          <Route path="/admin/meetings/new" element={<MeetingForm />} />
+          <Route path="/admin/meetings/:id" element={<MeetingDetail />} />
+          <Route path="/admin/meetings/:id/edit" element={<MeetingForm key="edit" />} />
           <Route path="/admin/leaves" element={<LeaveRequests />} />
           <Route path="/admin/payroll" element={<Payroll />} />
           <Route path="/admin/settings" element={<Settings />} />
@@ -62,6 +77,7 @@ export default function AppRoutes() {
           <Route path="/staff" element={<StaffHome />} />
           <Route path="/staff/punch" element={<PunchScreen />} />
           <Route path="/staff/attendance" element={<MyAttendance />} />
+          <Route path="/staff/corrections" element={<MyCorrections />} />
           <Route path="/staff/leaves" element={<MyLeaves />} />
           <Route path="/staff/salary" element={<MySalary />} />
         </Route>

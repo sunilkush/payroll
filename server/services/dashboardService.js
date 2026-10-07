@@ -3,9 +3,10 @@ import { Company } from '../models/Company.js';
 import { Leave } from '../models/Leave.js';
 import { LeaveBalance } from '../models/LeaveBalance.js';
 import { Payroll } from '../models/Payroll.js';
+import { PunchCorrection } from '../models/PunchCorrection.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
-import { ATTENDANCE_STATUS, LEAVE_STATUS, PAYROLL_STATUS, ROLES } from '../utils/constants.js';
+import { ATTENDANCE_STATUS, CORRECTION_STATUS, LEAVE_STATUS, PAYROLL_STATUS, ROLES } from '../utils/constants.js';
 import {
   addDays,
   currentMonth,
@@ -429,7 +430,8 @@ export async function getNotifications(user) {
 
   if (user.role === ROLES.ADMIN) {
     const previousMonth = lastMonths(2, month)[0];
-    const [pending, missed, staffCount, previousPayroll] = await Promise.all([
+    const [pendingCorrections, pending, missed, staffCount, previousPayroll] = await Promise.all([
+      PunchCorrection.countDocuments({ status: CORRECTION_STATUS.PENDING }),
       Leave.countDocuments({ status: LEAVE_STATUS.PENDING }),
       Attendance.countDocuments({ missedPunchOut: true, date: { $gte: addDays(today, -7) } }),
       User.countDocuments({ role: ROLES.STAFF, isActive: true }),
@@ -439,6 +441,9 @@ export async function getNotifications(user) {
       add('no-location', 'danger', 'Office location is not set', 'Staff cannot punch in until you add one.', '/admin/settings');
     }
     if (pending) add('pending-leaves', 'warning', `${pending} leave request(s) waiting`, 'Approve or reject them.', '/admin/leaves');
+    if (pendingCorrections) {
+      add('pending-corrections', 'warning', `${pendingCorrections} punch correction request(s) waiting`, 'Approve or reject them.', '/admin/corrections');
+    }
     if (staffCount && !previousPayroll.length) {
       add('payroll-missing', 'warning', `Payroll for ${monthLabel(previousMonth)} is not generated`, 'Generate and finalize it so staff get their slips.', '/admin/payroll');
     } else if (previousPayroll.some((row) => row.status === PAYROLL_STATUS.DRAFT)) {
@@ -451,7 +456,12 @@ export async function getNotifications(user) {
 
   // Staff
   const weekAgo = new Date(Date.now() - WEEK_MS);
-  const [todayRecord, decided, latestSlip] = await Promise.all([
+  const [decidedCorrections, todayRecord, decided, latestSlip] = await Promise.all([
+    PunchCorrection.find({
+      userId: user._id,
+      status: { $in: [CORRECTION_STATUS.APPROVED, CORRECTION_STATUS.REJECTED] },
+      actionAt: { $gte: weekAgo },
+    }).sort({ actionAt: -1 }).limit(3),
     Attendance.findOne({ userId: user._id, date: today }),
     company.settings.leaveEnabled
       ? Leave.find({
@@ -469,6 +479,10 @@ export async function getNotifications(user) {
   for (const leave of decided) {
     const approved = leave.status === LEAVE_STATUS.APPROVED;
     add(`leave-${leave._id}`, approved ? 'success' : 'danger', `Your ${leave.type} leave was ${approved ? 'approved' : 'rejected'}`, `${leave.days} day(s) from ${leave.fromDate}`, '/staff/leaves');
+  }
+  for (const correction of decidedCorrections) {
+    const approved = correction.status === CORRECTION_STATUS.APPROVED;
+    add(`correction-${correction._id}`, approved ? 'success' : 'danger', `Your punch correction was ${approved ? 'approved' : 'rejected'}`, `For ${correction.date}`, '/staff/corrections');
   }
   if (latestSlip) add(`slip-${latestSlip.period}`, 'success', `Salary slip for ${monthLabel(latestSlip.period)} is ready`, 'View or download it.', '/staff/salary');
   return items;

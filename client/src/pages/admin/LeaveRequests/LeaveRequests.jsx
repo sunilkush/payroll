@@ -4,7 +4,7 @@ import { approveLeaveApi, listLeavesApi, rejectLeaveApi } from '../../../api/lea
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import FormField from '../../../components/FormField/FormField.jsx';
-import LeaveStatus from '../../../components/LeaveStatus/LeaveStatus.jsx';
+import LeaveStatus, { HALF_DAY_LABEL } from '../../../components/LeaveStatus/LeaveStatus.jsx';
 import ListToolbar from '../../../components/ListToolbar/ListToolbar.jsx';
 import Modal from '../../../components/Modal/Modal.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
@@ -122,6 +122,7 @@ export default function LeaveRequests() {
             <td>
               <Tag color="blue">{leave.type}</Tag>
               {leave.days} day(s)
+              {leave.halfDay && ` · ${HALF_DAY_LABEL[leave.halfDay]}`}
             </td>
             <td>
               {formatDate(leave.fromDate)}

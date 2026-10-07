@@ -87,10 +87,10 @@ export async function getToday(user) {
 
 // Ek staff ke ek mahine ka din-wise status + totals.
 function buildMonth({ user, records, leaves, company, month }) {
-  // Approved leave ki har date -> leave type (CL/EL)
+  // Approved leave ki har date -> { type: CL/EL, halfDay: FIRST/SECOND ya undefined }
   const leaveByDate = new Map();
-  for (const leave of leaves) {
-    for (const date of datesBetween(leave.fromDate, leave.toDate)) leaveByDate.set(date, leave.type);
+  for (const { fromDate, toDate, type, halfDay } of leaves) {
+    for (const date of datesBetween(fromDate, toDate)) leaveByDate.set(date, { type, halfDay });
   }
 
   const today = todayStr();
@@ -106,13 +106,23 @@ function buildMonth({ user, records, leaves, company, month }) {
   const days = daysOfMonth(month).map((date) => {
     const record = recordByDate.get(date);
     const day = { date, weekday: weekdayOf(date), status: null };
+    const leave = leaveByDate.get(date);
+    // Half day leave: aadha din leave (paid), baaki aadha kaam. Punch hua to aadha present, warna aadha absent.
+    const halfLeave = leave?.halfDay ? leave : null;
 
     if (record) {
-      day.status = ATTENDANCE_STATUS.PRESENT;
+      day.status = halfLeave ? ATTENDANCE_STATUS.HALF_DAY : ATTENDANCE_STATUS.PRESENT;
       day.punchIn = record.punchIn;
       day.punchOut = record.punchOut ?? null;
       day.missedPunchOut = record.missedPunchOut;
-      summary.present += 1;
+      if (halfLeave) {
+        day.note = halfLeave.type;
+        day.halfDay = halfLeave.halfDay;
+        summary.present += 0.5;
+        summary.leave += 0.5;
+      } else {
+        summary.present += 1;
+      }
       if (record.missedPunchOut) summary.missedPunchOut += 1;
     } else if (date > today || date < trackedFrom) {
       day.status = null;
@@ -123,9 +133,16 @@ function buildMonth({ user, records, leaves, company, month }) {
     } else if (company.settings.weekOffDays.includes(day.weekday)) {
       day.status = ATTENDANCE_STATUS.WEEK_OFF;
       summary.weekOff += 1;
-    } else if (leaveByDate.has(date)) {
+    } else if (halfLeave) {
+      // Leave wala aadha din paid hai; kaam wale aadhe din punch nahi hua.
+      day.status = date === today ? ATTENDANCE_STATUS.NOT_MARKED : ATTENDANCE_STATUS.ABSENT;
+      day.note = halfLeave.type;
+      day.halfDay = halfLeave.halfDay;
+      summary.leave += 0.5;
+      if (date !== today) summary.absent += 0.5;
+    } else if (leave) {
       day.status = ATTENDANCE_STATUS.LEAVE;
-      day.note = leaveByDate.get(date);
+      day.note = leave.type;
       summary.leave += 1;
     } else if (date === today) {
       day.status = ATTENDANCE_STATUS.NOT_MARKED;

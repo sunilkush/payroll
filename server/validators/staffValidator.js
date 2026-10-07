@@ -11,6 +11,8 @@ const digits = (min, max, label, message) =>
 export const listStaffSchema = Joi.object({
   search: Joi.string().trim().max(100).allow(''),
   status: Joi.string().valid('all', 'active', 'inactive').default('all'),
+  // true: sirf wo staff jinhe sales meetings assign ho sakti hain
+  salesManager: Joi.boolean(),
   ...pagination,
 });
 
@@ -30,6 +32,7 @@ export const createStaffSchema = Joi.object({
   }).required(),
   pfApplicable: Joi.boolean(),
   esiApplicable: Joi.boolean(),
+  isSalesManager: Joi.boolean(),
   uan: digits(12, 12, 'UAN', 'UAN must be 12 digits'),
   esicNo: digits(10, 17, 'ESIC number', 'ESIC number must be 10 to 17 digits'),
   bankDetails: Joi.object({

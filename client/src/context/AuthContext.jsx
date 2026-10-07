@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 const LOGGED_OUT = { user: null, company: null };
 
 export function AuthProvider({ children }) {
-  // company: { _id, name, leaveEnabled } - Super Admin ke liye null.
+  // company: { _id, name, leaveEnabled, salesEnabled } - Super Admin ke liye null.
   const [session, setSession] = useState(LOGGED_OUT);
   // Page reload par token se user wapas laane tak loading true rehta hai.
   const [loading, setLoading] = useState(() => Boolean(tokenStore.get()));

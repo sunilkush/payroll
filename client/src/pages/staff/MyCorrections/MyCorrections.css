@@ -1,0 +1,30 @@
+.my-corrections__note,
+.my-corrections__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Mobile par dono time upar-neeche, tablet se saath-saath */
+.my-corrections__times {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--space-4);
+}
+
+.my-corrections__hint {
+  margin-bottom: var(--space-4);
+}
+
+.my-corrections__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .my-corrections__times {
+    grid-template-columns: 1fr 1fr;
+  }
+}

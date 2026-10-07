@@ -15,8 +15,9 @@ async function findStaffOrThrow(id) {
   return staff;
 }
 
-export async function listStaff({ search, status, page, limit }) {
+export async function listStaff({ search, status, salesManager, page, limit }) {
   const filter = { role: ROLES.STAFF };
+  if (salesManager) filter.isSalesManager = true;
   if (search) {
     const pattern = new RegExp(escapeRegex(search), 'i');
     filter.$or = [{ name: pattern }, { email: pattern }, { employeeCode: pattern }];

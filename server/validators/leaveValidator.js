@@ -1,16 +1,13 @@
 import Joi from 'joi';
-import { LEAVE_STATUS, LEAVE_TYPES } from '../utils/constants.js';
-import { isValidDateStr } from '../utils/dateUtil.js';
-import { pagination } from './common.js';
-
-const dateStr = Joi.string()
-  .custom((value, helpers) => (isValidDateStr(value) ? value : helpers.error('date.invalid')))
-  .messages({ 'date.invalid': '{{#label}} is not a valid date' });
+import { HALF_DAY_SESSIONS, LEAVE_STATUS, LEAVE_TYPES } from '../utils/constants.js';
+import { dateStr, pagination } from './common.js';
 
 export const applyLeaveSchema = Joi.object({
   type: Joi.string().valid(...LEAVE_TYPES).required().label('Leave type'),
   fromDate: dateStr.required().label('From date'),
   toDate: dateStr.required().label('To date'),
+  // Khali / na ho to poore din ki leave
+  halfDay: Joi.string().valid(...HALF_DAY_SESSIONS).empty('').label('Half day'),
   reason: Joi.string().trim().min(3).max(500).required().label('Reason'),
 });
 

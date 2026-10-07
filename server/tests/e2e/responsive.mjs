@@ -122,6 +122,30 @@ await post('/payroll/generate', admin, { month: prevMonth });
 await post('/payroll/finalize', admin, { month: prevMonth });
 await post('/payroll/generate', admin, { month });
 
+// Sales meetings: Ravi sales manager hai, ek client aur kal ki ek meeting
+await post('/settings', admin, { settings: { salesEnabled: true } }, 'PUT');
+await post(`/staff/${staffIds[0]}`, admin, { isSalesManager: true }, 'PUT');
+const client = await post('/clients', admin, {
+  name: 'ABC Precision Components Pvt Ltd',
+  contactPerson: 'Mr. Anil Gupta',
+  phone: '9810012345',
+  address: 'C-56, Sector 62, Noida, Uttar Pradesh 201301',
+  lat: 28.6273,
+  lng: 77.3725,
+});
+const tomorrow = new Date(Date.parse(`${todayStr()}T00:00:00Z`) + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const meeting = await post('/meetings', admin, {
+  clientId: client.body.data.client._id,
+  salesManagerId: staffIds[0],
+  title: 'Quarterly review and new order discussion',
+  purpose: 'Review last quarter supplies and discuss the next order.',
+  date: tomorrow,
+  startTime: '10:30',
+  endTime: '11:30',
+  location: { radius: 150 },
+});
+const meetingId = meeting.body.data.meeting._id;
+
 // ---------- Kaun sa role kaun se pages ----------
 const ROLES = [
   {
@@ -144,6 +168,13 @@ const ROLES = [
       ['staff-edit', `/admin/staff/${staffIds[0]}`],
       ['attendance', `/admin/attendance?month=${prevMonth}`],
       ['attendance-staff', `/admin/attendance/${staffIds[0]}?month=${prevMonth}`],
+      ['corrections', '/admin/corrections'],
+      ['clients', '/admin/clients'],
+      ['client-new', '/admin/clients/new'],
+      ['meetings', '/admin/meetings'],
+      ['meeting-new', '/admin/meetings/new'],
+      ['meeting-detail', `/admin/meetings/${meetingId}`],
+      ['meeting-edit', `/admin/meetings/${meetingId}/edit`],
       ['leaves', '/admin/leaves'],
       ['payroll', '/admin/payroll'],
       ['settings', '/admin/settings'],
@@ -156,6 +187,7 @@ const ROLES = [
       ['dashboard', '/staff'],
       ['punch', '/staff/punch'],
       ['attendance', '/staff/attendance'],
+      ['corrections', '/staff/corrections'],
       ['leaves', '/staff/leaves'],
       ['salary', '/staff/salary'],
     ],

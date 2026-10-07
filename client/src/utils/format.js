@@ -55,6 +55,12 @@ export function greeting(now = new Date()) {
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// <input type="date"> ke liye aaj ki date, 'YYYY-MM-DD' (local time).
+export function todayLocal() {
+  const now = new Date();
+  return `${currentMonth()}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 // <input type="month"> ke liye current month, 'YYYY-MM' (local time).
 export function currentMonth() {
   const now = new Date();

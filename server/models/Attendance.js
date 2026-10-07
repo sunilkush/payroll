@@ -5,14 +5,17 @@ import { tenantPlugin } from './plugins/tenantPlugin.js';
 const punchSchema = new mongoose.Schema(
   {
     time: { type: Date, required: true },
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
+    // Location sirf asli (GPS) punch par hoti hai; correction request se bane punch par nahi.
+    lat: { type: Number },
+    lng: { type: Number },
     accuracy: { type: Number }, // GPS accuracy, meters
-    distance: { type: Number, required: true }, // office se doori, meters
+    distance: { type: Number }, // office se doori, meters
     locationName: { type: String },
     // Fake GPS poori tarah nahi rok sakte, isliye IP/device ka log rakhte hain.
     ip: { type: String },
     userAgent: { type: String },
+    // Time admin ne punch correction request manzoor karke badla hai.
+    corrected: { type: Boolean },
   },
   { _id: false }
 );

@@ -1,0 +1,28 @@
+/* Har section Ant Design ka Card hai. Mobile: fields ek column mein. Tablet se: 2, badi screen: 3. */
+.meeting-form__section {
+  margin-bottom: var(--space-4);
+}
+
+.meeting-form__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--space-6);
+}
+
+.meeting-form__help {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .meeting-form__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1366px) {
+  .meeting-form__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

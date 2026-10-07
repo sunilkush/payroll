@@ -32,6 +32,9 @@ export const updateSettingsSchema = Joi.object({
     allowPastLeave: Joi.boolean(),
     elCarryForwardMax: Joi.number().min(0).max(365).label('EL carry forward limit'),
     maxGpsAccuracy: Joi.number().integer().min(10).max(1000).label('GPS accuracy limit'),
+    salesEnabled: Joi.boolean(),
+    requireVisitPhoto: Joi.boolean(),
+    meetingCheckInGraceMin: Joi.number().integer().min(0).max(240).label('Meeting check-in grace'),
     weekOffDays: Joi.array().items(Joi.number().integer().min(0).max(6)).unique().max(6).label('Week off days'),
   }).min(1),
 }).min(1);

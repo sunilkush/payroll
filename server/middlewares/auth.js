@@ -8,6 +8,6 @@ export const auth = asyncHandler(async (req, res, next) => {
 
   const { user, company } = await authenticate(token);
   req.user = user;
-  req.company = company; // { _id, name, leaveEnabled } ya Super Admin ke liye null
+  req.company = company; // { _id, name, leaveEnabled, salesEnabled } ya Super Admin ke liye null
   next();
 });

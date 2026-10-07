@@ -35,6 +35,12 @@ const companySchema = new mongoose.Schema(
       elCarryForwardMax: { type: Number, default: 30, min: 0 },
       // Is se kharab (zyada meter) GPS accuracy par punch reject hota hai.
       maxGpsAccuracy: { type: Number, default: 100, min: 1 },
+      // Sales meetings module ON/OFF (client visit, QR + geofence check-in).
+      salesEnabled: { type: Boolean, default: false },
+      // Meeting poori karne ke liye visit ki photo zaroori hai ya nahi.
+      requireVisitPhoto: { type: Boolean, default: false },
+      // Meeting ke start se itne minute pehle se (aur end ke itne minute baad tak) check-in ho sakta hai.
+      meetingCheckInGraceMin: { type: Number, default: 30, min: 0 },
       // 0 = Sunday ... 6 = Saturday
       weekOffDays: { type: [Number], default: [0] },
     },

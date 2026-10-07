@@ -13,3 +13,147 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-warning);
 }
+
+.attendance-month__views {
+  margin-bottom: var(--space-3);
+}
+
+/* ---- Calendar: har din ka cell status ke rang mein ---- */
+.attendance-calendar.ant-picker-calendar {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.attendance-calendar .ant-picker-panel {
+  border-top: 0;
+}
+
+.attendance-calendar .ant-picker-content th {
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.attendance-calendar .ant-picker-cell {
+  padding: 2px;
+  cursor: pointer;
+}
+
+.attendance-calendar .ant-picker-cell::before {
+  display: none;
+}
+
+/* Mobile: sirf tarikh, rang se status */
+.attendance-calendar__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: var(--space-1);
+  overflow: hidden;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.attendance-calendar__number {
+  font-weight: var(--font-weight-medium);
+}
+
+.attendance-calendar__time {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-text-secondary);
+}
+
+.attendance-calendar__cell--outside {
+  visibility: hidden;
+}
+
+/* Jis hafte ki line mein is mahine ka koi din nahi (calendar hamesha 6 line banata hai) wo chhupa do */
+.attendance-calendar tbody tr:not(:has(.attendance-calendar__cell:not(.attendance-calendar__cell--outside))) {
+  display: none;
+}
+
+.attendance-calendar__cell--present {
+  background: var(--color-success-light);
+}
+
+.attendance-calendar__cell--absent {
+  background: var(--color-danger-light);
+}
+
+.attendance-calendar__cell--leave,
+.attendance-calendar__cell--holiday {
+  background: var(--color-info-light);
+}
+
+.attendance-calendar__cell--half-day,
+.attendance-calendar__cell--not-marked {
+  background: var(--color-warning-light);
+}
+
+.attendance-calendar__cell--today {
+  border-color: var(--color-text-muted);
+}
+
+.attendance-calendar__cell--selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.attendance-calendar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attendance-calendar__detail p {
+  margin-bottom: var(--space-2);
+}
+
+.attendance-calendar__detail-title {
+  font-weight: var(--font-weight-medium);
+}
+
+.attendance-calendar__punches {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.attendance-calendar__punches dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.attendance-calendar__punches dd {
+  margin: 0;
+}
+
+/* Tablet se: cell bade, andar status aur punch time */
+@media (min-width: 768px) {
+  .attendance-calendar .ant-picker-cell {
+    padding: 3px;
+  }
+
+  .attendance-calendar__cell {
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-height: 92px;
+    padding: var(--space-2);
+    text-align: left;
+  }
+
+  .attendance-calendar__cell .ant-tag {
+    margin-inline-end: 0;
+  }
+}

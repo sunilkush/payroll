@@ -10,11 +10,18 @@ async function assertCanAccess(user) {
   if (!user.isActive) throw new ApiError(403, 'Your account is deactivated. Please contact your admin.');
   if (user.role === ROLES.SUPER_ADMIN) return null;
 
-  const company = await Company.findById(user.companyId).select('name isActive settings.leaveEnabled');
+  const company = await Company.findById(user.companyId).select(
+    'name isActive settings.leaveEnabled settings.salesEnabled'
+  );
   if (!company) throw new ApiError(403, 'Company not found.');
   if (!company.isActive) throw new ApiError(403, 'Your company is blocked. Please contact support.');
 
-  return { _id: company._id, name: company.name, leaveEnabled: company.settings.leaveEnabled };
+  return {
+    _id: company._id,
+    name: company.name,
+    leaveEnabled: company.settings.leaveEnabled,
+    salesEnabled: company.settings.salesEnabled,
+  };
 }
 
 export async function login({ email, password }) {
