@@ -22,6 +22,9 @@ import MeetingForm from '../pages/admin/MeetingForm/MeetingForm.jsx';
 import MeetingDetail from '../pages/admin/MeetingDetail/MeetingDetail.jsx';
 import Settings from '../pages/admin/Settings/Settings.jsx';
 import MyCorrections from '../pages/staff/MyCorrections/MyCorrections.jsx';
+import MyMeetings from '../pages/staff/MyMeetings/MyMeetings.jsx';
+import MeetingVisit from '../pages/staff/MeetingVisit/MeetingVisit.jsx';
+import ScanMeeting from '../pages/staff/ScanMeeting/ScanMeeting.jsx';
 import MyLeaves from '../pages/staff/MyLeaves/MyLeaves.jsx';
 import MySalary from '../pages/staff/MySalary/MySalary.jsx';
 import Payroll from '../pages/admin/Payroll/Payroll.jsx';
@@ -78,6 +81,9 @@ export default function AppRoutes() {
           <Route path="/staff/punch" element={<PunchScreen />} />
           <Route path="/staff/attendance" element={<MyAttendance />} />
           <Route path="/staff/corrections" element={<MyCorrections />} />
+          <Route path="/staff/meetings" element={<MyMeetings />} />
+          <Route path="/staff/meetings/:id" element={<MeetingVisit />} />
+          <Route path="/staff/scan" element={<ScanMeeting />} />
           <Route path="/staff/leaves" element={<MyLeaves />} />
           <Route path="/staff/salary" element={<MySalary />} />
         </Route>

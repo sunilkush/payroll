@@ -1,0 +1,18 @@
+.my-meetings__muted {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.my-meetings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (min-width: 992px) {
+  .my-meetings__actions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+}

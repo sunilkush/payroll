@@ -40,7 +40,21 @@ const OUTCOME_OPTIONS = [
   { value: '', label: 'All outcomes' },
   ...Object.entries(OUTCOME_LABEL).map(([value, label]) => ({ value, label })),
 ];
-const EMPTY_QUERY = { search: '', status: 'all', from: '', to: '', salesManagerId: '', clientId: '', outcome: '', page: 1 };
+const LOCATION_OPTIONS = [
+  { value: '', label: 'Any location status' },
+  { value: 'VERIFIED', label: 'Location verified' },
+];
+const EMPTY_QUERY = {
+  search: '',
+  status: 'all',
+  from: '',
+  to: '',
+  salesManagerId: '',
+  clientId: '',
+  outcome: '',
+  locationStatus: '',
+  page: 1,
+};
 
 // Khali filters server ko nahi bhejte.
 const toParams = (query) => Object.fromEntries(Object.entries(query).filter(([, value]) => value !== ''));
@@ -143,6 +157,13 @@ export default function Meetings() {
           onChange={setFilter}
         />
         <FormField label="Outcome" name="outcome" options={OUTCOME_OPTIONS} value={query.outcome} onChange={setFilter} />
+        <FormField
+          label="Check-in location"
+          name="locationStatus"
+          options={LOCATION_OPTIONS}
+          value={query.locationStatus}
+          onChange={setFilter}
+        />
       </div>
 
       <Alert>{error}</Alert>

@@ -16,13 +16,16 @@ if (env.forceHttps) app.use(httpsRedirect);
 
 // Security headers; HTTPS par HSTS bhi bhejta hai. Content-Security-Policy mein sirf wahi bahar ki
 // jagahein khuli hain jo Settings ke office-location map ko chahiye: OpenStreetMap ki map tiles
-// (images) aur uski place search.
+// (images) aur uski place search. Baaki do cheezein (blob:) meeting ke QR scanner ke liye hain.
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        'img-src': ["'self'", 'data:', 'https://*.tile.openstreetmap.org'],
+        // blob: sales manager ki upload ki hui QR photo (scanner use browser mein hi padhta hai)
+        'img-src': ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org'],
         'connect-src': ["'self'", 'https://nominatim.openstreetmap.org'],
+        // QR scanner camera ki tasveer ek worker mein padhta hai, jo blob: se banta hai
+        'worker-src': ["'self'", 'blob:'],
       },
     },
   })

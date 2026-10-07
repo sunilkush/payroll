@@ -7,6 +7,7 @@ import {
   FieldTimeOutlined,
   FileTextOutlined,
   PlusOutlined,
+  QrcodeOutlined,
   ScheduleOutlined,
   SettingOutlined,
   ShopOutlined,
@@ -27,10 +28,14 @@ export const ROLE_HOME = Object.freeze({
   [ROLES.STAFF]: '/staff',
 });
 
+// Sales manager ke links: company mein Sales ON ho aur admin ne is staff ko sales manager banaya ho.
+const SALES_MANAGER = { feature: 'salesEnabled', userFlag: 'isSalesManager' };
+
 // Sidebar / drawer ke links. Naya module bane to yahan jodo.
 //   group    sidebar mein kis heading ke neeche aaye
 //   icon     Ant Design ka icon component
 //   feature  company ki wo setting jo ON ho tabhi link dikhe (jaise leaveEnabled)
+//   userFlag user par wo flag jo ON ho tabhi link dikhe (jaise isSalesManager)
 export const ROLE_NAV = Object.freeze({
   [ROLES.SUPER_ADMIN]: [
     { to: '/superadmin', label: 'Dashboard', icon: DashboardOutlined, group: 'Overview', end: true },
@@ -54,6 +59,8 @@ export const ROLE_NAV = Object.freeze({
     { to: '/staff/attendance', label: 'My Attendance', icon: ClockCircleOutlined, group: 'My work' },
     { to: '/staff/corrections', label: 'Punch Corrections', icon: FieldTimeOutlined, group: 'My work' },
     { to: '/staff/leaves', label: 'My Leaves', icon: CalendarOutlined, group: 'My work', feature: 'leaveEnabled' },
+    { to: '/staff/meetings', label: 'My Meetings', icon: ScheduleOutlined, group: 'Sales', ...SALES_MANAGER },
+    { to: '/staff/scan', label: 'Scan Meeting QR', icon: QrcodeOutlined, group: 'Sales', ...SALES_MANAGER },
     { to: '/staff/salary', label: 'My Salary', icon: FileTextOutlined, group: 'Pay' },
   ],
 });
@@ -73,15 +80,16 @@ export const ROLE_ACTIONS = Object.freeze({
   ],
   [ROLES.STAFF]: [
     { to: '/staff/punch', label: 'Punch in / out', icon: EnvironmentOutlined },
+    { to: '/staff/scan', label: 'Scan meeting QR', icon: QrcodeOutlined, ...SALES_MANAGER },
     { to: '/staff/corrections', label: 'Fix a missed punch', icon: FieldTimeOutlined },
     { to: '/staff/leaves', label: 'Apply for leave', icon: CalendarOutlined, feature: 'leaveEnabled' },
     { to: '/staff/salary', label: 'View salary slips', icon: FileTextOutlined },
   ],
 });
 
-// Jo items kisi band feature par depend karte hain unhe hata deta hai.
-export const filterByFeatures = (items, company) =>
-  items.filter((item) => !item.feature || company?.[item.feature]);
+// Jo items kisi band feature (ya user ke band flag) par depend karte hain unhe hata deta hai.
+export const filterByFeatures = (items, company, user) =>
+  items.filter((item) => (!item.feature || company?.[item.feature]) && (!item.userFlag || user?.[item.userFlag]));
 
 // Chalu URL ke liye menu ka kaun sa link active hai: "end" wale links poora match,
 // baaki shuruaat se (/admin/staff/123 -> Staff). Sabse lamba match jeetta hai.

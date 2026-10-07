@@ -10,6 +10,7 @@ import { LeaveBalance } from '../../models/LeaveBalance.js';
 import { Meeting } from '../../models/Meeting.js';
 import { User } from '../../models/User.js';
 import { markMissedPunchOuts } from '../../services/attendanceService.js';
+import { hashToken, meetingToken } from '../../services/qrService.js';
 import { addDays, daysOfMonth, todayStr, weekdayOf, zonedTime } from '../../utils/dateUtil.js';
 import { runWithTenant } from '../../utils/tenantContext.js';
 
@@ -1312,5 +1313,275 @@ describe('sales meetings: QR token', () => {
     assert.equal(qr.expiresAt, `${day}T12:45:00.000Z`);
     assert.equal((await qrOf(legacy._id)).token, qr.token);
     assert.match(await hashInDb(legacy._id), /^[0-9a-f]{64}$/);
+  });
+});
+
+describe('sales meetings: QR scan (sales manager)', () => {
+  // Ravi (A.staff) aur Mohan dono A ke sales manager hain. A mein check-in grace 15 minute.
+  const MIN = 60 * 1000;
+  const call = (method, path, token, body) => api.call(path, { method, token, body });
+  const scan = (token, as = A.staff) => call('POST', '/meetings/scan', as, { token });
+  const eventsOf = async (id) => (await Meeting.findById(id).lean()).events.map((event) => event.type);
+  const S = {}; // { mohan, base, now: { id, token } }
+
+  // Seedha DB mein meeting (API beete / takraate waqt nahi banne deta), phir admin se uska QR.
+  async function meetingAt(startOffsetMin, endOffsetMin, overrides = {}) {
+    const meeting = await Meeting.create({
+      companyId: S.base.companyId,
+      clientId: S.base.clientId,
+      salesManagerId: A.staffId,
+      title: 'Scan test',
+      date: today,
+      startAt: new Date(Date.now() + startOffsetMin * MIN),
+      endAt: new Date(Date.now() + endOffsetMin * MIN),
+      location: S.base.location,
+      createdBy: A.adminId,
+      ...overrides,
+    });
+    const id = String(meeting._id);
+    return { id, token: (await call('GET', `/meetings/${id}/qr`, A.admin)).body.data.qr.token };
+  }
+
+  test('validation aur role', async () => {
+    S.mohan = await api.login('mohan@alpha.test');
+    S.base = await Meeting.findOne({ title: 'Purani meeting' }).lean();
+    S.now = await meetingAt(-10, 50);
+
+    assert.equal((await scan(undefined)).status, 400);
+    assert.equal((await scan('https://example.com/not-a-token')).status, 400);
+    const unknown = await scan('A'.repeat(43));
+    assert.equal(unknown.status, 404);
+    assert.match(unknown.body.message, /Invalid QR code/);
+    assert.equal((await scan(S.now.token, A.admin)).status, 403, 'admin scan nahi karta');
+    assert.equal((await scan(S.now.token, B.staff)).status, 403, 'B ka staff sales manager nahi');
+    assert.equal((await call('POST', '/meetings/scan', undefined, { token: S.now.token })).status, 401);
+  });
+
+  test('doosre sales manager ka QR -> 403, aur audit mein darj', async () => {
+    const res = await scan(S.now.token, S.mohan);
+    assert.equal(res.status, 403);
+    assert.match(res.body.message, /not assigned to you/);
+    assert.equal(res.body.data, undefined, 'meeting ki koi jaankari nahi');
+    assert.equal((await eventsOf(S.now.id)).at(-1), 'CHECK_IN_REJECTED');
+  });
+
+  test('sahi sales manager, sahi waqt -> check-in ho sakta hai', async () => {
+    const res = await scan(S.now.token);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.canCheckIn, true);
+    assert.equal(res.body.data.alreadyCheckedIn, false);
+    const { meeting } = res.body.data;
+    assert.equal(meeting._id, S.now.id);
+    assert.equal(meeting.client.name, 'XYZ Industries');
+    assert.equal(meeting.location.radius, 100);
+    assert.ok(new Date(meeting.checkInOpensAt) < new Date() && new Date(meeting.checkInClosesAt) > new Date());
+    assert.equal(meeting.qr, undefined);
+    assert.equal(meeting.events, undefined);
+    assert.equal((await eventsOf(S.now.id)).at(-1), 'QR_SCANNED');
+    assert.equal((await Meeting.findById(S.now.id).lean()).status, 'SCHEDULED', 'scan se status nahi badalta');
+  });
+
+  test('galat din / bahut jaldi / expire', async () => {
+    const tomorrowMeeting = await meetingAt(24 * 60, 25 * 60, { date: addDays(today, 1) });
+    let res = await scan(tomorrowMeeting.token);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /not scheduled for today/);
+
+    res = await scan((await meetingAt(180, 240)).token);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /Too early/);
+    assert.equal((await scan((await meetingAt(10, 70)).token)).status, 200, 'grace (15 min) ke andar');
+
+    res = await scan((await meetingAt(-180, -120)).token);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /expired/);
+    assert.equal((await scan((await meetingAt(-70, -10)).token)).status, 200, 'end ke baad grace ke andar');
+
+    res = await scan((await meetingAt(-26 * 60, -25 * 60, { date: addDays(today, -1) })).token);
+    assert.match(res.body.message, /expired/);
+  });
+
+  test('regenerate ke baad purana QR nahi chalta, naya chalta hai', async () => {
+    const res = await call('POST', `/meetings/${S.now.id}/qr/regenerate`, A.admin);
+    assert.equal((await scan(S.now.token)).status, 404);
+    S.now.token = res.body.data.qr.token;
+    assert.equal((await scan(S.now.token)).status, 200);
+  });
+
+  test('cancel / complete / pehle se checked-in', async () => {
+    const done = await meetingAt(-10, 50);
+    await Meeting.updateOne({ _id: done.id }, { $set: { status: 'COMPLETED' } });
+    let res = await scan(done.token);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /already been completed/);
+
+    await call('PATCH', `/meetings/${S.now.id}/cancel`, A.admin, {});
+    res = await scan(S.now.token);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /cancelled/);
+
+    // Ravi ki ek visit pehle se khuli hai (models wale test se): us par QR lagao aur scan karo
+    const open = await Meeting.findOne({ salesManagerId: A.staffId, status: 'CHECKED_IN' });
+    const token = meetingToken(open._id, 1);
+    await Meeting.updateOne({ _id: open._id }, { $set: { 'qr.tokenHash': hashToken(token) } });
+    res = await scan(token);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.canCheckIn, false);
+    assert.equal(res.body.data.alreadyCheckedIn, true);
+    assert.equal(res.body.data.meeting.status, 'CHECKED_IN');
+    assert.equal((await scan(token, S.mohan)).status, 403, 'doosre ko phir bhi nahi');
+  });
+});
+
+describe('sales meetings: check-in (geofence) + check-out', () => {
+  // Meeting ki location: XYZ Industries (28.6273, 77.3725), radius 100 m. A mein GPS accuracy ki hadd 100 m.
+  const MIN = 60 * 1000;
+  const INSIDE_SPOT = { lat: 28.6276, lng: 77.3725, accuracy: 15 }; // ~33 m
+  const FAR_SPOT = { lat: 28.6383, lng: 77.3725, accuracy: 15 }; // ~1.2 km
+  const call = (method, path, token, body) => api.call(path, { method, token, body });
+  const checkIn = (token, spot, as = A.staff) => call('POST', '/meetings/check-in', as, { token, ...spot });
+  const checkOut = (id, body, as = A.staff) => call('POST', `/meetings/${id}/check-out`, as, body);
+  const inDb = (id) => Meeting.findById(id).lean();
+  const V = {}; // { mohan, base, openId, visit: { id, token } }
+
+  async function meetingNow(overrides = {}) {
+    const meeting = await Meeting.create({
+      companyId: V.base.companyId,
+      clientId: V.base.clientId,
+      salesManagerId: A.staffId,
+      title: 'Visit test',
+      date: today,
+      startAt: new Date(Date.now() - 10 * MIN),
+      endAt: new Date(Date.now() + 50 * MIN),
+      location: { ...V.base.location, lat: 28.6273, lng: 77.3725, radius: 100 },
+      createdBy: A.adminId,
+      ...overrides,
+    });
+    const id = String(meeting._id);
+    return { id, token: (await call('GET', `/meetings/${id}/qr`, A.admin)).body.data.qr.token };
+  }
+
+  test('validation aur role', async () => {
+    V.mohan = await api.login('mohan@alpha.test');
+    V.base = await Meeting.findOne({ title: 'Purani meeting' }).lean();
+    V.openId = String((await Meeting.findOne({ salesManagerId: A.staffId, status: 'CHECKED_IN' }))._id);
+    V.visit = await meetingNow();
+
+    assert.equal((await checkIn(V.visit.token, {})).status, 400, 'location zaroori');
+    assert.equal((await checkIn(V.visit.token, { lat: 28.6, lng: 77.3 })).status, 400, 'accuracy zaroori');
+    assert.equal((await checkIn('A'.repeat(43), INSIDE_SPOT)).status, 404);
+    assert.equal((await checkIn(V.visit.token, INSIDE_SPOT, A.admin)).status, 403);
+    assert.equal((await checkIn(V.visit.token, INSIDE_SPOT, V.mohan)).status, 403, 'doosre sales manager ka QR');
+  });
+
+  test('ek visit khuli ho to doosri mein check-in nahi', async () => {
+    const res = await checkIn(V.visit.token, INSIDE_SPOT);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /still checked in/);
+    assert.equal((await inDb(V.visit.id)).status, 'SCHEDULED');
+  });
+
+  test('check-out: outcome zaroori, follow-up ke rules, sirf apni visit', async () => {
+    const ok = { result: { outcome: 'INTERESTED' } };
+    assert.equal((await checkOut(V.openId, {})).status, 400);
+    assert.equal((await checkOut(V.openId, { result: { outcome: 'MAYBE' } })).status, 400);
+    assert.equal((await checkOut(V.openId, { ...ok, lat: 28.6 })).status, 400, 'lat ke saath lng');
+    let res = await checkOut(V.openId, { result: { outcome: 'FOLLOW_UP_REQUIRED' } });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.errors[0].field, 'followUp.date');
+    res = await checkOut(V.openId, { ...ok, followUp: { date: addDays(today, -1) } });
+    assert.equal(res.status, 400, 'beeti hui follow-up date');
+
+    assert.equal((await checkOut(V.openId, ok, V.mohan)).status, 404);
+    assert.equal((await checkOut(V.openId, ok, A.admin)).status, 403);
+    assert.equal((await checkOut(V.visit.id, ok)).status, 409, 'check-in hi nahi hua');
+    assert.equal((await inDb(V.openId)).status, 'CHECKED_IN');
+  });
+
+  test('check-out door se bhi hota hai (darj hota hai); follow-up banta hai', async () => {
+    const followDate = addDays(today, 7);
+    const res = await checkOut(V.openId, {
+      ...FAR_SPOT,
+      result: { outcome: 'FOLLOW_UP_REQUIRED', clientInterested: true, requirement: '500 units per month', estimatedDealValue: 250000, remarks: 'Pricing bhejni hai' },
+      followUp: { date: followDate, time: '15:30', notes: 'Quotation ke saath call' },
+    });
+    assert.equal(res.status, 200);
+    const { meeting } = res.body.data;
+    assert.equal(meeting.status, 'COMPLETED');
+    assert.equal(meeting.checkOut.locationStatus, 'OUTSIDE_GEOFENCE');
+    assert.ok(meeting.checkOut.distance > 1000);
+    assert.equal(typeof meeting.durationMinutes, 'number');
+    assert.equal(meeting.result.outcome, 'FOLLOW_UP_REQUIRED');
+    assert.equal(meeting.result.estimatedDealValue, 250000);
+    assert.deepEqual(meeting.followUp, { at: `${followDate}T10:00:00.000Z`, notes: 'Quotation ke saath call', status: 'PENDING' });
+    assert.deepEqual(meeting.events.slice(-2).map((event) => event.type), ['CHECKED_OUT', 'COMPLETED']);
+    assert.equal((await checkOut(V.openId, { result: { outcome: 'INTERESTED' } })).status, 409, 'dobara check-out nahi');
+  });
+
+  test('GPS kharab -> 400; geofence ke bahar -> 403 doori ke saath; dono audit mein', async () => {
+    let res = await checkIn(V.visit.token, { ...INSIDE_SPOT, accuracy: 500 });
+    assert.equal(res.status, 400);
+    assert.match(res.body.message, /GPS accuracy is too low/);
+
+    res = await checkIn(V.visit.token, FAR_SPOT);
+    assert.equal(res.status, 403);
+    assert.match(res.body.message, /approximately 1\.2 km away from the meeting location/);
+
+    const meeting = await inDb(V.visit.id);
+    assert.equal(meeting.status, 'SCHEDULED', 'QR sahi hone se hi check-in nahi hota');
+    assert.equal(meeting.checkIn, undefined);
+    const rejected = meeting.events.filter((event) => event.type === 'CHECK_IN_REJECTED').map((event) => event.detail);
+    assert.ok(rejected.some((detail) => /Low GPS accuracy/.test(detail)));
+    assert.ok(rejected.some((detail) => /Outside geofence: 1\.2 km/.test(detail)));
+  });
+
+  test('geofence ke andar -> check-in; time aur doori server ke; dobara -> 409', async () => {
+    const before = Date.now();
+    const res = await checkIn(V.visit.token, { ...INSIDE_SPOT, distance: 0, at: '2020-01-01T00:00:00Z', status: 'COMPLETED' });
+    assert.equal(res.status, 200);
+    const { meeting } = res.body.data;
+    assert.equal(meeting.status, 'CHECKED_IN');
+    assert.equal(meeting.checkIn.locationStatus, 'VERIFIED');
+    assert.ok(meeting.checkIn.distance > 25 && meeting.checkIn.distance < 45, `doori ~33 m, mili ${meeting.checkIn.distance}`);
+    assert.ok(Date.parse(meeting.checkIn.at) >= before - 1000, 'phone ka bheja time nahi, server ka');
+    assert.equal(meeting.checkIn.accuracy, 15);
+    assert.ok((await inDb(V.visit.id)).checkIn.ip);
+    assert.equal(meeting.clientId.name, 'XYZ Industries');
+
+    const again = await checkIn(V.visit.token, INSIDE_SPOT);
+    assert.equal(again.status, 409);
+    assert.match(again.body.message, /already checked in/);
+    const scanned = await call('POST', '/meetings/scan', A.staff, { token: V.visit.token });
+    assert.equal(scanned.body.data.alreadyCheckedIn, true);
+
+    // Check-in ke baad admin na badal sakta hai na cancel kar sakta hai, lekin visit dekh sakta hai
+    assert.equal((await call('PATCH', `/meetings/${V.visit.id}/cancel`, A.admin, {})).status, 409);
+    const detail = await call('GET', `/meetings/${V.visit.id}`, A.admin);
+    assert.equal(detail.body.data.meeting.checkIn.locationStatus, 'VERIFIED');
+    assert.equal((await call('GET', `/meetings/${V.visit.id}`, A.staff)).status, 200, 'refresh ke baad sales manager ko bhi');
+  });
+
+  test('check-out bina location ke bhi; admin ke filters', async () => {
+    const res = await checkOut(V.visit.id, { result: { outcome: 'DEAL_CLOSED', clientInterested: null, estimatedDealValue: null } });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.meeting.checkOut.locationStatus, 'LOCATION_UNAVAILABLE');
+    assert.equal(res.body.data.meeting.checkOut.distance, undefined);
+    assert.equal(res.body.data.meeting.followUp, undefined);
+
+    assert.equal((await call('GET', '/meetings?outcome=DEAL_CLOSED', A.admin)).body.data.total, 1);
+    assert.equal((await call('GET', '/meetings?outcome=FOLLOW_UP_REQUIRED', A.admin)).body.data.total, 1);
+    assert.equal((await call('GET', '/meetings?outcome=DEAL_CLOSED', V.mohan)).body.data.total, 0);
+  });
+
+  test('cancel / expire hui meeting mein sahi jagah se bhi check-in nahi', async () => {
+    const cancelled = await meetingNow();
+    await call('PATCH', `/meetings/${cancelled.id}/cancel`, A.admin, {});
+    assert.equal((await checkIn(cancelled.token, INSIDE_SPOT)).status, 409);
+
+    const expired = await meetingNow({ startAt: new Date(Date.now() - 180 * MIN), endAt: new Date(Date.now() - 120 * MIN) });
+    const res = await checkIn(expired.token, INSIDE_SPOT);
+    assert.equal(res.status, 409);
+    assert.match(res.body.message, /expired/);
+    assert.equal((await inDb(expired.id)).status, 'SCHEDULED');
   });
 });

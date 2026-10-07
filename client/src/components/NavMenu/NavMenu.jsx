@@ -16,7 +16,7 @@ export default function NavMenu({ collapsed = false, onClose }) {
   const { pathname } = useLocation();
   const logout = useLogout();
 
-  const links = filterByFeatures(ROLE_NAV[user.role], company);
+  const links = filterByFeatures(ROLE_NAV[user.role], company, user);
   const active = activeLink(links, pathname);
   const role = roleLine(user);
 

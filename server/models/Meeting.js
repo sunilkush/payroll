@@ -15,10 +15,11 @@ const { ObjectId } = mongoose.Schema.Types;
 const visitPunchSchema = new mongoose.Schema(
   {
     at: { type: Date, required: true },
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
+    // Check-in par hamesha hoti hai. Check-out par GPS na mile to khali (locationStatus: LOCATION_UNAVAILABLE).
+    lat: { type: Number },
+    lng: { type: Number },
     accuracy: { type: Number }, // GPS accuracy, meters
-    distance: { type: Number, required: true }, // meeting location se doori, meters
+    distance: { type: Number }, // meeting location se doori, meters
     locationStatus: { type: String, enum: Object.values(LOCATION_STATUS), required: true },
     // Fake GPS poori tarah nahi rok sakte, isliye IP/device ka log rakhte hain (attendance punch jaisa).
     ip: { type: String },

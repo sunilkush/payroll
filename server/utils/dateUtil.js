@@ -34,6 +34,16 @@ export function zonedTime(dateStr, time) {
   return new Date(asUtc - (shown - asUtc));
 }
 
+const timeFormatter = new Intl.DateTimeFormat('en-IN', {
+  timeZone: env.timezone,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+});
+
+// App timezone ka time, user ko dikhane ke liye: '10:30 am'
+export const toTimeStr = (date) => timeFormatter.format(date);
+
 // month: 'YYYY-MM' -> us mahine ki saari dates
 export function daysOfMonth(month) {
   const [year, monthNumber] = month.split('-').map(Number);

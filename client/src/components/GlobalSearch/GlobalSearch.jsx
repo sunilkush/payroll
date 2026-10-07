@@ -25,10 +25,10 @@ export default function GlobalSearch({ compact = false }) {
   // Pages + quick actions: turant, bina server ke
   const pages = useMemo(() => {
     const seen = new Set();
-    return [...filterByFeatures(ROLE_NAV[user.role], company), ...filterByFeatures(ROLE_ACTIONS[user.role], company)].filter(
+    return [...filterByFeatures(ROLE_NAV[user.role], company, user), ...filterByFeatures(ROLE_ACTIONS[user.role], company, user)].filter(
       (item) => !seen.has(item.to) && seen.add(item.to)
     );
-  }, [user.role, company]);
+  }, [user, company]);
 
   // Staff / companies: likhna rukne ke thodi der baad
   useEffect(() => {

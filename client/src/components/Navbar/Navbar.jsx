@@ -28,11 +28,11 @@ export default function Navbar({ desktop, collapsed, onMenuClick, onToggleCollap
   const navigate = useNavigate();
   const logout = useLogout();
 
-  const section = activeLink(filterByFeatures(ROLE_NAV[user.role], company), pathname);
+  const section = activeLink(filterByFeatures(ROLE_NAV[user.role], company, user), pathname);
   const title = section?.label ?? APP_NAME;
   // Detail page ka khaas naam (company / staff ka naam, "Add staff"); page khud deta hai
   const detail = useCurrentPageDetail();
-  const actions = filterByFeatures(ROLE_ACTIONS[user.role], company);
+  const actions = filterByFeatures(ROLE_ACTIONS[user.role], company, user);
 
   // Browser tab ka title: "Staff · PayRoster"
   useEffect(() => {
