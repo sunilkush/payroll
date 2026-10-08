@@ -1,0 +1,193 @@
+/* Server ke index page (views/index.pug) ka style. Mobile-first: pehle phone, phir badi screen.
+   Rang client/src/styles/variables.css wale hi hain. */
+:root {
+  --color-primary: #4f46e5;
+  --color-primary-dark: #4338ca;
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-success: #15803d;
+  --color-success-light: #dcfce7;
+  --color-danger: #b91c1c;
+  --color-danger-light: #fee2e2;
+  --radius: 12px;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Inter, 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.home {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+.home__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.home__logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.home__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.home__subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.home__card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.home__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.home__status--ok {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.home__status--down {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.home__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.home__list {
+  margin: 0;
+}
+
+.home__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.home__row dt {
+  color: var(--color-text-muted);
+}
+
+.home__row dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.home__links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.home__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.home__button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.home__button--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.home__button--primary:hover {
+  border-color: var(--color-primary-dark);
+  background: var(--color-primary-dark);
+  color: var(--color-surface);
+}
+
+.home__footer {
+  margin-top: var(--space-6);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .home {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .home__card {
+    padding: var(--space-6);
+  }
+
+  .home__links {
+    flex-direction: row;
+  }
+
+  .home__button {
+    flex: 1;
+  }
+}

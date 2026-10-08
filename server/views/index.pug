@@ -1,0 +1,38 @@
+extends layout
+
+block content
+  main.home
+    header.home__header
+      span.home__logo(aria-hidden='true') P
+      div
+        h1.home__title= appName
+        p.home__subtitle Attendance, leave and payroll API
+
+    section.home__card
+      p(class=`home__status home__status--${database.connected ? 'ok' : 'down'}`)
+        span.home__dot(aria-hidden='true')
+        = database.connected ? 'API is running' : 'API is running, database is not connected'
+
+      dl.home__list
+        .home__row
+          dt Version
+          dd= version
+        .home__row
+          dt Environment
+          dd= environment
+        .home__row
+          dt Database
+          dd= database.label
+        .home__row
+          dt Server time
+          dd #{serverTime} (#{timezone})
+        .home__row
+          dt API base URL
+          dd
+            code= apiBase
+
+    nav.home__links(aria-label='Links')
+      a.home__button.home__button--primary(href=clientUrl) Open #{appName}
+      a.home__button(href=`${apiBase}/health`) Health check
+
+    footer.home__footer &copy; #{new Date().getFullYear()} #{appName}

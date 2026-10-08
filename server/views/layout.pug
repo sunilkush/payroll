@@ -1,0 +1,13 @@
+//- Server se bane (Pug) pages ka saajha dhancha. Naya page: "extends layout" + "block content".
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    meta(name='robots' content='noindex')
+    title= title ? `${title} · ${appName}` : appName
+    link(rel='icon' type='image/svg+xml' href='/server-assets/favicon.svg')
+    //- Rule: inline CSS nahi; styles public/css mein
+    link(rel='stylesheet' href='/server-assets/css/home.css')
+  body
+    block content

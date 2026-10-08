@@ -39,6 +39,18 @@ npm run seed:demo                     # logins aur password script ke end mein p
 Shuru karne ka order: Super Admin login -> company + admin banao -> admin login -> Settings mein
 office location (aur chaho to Leave / PF / ESI ON) -> staff add karo -> staff login karke punch kare.
 
+## Server ka index page (Pug)
+
+Backend ka apna ek chhota HTML page hai jo **Pug** template se banta hai: API chal rahi hai ya nahi,
+version, environment, database ka haal.
+
+- Dev mein: `http://localhost:5000/` (aur `/api`). Production mein `/` React app ka hai, isliye
+  page sirf `/api` par milta hai.
+- Files: `server/views/layout.pug` + `index.pug` (view), `controllers/homeController.js`,
+  `services/statusService.js`, `routes/homeRoutes.js`, style `server/public/css/home.css`.
+- Ye page bina login ke khulta hai, isliye isme koi secret ya andar ki detail mat jodo.
+- Naya Pug page: `views/` mein file banao (`extends layout`), controller mein `res.render('naam', data)`.
+
 ## Tests
 
 ```bash
