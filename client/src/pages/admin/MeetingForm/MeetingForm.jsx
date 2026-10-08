@@ -14,7 +14,7 @@ import LocationMap from '../../../components/LocationMap/LocationMap.jsx';
 import { isOpenMeeting } from '../../../components/MeetingStatus/MeetingStatus.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
-import { todayLocal } from '../../../utils/format.js';
+import { addMinutes, endAfter, todayLocal } from '../../../utils/format.js';
 import './MeetingForm.css';
 
 const DEFAULT_RADIUS = '100';
@@ -116,7 +116,14 @@ export default function MeetingForm() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      // Start chunte hi end ek ghante baad ka bhar jaye (agar khali ho ya start se pehle reh gaya ho).
+      if (name === 'startTime' && value && (!prev.endTime || prev.endTime <= value)) next.endTime = addMinutes(value, 60);
+      // End mein AM / PM na chuna ho to picker AM maanta hai; start se pehle ho to dopahar ka maan lo.
+      if (name === 'endTime') next.endTime = endAfter(next.startTime, value);
+      return next;
+    });
   };
 
   // Client chunte hi uska contact aur saved location bhar jati hai (admin badal sakta hai).

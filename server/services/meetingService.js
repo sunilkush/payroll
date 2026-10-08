@@ -5,7 +5,7 @@ import { Meeting } from '../models/Meeting.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { FOLLOW_UP_STATUS, MEETING_EVENTS, MEETING_OPEN_STATUSES, MEETING_STATUS, ROLES } from '../utils/constants.js';
-import { currentMonth, todayStr, zonedTime } from '../utils/dateUtil.js';
+import { currentMonth, todayStr, toTimeStr, zonedTime } from '../utils/dateUtil.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { buildQr, meetingToken, qrExpiry } from './qrService.js';
@@ -39,7 +39,10 @@ async function assertSalesManager(salesManagerId) {
 function toSchedule(date, startTime, endTime) {
   const startAt = zonedTime(date, startTime);
   const endAt = zonedTime(date, endTime);
-  if (endAt <= startAt) throw fieldError('endTime', 'End time must be after start time.');
+  if (endAt <= startAt) {
+    // Dono time saath mein dikhao: aksar galti AM / PM ki hoti hai (12:30 ki jagah 12:30 am).
+    throw fieldError('endTime', `End time (${toTimeStr(endAt)}) must be after start time (${toTimeStr(startAt)}). Check AM / PM.`);
+  }
   if (endAt <= new Date()) throw fieldError('date', 'This meeting time has already passed.');
   return { date, startAt, endAt };
 }

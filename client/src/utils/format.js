@@ -55,6 +55,23 @@ export function greeting(now = new Date()) {
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// ---- 'HH:mm' (24 ghante) wale time, form ke start / end fields ke liye ----
+
+const toMinutes = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+const fromMinutes = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+// addMinutes('10:30', 60) -> '11:30'. Din ke bahar na jaye, isliye 23:59 par rukta hai.
+export const addMinutes = (time, minutes) => fromMinutes(Math.min(toMinutes(time) + minutes, 23 * 60 + 59));
+
+// Time picker mein AM / PM na chhuo to wo AM maan leta hai: start 11:00 ke baad end "12:30" chuno to
+// 12:30 AM (raat) ban jata hai. End ka start se pehle hona galat hi hai, isliye aise mein use dopahar (PM) maan lete hain.
+// endAfter('11:00', '00:30') -> '12:30';  endAfter('10:00', '05:30') -> '17:30';  sahi ho to waisa hi.
+export function endAfter(start, end) {
+  if (!start || !end || toMinutes(end) > toMinutes(start)) return end;
+  const afternoon = toMinutes(end) + 12 * 60;
+  return toMinutes(end) < 12 * 60 && afternoon > toMinutes(start) ? fromMinutes(afternoon) : end;
+}
+
 // <input type="date"> ke liye aaj ki date, 'YYYY-MM-DD' (local time).
 export function todayLocal() {
   const now = new Date();

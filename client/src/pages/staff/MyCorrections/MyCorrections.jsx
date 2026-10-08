@@ -10,7 +10,7 @@ import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import Pagination from '../../../components/Pagination/Pagination.jsx';
 import Table from '../../../components/Table/Table.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
-import { formatDate, formatTime, todayLocal } from '../../../utils/format.js';
+import { endAfter, formatDate, formatTime, todayLocal } from '../../../utils/format.js';
 import { useFeedback } from '../../../utils/useFeedback.js';
 import './MyCorrections.css';
 
@@ -61,7 +61,12 @@ export default function MyCorrections() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      // Punch out mein AM / PM na chuna ho to picker AM maanta hai; punch in se pehle ho to dopahar ka maan lo.
+      if (name === 'punchOut') next.punchOut = endAfter(next.punchIn, value);
+      return next;
+    });
   };
 
   const handleSubmit = async (event) => {
