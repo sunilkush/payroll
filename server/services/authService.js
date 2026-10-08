@@ -11,7 +11,7 @@ async function assertCanAccess(user) {
   if (user.role === ROLES.SUPER_ADMIN) return null;
 
   const company = await Company.findById(user.companyId).select(
-    'name isActive settings.leaveEnabled settings.salesEnabled'
+    'name isActive settings.leaveEnabled settings.salesEnabled settings.requireVisitPhoto'
   );
   if (!company) throw new ApiError(403, 'Company not found.');
   if (!company.isActive) throw new ApiError(403, 'Your company is blocked. Please contact support.');
@@ -21,6 +21,7 @@ async function assertCanAccess(user) {
     name: company.name,
     leaveEnabled: company.settings.leaveEnabled,
     salesEnabled: company.settings.salesEnabled,
+    requireVisitPhoto: company.settings.requireVisitPhoto,
   };
 }
 

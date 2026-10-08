@@ -1,6 +1,8 @@
 import '../setup.js';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { startTestServer } from '../helpers.js';
 import mongoose from 'mongoose';
@@ -10,6 +12,7 @@ import { LeaveBalance } from '../../models/LeaveBalance.js';
 import { Meeting } from '../../models/Meeting.js';
 import { User } from '../../models/User.js';
 import { markMissedPunchOuts } from '../../services/attendanceService.js';
+import { markMissedMeetings } from '../../services/meetingService.js';
 import { hashToken, meetingToken } from '../../services/qrService.js';
 import { addDays, daysOfMonth, todayStr, weekdayOf, zonedTime } from '../../utils/dateUtil.js';
 import { runWithTenant } from '../../utils/tenantContext.js';
@@ -1466,6 +1469,8 @@ describe('sales meetings: check-in (geofence) + check-out', () => {
     V.base = await Meeting.findOne({ title: 'Purani meeting' }).lean();
     V.openId = String((await Meeting.findOne({ salesManagerId: A.staffId, status: 'CHECKED_IN' }))._id);
     V.visit = await meetingNow();
+    // Photo wala rule agle describe mein; yahan sirf location aur result
+    await call('PUT', '/settings', A.admin, { settings: { requireVisitPhoto: false } });
 
     assert.equal((await checkIn(V.visit.token, {})).status, 400, 'location zaroori');
     assert.equal((await checkIn(V.visit.token, { lat: 28.6, lng: 77.3 })).status, 400, 'accuracy zaroori');
@@ -1583,5 +1588,395 @@ describe('sales meetings: check-in (geofence) + check-out', () => {
     assert.equal(res.status, 409);
     assert.match(res.body.message, /expired/);
     assert.equal((await inDb(expired.id)).status, 'SCHEDULED');
+  });
+});
+
+describe('sales meetings: visit photo, attachments, follow-ups', () => {
+  const MIN = 60 * 1000;
+  const SPOT = { lat: 28.6276, lng: 77.3725, accuracy: 15 };
+  const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(64, 1)]);
+  const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 2)]);
+  const PDF = Buffer.from('%PDF-1.4\n% test file\n');
+  const TEXT = Buffer.from('ye photo nahi, sirf text hai');
+  const uploadDir = process.env.UPLOAD_DIR;
+  const onDisk = (relative) => fs.existsSync(path.join(uploadDir, relative));
+  const call = (method, url, token, body) => api.call(url, { method, token, body });
+  const inDb = (id) => Meeting.findById(id).lean();
+  const P = {}; // { mohan, base, first, second }
+
+  // Multipart upload -> { status, body }
+  async function upload(url, token, field, bytes, { name = 'photo.jpg', type = 'image/jpeg', fields = {} } = {}) {
+    const form = new FormData();
+    if (bytes) form.append(field, new Blob([bytes], { type }), name);
+    for (const [key, value] of Object.entries(fields)) form.append(key, String(value));
+    const res = await fetch(`${api.origin}/api/v1${url}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    return { status: res.status, body: await res.json() };
+  }
+  // File download -> { status, type, bytes }
+  async function download(url, token) {
+    const res = await fetch(`${api.origin}/api/v1${url}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    return { status: res.status, type: res.headers.get('content-type'), bytes: Buffer.from(await res.arrayBuffer()) };
+  }
+  async function meetingNow() {
+    const meeting = await Meeting.create({
+      companyId: P.base.companyId,
+      clientId: P.base.clientId,
+      salesManagerId: A.staffId,
+      title: 'Photo test',
+      date: today,
+      startAt: new Date(Date.now() - 10 * MIN),
+      endAt: new Date(Date.now() + 50 * MIN),
+      location: { ...P.base.location, lat: 28.6273, lng: 77.3725, radius: 100 },
+      createdBy: A.adminId,
+    });
+    const id = String(meeting._id);
+    return { id, token: (await call('GET', `/meetings/${id}/qr`, A.admin)).body.data.qr.token };
+  }
+  const checkIn = (visit) => call('POST', '/meetings/check-in', A.staff, { token: visit.token, ...SPOT });
+
+  after(() => fs.rmSync(uploadDir, { recursive: true, force: true }));
+
+  test('photo sirf visit ke dauran, sirf assigned sales manager, sirf asli image', async () => {
+    P.mohan = await api.login('mohan@alpha.test');
+    P.base = await Meeting.findOne({ title: 'Purani meeting' }).lean();
+    P.first = await meetingNow();
+    const url = `/meetings/${P.first.id}/photo`;
+
+    assert.equal((await upload(url, A.staff, 'photo', JPEG)).status, 409, 'check-in se pehle nahi');
+    assert.equal((await checkIn(P.first)).status, 200);
+
+    assert.equal((await upload(url, undefined, 'photo', JPEG)).status, 401);
+    assert.equal((await upload(url, A.admin, 'photo', JPEG)).status, 403);
+    assert.equal((await upload(url, P.mohan, 'photo', JPEG)).status, 404);
+    assert.equal((await upload(url, A.staff, 'photo', null)).status, 400, 'file hi nahi');
+    assert.equal((await upload(url, A.staff, 'photo', TEXT)).status, 400, 'naam/type image ka, andar text');
+    assert.equal((await upload(url, A.staff, 'photo', PDF)).status, 400, 'photo mein PDF nahi');
+    assert.equal((await upload(url, A.staff, 'photo', JPEG, { fields: { lat: 28.6 } })).status, 400, 'lat ke saath lng');
+    const big = await upload(url, A.staff, 'photo', Buffer.concat([JPEG, Buffer.alloc(5 * 1024 * 1024)]));
+    assert.equal(big.status, 400);
+    assert.match(big.body.message, /too large/);
+    assert.equal((await inDb(P.first.id)).visitPhoto, undefined);
+  });
+
+  test('photo upload: time server ka, storage path bahar nahi; dobara lene par purani file hatti hai', async () => {
+    const url = `/meetings/${P.first.id}/photo`;
+    let res = await upload(url, A.staff, 'photo', JPEG, { name: '../../evil name?.jpg', fields: { lat: 28.6276, lng: 77.3725, source: 'camera' } });
+    assert.equal(res.status, 201);
+    const photo = res.body.data.meeting.visitPhoto;
+    assert.equal(photo.mimeType, 'image/jpeg');
+    assert.equal(photo.source, 'camera');
+    assert.equal(photo.lat, 28.6276);
+    assert.equal(photo.size, JPEG.length);
+    assert.equal(photo.path, undefined);
+    assert.equal(res.body.data.meeting.clientId.name, 'XYZ Industries', 'visit page ko client ka naam chahiye');
+    assert.equal(photo.name.includes('/'), false);
+    assert.ok(Date.now() - Date.parse(photo.uploadedAt) < 60000);
+    const firstPath = (await inDb(P.first.id)).visitPhoto.path;
+    assert.match(firstPath, new RegExp(`^${A.id}/meetings/${P.first.id}/[0-9a-f]{32}\\.jpg$`));
+    assert.ok(onDisk(firstPath));
+
+    res = await upload(url, A.staff, 'photo', PNG, { name: 'dobara.jpg' });
+    assert.equal(res.body.data.meeting.visitPhoto.mimeType, 'image/png', 'type bytes se, naam se nahi');
+    assert.equal(res.body.data.meeting.visitPhoto.source, 'upload');
+    assert.equal(onDisk(firstPath), false);
+    assert.ok(onDisk((await inDb(P.first.id)).visitPhoto.path));
+  });
+
+  test('photo dekhna: admin aur wahi sales manager; baaki ko 404', async () => {
+    const url = `/meetings/${P.first.id}/photo`;
+    const mine = await download(url, A.staff);
+    assert.equal(mine.status, 200);
+    assert.equal(mine.type, 'image/png');
+    assert.ok(mine.bytes.equals(PNG));
+    assert.equal((await download(url, A.admin)).status, 200);
+    assert.equal((await download(url, P.mohan)).status, 404);
+    assert.equal((await download(url, B.admin)).status, 404);
+    assert.equal((await download(url)).status, 401);
+  });
+
+  test('attachments: image / PDF, zyada se zyada 5, hatana', async () => {
+    const url = `/meetings/${P.first.id}/attachments`;
+    assert.equal((await upload(url, A.staff, 'file', TEXT, { name: 'notes.pdf', type: 'application/pdf' })).status, 400);
+    assert.equal((await upload(url, P.mohan, 'file', PDF)).status, 404);
+
+    let res = await upload(url, A.staff, 'file', PDF, { name: 'quotation.pdf', type: 'application/pdf' });
+    assert.equal(res.status, 201);
+    const [pdf] = res.body.data.meeting.attachments;
+    assert.equal(pdf.name, 'quotation.pdf');
+    assert.equal(pdf.mimeType, 'application/pdf');
+    assert.equal(pdf.path, undefined);
+    for (let i = 0; i < 4; i += 1) assert.equal((await upload(url, A.staff, 'file', JPEG, { name: `site-${i}.jpg` })).status, 201);
+    res = await upload(url, A.staff, 'file', JPEG);
+    assert.equal(res.status, 400);
+    assert.match(res.body.message, /at most 5/);
+
+    const file = await download(`${url}/${pdf._id}`, A.admin);
+    assert.equal(file.status, 200);
+    assert.equal(file.type, 'application/pdf');
+    assert.ok(file.bytes.equals(PDF));
+    assert.equal((await download(`${url}/${pdf._id}`, P.mohan)).status, 404);
+    assert.equal((await download(`${url}/${P.first.id}`, A.admin)).status, 404, 'galat file id');
+
+    const stored = (await inDb(P.first.id)).attachments[0].path;
+    assert.equal((await call('DELETE', `${url}/${pdf._id}`, A.admin)).status, 403);
+    res = await call('DELETE', `${url}/${pdf._id}`, A.staff);
+    assert.equal(res.body.data.meeting.attachments.length, 4);
+    assert.equal(onDisk(stored), false);
+    assert.equal((await call('DELETE', `${url}/${pdf._id}`, A.staff)).status, 404);
+  });
+
+  test('"photo required" ON: bina photo check-out nahi; check-out ke baad files band', async () => {
+    await call('PUT', '/settings', A.admin, { settings: { requireVisitPhoto: true } });
+    assert.equal((await call('GET', '/auth/me', A.staff)).body.data.company.requireVisitPhoto, true);
+    const out = (id, followUp) => call('POST', `/meetings/${id}/check-out`, A.staff, { result: { outcome: 'FOLLOW_UP_REQUIRED' }, followUp });
+
+    // Pehli visit par photo hai
+    assert.equal((await out(P.first.id, { date: addDays(today, 3) })).status, 200);
+    assert.equal((await upload(`/meetings/${P.first.id}/photo`, A.staff, 'photo', JPEG)).status, 409);
+    assert.equal((await upload(`/meetings/${P.first.id}/attachments`, A.staff, 'file', PDF)).status, 409);
+    assert.equal((await download(`/meetings/${P.first.id}/photo`, A.admin)).status, 200, 'dekhna chalta rehta hai');
+
+    P.second = await meetingNow();
+    await checkIn(P.second);
+    let res = await out(P.second.id, { date: today });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.errors[0].field, 'visitPhoto');
+    assert.equal((await inDb(P.second.id)).status, 'CHECKED_IN');
+    await upload(`/meetings/${P.second.id}/photo`, A.staff, 'photo', JPEG);
+    res = await out(P.second.id, { date: today, notes: 'Aaj shaam call' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.meeting.visitPhoto.mimeType, 'image/jpeg');
+  });
+
+  test('follow-ups: list (jo pehle due wo upar), ghanti, band karna', async () => {
+    const ids = async (token) => (await call('GET', '/dashboard/notifications', token)).body.data.items.map((item) => item.id);
+    let res = await call('GET', '/meetings/follow-ups', A.staff);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data.counts, { all: 3, PENDING: 3, DONE: 0, CANCELLED: 0 });
+    assert.deepEqual(res.body.data.items.map((item) => item._id).slice(0, 2), [P.second.id, P.first.id], 'aaj wala sabse upar');
+    assert.equal(res.body.data.items[0].followUp.notes, 'Aaj shaam call');
+    assert.equal(res.body.data.items[0].clientId.name, 'XYZ Industries');
+    assert.equal((await call('GET', '/meetings/follow-ups', A.admin)).body.data.total, 3);
+    assert.equal((await call('GET', '/meetings/follow-ups', P.mohan)).body.data.total, 0);
+    assert.equal((await call('GET', '/meetings/follow-ups', B.admin)).body.data.total, 0);
+    assert.equal((await call('GET', '/meetings/follow-ups?status=LATER', A.staff)).status, 400);
+
+    assert.ok((await ids(A.staff)).includes('follow-ups-due'), 'aaj ka follow-up due hai');
+    assert.ok((await ids(A.admin)).includes('follow-ups-due'));
+    assert.ok(!(await ids(P.mohan)).includes('follow-ups-due'));
+
+    const close = (id, token, status) => call('PATCH', `/meetings/${id}/follow-up`, token, { status });
+    assert.equal((await close(P.second.id, A.staff, 'PENDING')).status, 400);
+    assert.equal((await close(P.second.id, P.mohan, 'DONE')).status, 404);
+    assert.equal((await close(P.second.id, B.admin, 'DONE')).status, 404);
+    res = await close(P.second.id, A.staff, 'DONE');
+    assert.equal(res.body.data.meeting.followUp.status, 'DONE');
+    assert.equal((await close(P.second.id, A.staff, 'DONE')).status, 409);
+    assert.ok(!(await ids(A.staff)).includes('follow-ups-due'), 'ab aaj tak ka koi pending nahi');
+
+    res = await close(P.first.id, A.admin, 'CANCELLED');
+    assert.equal(res.body.data.meeting.followUp.status, 'CANCELLED');
+    assert.deepEqual((await call('GET', '/meetings/follow-ups?status=all', A.staff)).body.data.counts, { all: 3, PENDING: 1, DONE: 1, CANCELLED: 1 });
+    assert.equal((await call('GET', '/meetings/follow-ups', A.staff)).body.data.total, 1);
+  });
+});
+
+describe('sales meetings: dashboard, ghanti, Excel export', () => {
+  // Company B mein abhi koi meeting nahi: yahan ginti saaf rehti hai.
+  const MIN = 60 * 1000;
+  const call = (method, url, token, body) => api.call(url, { method, token, body });
+  const at = (offsetMin) => new Date(Date.now() + offsetMin * MIN);
+  const punch = (offsetMin) => ({ at: at(offsetMin), lat: 28.6, lng: 77.3, accuracy: 10, distance: 20, locationStatus: 'VERIFIED' });
+
+  test('setup: B ka staff sales manager, aaj ki 5 meetings + kal ki 1', async () => {
+    await call('PUT', `/staff/${B.staffId}`, B.admin, { isSalesManager: true });
+    const client = await Client.findOne({ companyId: B.id }).lean();
+    const base = {
+      companyId: B.id,
+      clientId: client._id,
+      salesManagerId: B.staffId,
+      date: today,
+      location: { name: 'ABC Pvt Ltd', lat: 28.6, lng: 77.3, radius: 100 },
+      createdBy: B.adminId,
+    };
+    await Meeting.insertMany([
+      { ...base, title: 'Abhi wali', startAt: at(-10), endAt: at(50) },
+      { ...base, title: 'Chhoot gayi', startAt: at(-240), endAt: at(-180) },
+      { ...base, title: 'Chalu visit', startAt: at(-60), endAt: at(-5), status: 'CHECKED_IN', checkIn: punch(-55) },
+      {
+        ...base,
+        title: 'Poori hui',
+        startAt: at(-360),
+        endAt: at(-300),
+        status: 'COMPLETED',
+        checkIn: punch(-355),
+        checkOut: punch(-300),
+        durationMinutes: 55,
+        result: { outcome: 'DEAL_CLOSED', clientInterested: true, estimatedDealValue: 250000, remarks: 'Order pakka' },
+        followUp: { at: at(-1), notes: 'Advance ke liye call', status: 'PENDING' },
+      },
+      { ...base, title: 'Cancel hui', startAt: at(-500), endAt: at(-440), status: 'CANCELLED', cancelReason: 'Client bahar hai' },
+      { ...base, title: 'Kal wali', date: addDays(today, 1), startAt: at(24 * 60), endAt: at(25 * 60), status: 'QR_SENT' },
+    ]);
+    assert.equal(await Meeting.countDocuments({ companyId: B.id }), 6);
+  });
+
+  test('dashboard: aaj ki ginti (time nikal chuki meeting = missed), aane wali, follow-ups', async () => {
+    const res = await call('GET', '/meetings/dashboard', B.admin);
+    assert.equal(res.status, 200);
+    const { counts, today: list, followUps, month: monthly, date } = res.body.data;
+    assert.equal(date, today);
+    assert.deepEqual(counts, { total: 5, scheduled: 1, checkedIn: 1, completed: 1, missed: 1, cancelled: 1, upcoming: 1 });
+    assert.deepEqual(list.map((item) => item.title), ['Cancel hui', 'Poori hui', 'Chhoot gayi', 'Chalu visit', 'Abhi wali'], 'time ke hisaab se');
+    assert.deepEqual(list.map((item) => item.status), ['CANCELLED', 'COMPLETED', 'MISSED', 'CHECKED_IN', 'SCHEDULED']);
+    assert.equal(list[1].outcome, 'DEAL_CLOSED');
+    assert.equal(list[1].client, 'ABC Pvt Ltd');
+    assert.equal(list[1].salesManager, 'Sita Devi');
+    assert.ok(list[3].checkInAt);
+    assert.deepEqual(followUps, { pending: 1, due: 1 });
+    assert.equal(monthly.completed, 1);
+    assert.equal(monthly.missed, 1);
+
+    // Sales manager ko apni hi (yahan saari usi ki hain); doosri company alag; super admin nahi
+    assert.deepEqual((await call('GET', '/meetings/dashboard', B.staff)).body.data.counts, counts);
+    assert.notDeepEqual((await call('GET', '/meetings/dashboard', A.admin)).body.data.counts, counts);
+    assert.equal((await call('GET', '/meetings/dashboard', superAdmin)).status, 403);
+    assert.equal((await call('GET', '/meetings/dashboard')).status, 401);
+  });
+
+  test('ghanti: admin ko "QR nahi bheja", sales manager ko chalu visit / bachi meetings / follow-up', async () => {
+    const items = async (token) => (await call('GET', '/dashboard/notifications', token)).body.data.items;
+    const admin = await items(B.admin);
+    const unsent = admin.find((item) => item.id === 'qr-not-sent');
+    assert.match(unsent.title, /^1 meeting\(s\) today/, 'sirf wo jo abhi ho sakti hai');
+    assert.ok(admin.some((item) => item.id === 'follow-ups-due'));
+
+    const staff = await items(B.staff);
+    assert.match(staff.find((item) => item.id === 'visit-open').title, /ABC Pvt Ltd/);
+    assert.match(staff.find((item) => item.id === 'meetings-today').title, /^1 client meeting/);
+    assert.ok(staff.some((item) => item.id === 'follow-ups-due'));
+
+    // Sales OFF karte hi ye sab hat jate hain
+    await call('PUT', '/settings', B.admin, { settings: { salesEnabled: false } });
+    const ids = (list) => list.map((item) => item.id);
+    for (const id of ['qr-not-sent', 'follow-ups-due']) assert.ok(!ids(await items(B.admin)).includes(id));
+    for (const id of ['visit-open', 'meetings-today', 'follow-ups-due']) assert.ok(!ids(await items(B.staff)).includes(id));
+    await call('PUT', '/settings', B.admin, { settings: { salesEnabled: true } });
+  });
+
+  test('Excel export: list wale filters, sirf apni company, sirf admin', async () => {
+    const { default: ExcelJS } = await import('exceljs');
+    const sheetOf = async (query, token = B.admin) => {
+      const res = await api.raw(`/meetings/export${query}`, { token });
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get('content-type'), /spreadsheetml/);
+      assert.match(res.headers.get('content-disposition'), /meetings-\d{4}-\d{2}-\d{2}\.xlsx/);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await res.arrayBuffer());
+      return workbook.worksheets[0];
+    };
+    const header = (sheet) => sheet.getRow(3).values.slice(1);
+    const cell = (sheet, row, name) => sheet.getRow(row).getCell(header(sheet).indexOf(name) + 1).value;
+
+    let sheet = await sheetOf('');
+    assert.match(sheet.getRow(1).getCell(1).value, /Sales Meetings/);
+    assert.equal(sheet.rowCount, 3 + 6, 'B ki 6 meetings, A ki ek bhi nahi');
+    assert.deepEqual(header(sheet).slice(0, 5), ['Date', 'Meeting', 'Client', 'Sales Manager', 'Emp Code']);
+    assert.equal(cell(sheet, 4, 'Meeting'), 'Cancel hui', 'purani pehle');
+    assert.equal(cell(sheet, 4, 'Cancel Reason'), 'Client bahar hai');
+
+    sheet = await sheetOf('?status=COMPLETED');
+    assert.equal(sheet.rowCount, 4);
+    assert.equal(cell(sheet, 4, 'Client'), 'ABC Pvt Ltd');
+    assert.equal(cell(sheet, 4, 'Sales Manager'), 'Sita Devi');
+    assert.equal(cell(sheet, 4, 'Status'), 'Completed');
+    assert.equal(cell(sheet, 4, 'Duration (min)'), 55);
+    assert.equal(cell(sheet, 4, 'Check-in Distance (m)'), 20);
+    assert.equal(cell(sheet, 4, 'Check-in Location'), 'Verified');
+    assert.equal(cell(sheet, 4, 'Outcome'), 'Deal Closed');
+    assert.equal(cell(sheet, 4, 'Client Interested'), 'Yes');
+    assert.equal(cell(sheet, 4, 'Est. Deal Value'), 250000);
+    assert.equal(cell(sheet, 4, 'Follow-up Status'), 'Pending');
+    assert.match(cell(sheet, 4, 'Check-in'), /\d{2}:\d{2} (am|pm)/i);
+
+    assert.equal((await sheetOf(`?from=${addDays(today, 1)}`)).rowCount, 4, 'date filter');
+    assert.equal((await sheetOf('?outcome=NOT_INTERESTED')).rowCount, 3, 'koi row nahi, sirf heading');
+    assert.equal((await api.raw('/meetings/export', { token: B.staff })).status, 403);
+    assert.equal((await api.raw('/meetings/export?status=EXPIRED', { token: B.admin })).status, 400);
+    assert.equal((await api.raw('/meetings/export')).status, 401);
+  });
+});
+
+describe('sales meetings: missed (cron) + grace badalna', () => {
+  // B mein grace 30 minute (default). Pichhle describe se: "Chhoot gayi" 3 ghante pehle khatam, "Abhi wali" chalu.
+  const MIN = 60 * 1000;
+  const call = (method, url, token, body) => api.call(url, { method, token, body });
+  const statusOf = async (title) => (await Meeting.findOne({ companyId: B.id, title }).lean()).status;
+
+  test('time nikal chuki khuli meeting MISSED hoti hai; grace ke andar wali nahi; dobara chalane par kuch nahi', async () => {
+    const source = await Meeting.findOne({ companyId: B.id, title: 'Abhi wali' }).lean();
+    const { _id, ...copy } = source;
+    await Meeting.create({ ...copy, title: 'Grace ke andar', startAt: new Date(Date.now() - 70 * MIN), endAt: new Date(Date.now() - 10 * MIN) });
+
+    assert.ok((await markMissedMeetings()) >= 1);
+    assert.equal(await statusOf('Chhoot gayi'), 'MISSED');
+    assert.equal(await statusOf('Grace ke andar'), 'SCHEDULED', 'end ke 10 min baad, grace 30');
+    assert.equal(await statusOf('Abhi wali'), 'SCHEDULED');
+    assert.equal(await statusOf('Kal wali'), 'QR_SENT');
+    assert.equal(await statusOf('Chalu visit'), 'CHECKED_IN', 'chalu visit ko nahi chhedta');
+    const missed = await Meeting.findOne({ companyId: B.id, title: 'Chhoot gayi' }).lean();
+    assert.equal(missed.events.at(-1).type, 'MISSED');
+
+    assert.equal(await markMissedMeetings(), 0);
+    // 25 minute baad "Grace ke andar" ka waqt bhi nikal jata hai
+    assert.ok((await markMissedMeetings(new Date(Date.now() + 25 * MIN))) >= 1);
+    assert.equal(await statusOf('Grace ke andar'), 'MISSED');
+  });
+
+  test('ab list, dashboard aur Excel mein "Missed" dikhta hai; missed meeting mein check-in nahi', async () => {
+    const list = await call('GET', '/meetings?status=MISSED', B.admin);
+    assert.equal(list.body.data.total, 2);
+    assert.equal(list.body.data.counts.MISSED, 2);
+    assert.equal((await call('GET', '/meetings/dashboard', B.admin)).body.data.counts.missed, 2);
+    const res = await api.raw('/meetings/export?status=MISSED', { token: B.admin });
+    const { default: ExcelJS } = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await res.arrayBuffer());
+    assert.equal(workbook.worksheets[0].rowCount, 3 + 2);
+
+    const missed = await Meeting.findOne({ companyId: B.id, title: 'Chhoot gayi' });
+    const token = meetingToken(missed._id, 1);
+    await Meeting.updateOne({ _id: missed._id }, { $set: { 'qr.tokenHash': hashToken(token) } });
+    const scan = await call('POST', '/meetings/scan', B.staff, { token });
+    assert.equal(scan.status, 409);
+    assert.match(scan.body.message, /missed/);
+    assert.equal((await call('PUT', `/meetings/${missed._id}`, B.admin, { title: 'Dobara' })).status, 409, 'missed meeting badalti nahi');
+  });
+
+  test('grace badalne par khuli meetings ke QR ki "valid until" badalti hai', async () => {
+    const client = await Client.findOne({ companyId: B.id }).lean();
+    const day = addDays(today, 3);
+    const created = await call('POST', '/meetings', B.admin, {
+      clientId: client._id,
+      salesManagerId: B.staffId,
+      title: 'Grace test',
+      date: day,
+      startTime: '10:00',
+      endTime: '11:00',
+      location: { lat: 28.6, lng: 77.3 },
+    });
+    assert.equal(created.status, 201);
+    const id = created.body.data.meeting._id;
+    assert.equal(created.body.data.meeting.qr.expiresAt, `${day}T06:00:00.000Z`, '11:00 IST + 30 min');
+
+    await call('PUT', '/settings', B.admin, { settings: { meetingCheckInGraceMin: 60 } });
+    const qr = (await call('GET', `/meetings/${id}/qr`, B.admin)).body.data.qr;
+    assert.equal(qr.expiresAt, `${day}T06:30:00.000Z`, '11:00 IST + 60 min');
+    const done = await Meeting.findOne({ companyId: B.id, title: 'Poori hui' }).lean();
+    assert.equal(done.qr?.expiresAt, undefined, 'poori ho chuki meeting ko nahi chhedta');
   });
 });

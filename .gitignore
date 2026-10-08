@@ -23,3 +23,6 @@ Thumbs.db
 
 # npm run test:responsive ke screenshots
 server/tests/e2e/screenshots/
+
+# Upload hui files (visit photo, attachments)
+server/uploads/

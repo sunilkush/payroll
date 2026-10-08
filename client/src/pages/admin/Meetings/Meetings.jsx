@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { listClientsApi } from '../../../api/clientApi.js';
-import { listMeetingsApi } from '../../../api/meetingApi.js';
+import { downloadMeetingsExcel, listMeetingsApi } from '../../../api/meetingApi.js';
 import { listStaffApi } from '../../../api/staffApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
@@ -71,6 +71,20 @@ export default function Meetings() {
   // Filter dropdowns ke options
   const [clients, setClients] = useState([]);
   const [managers, setManagers] = useState([]);
+  const [exporting, setExporting] = useState(false);
+
+  // Jo filters screen par lage hain wahi Excel mein (page ko chhod kar: Excel mein saari rows aati hain).
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { page: _page, ...filters } = toParams(query);
+      await downloadMeetingsExcel(filters);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // MeetingForm / MeetingDetail yahan message bhejte hain: ek baar toast dikha kar hata do.
   useEffect(() => {
@@ -125,6 +139,11 @@ export default function Meetings() {
   return (
     <section className="meetings">
       <PageHeader title="Meetings" subtitle="Client meetings assigned to your sales managers">
+        {result.total > 0 && (
+          <Button variant="secondary" icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+            Export Excel
+          </Button>
+        )}
         {addButton}
       </PageHeader>
 

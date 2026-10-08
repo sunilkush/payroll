@@ -67,3 +67,17 @@
   flex: 1;
   min-height: 44px;
 }
+
+/* Sabse zaroori button: poori chaudai, ungli se dabane layak */
+.scan-meeting__big.ant-btn {
+  width: 100%;
+  min-height: 52px;
+  font-size: var(--font-size-md);
+}
+
+.scan-meeting__hint {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  color: var(--color-text-muted);
+}

@@ -1,5 +1,11 @@
 import Joi from 'joi';
-import { DEFAULT_MEETING_RADIUS, LOCATION_STATUS, MEETING_OUTCOMES, MEETING_STATUS } from '../utils/constants.js';
+import {
+  DEFAULT_MEETING_RADIUS,
+  FOLLOW_UP_STATUS,
+  LOCATION_STATUS,
+  MEETING_OUTCOMES,
+  MEETING_STATUS,
+} from '../utils/constants.js';
 import { dateStr, objectId, pagination, phone, timeStr } from './common.js';
 
 // QR ke andar ka token (base64url). Lambai / akshar yahin jaanch lete hain, taaki kachra DB tak na jaye.
@@ -90,3 +96,21 @@ export const checkOutSchema = Joi.object({
     notes: Joi.string().trim().max(500).allow('').label('Follow-up notes'),
   }).default({}),
 }).and('lat', 'lng');
+
+// Visit photo ke saath aane wale fields (multipart mein sab string aate hain; Joi number bana deta hai).
+export const visitPhotoSchema = Joi.object({
+  lat: lat.empty(''),
+  lng: lng.empty(''),
+  source: Joi.string().valid('camera', 'upload').default('upload'),
+}).and('lat', 'lng');
+
+export const fileParamSchema = Joi.object({ id: objectId.required(), fileId: objectId.required() });
+
+export const listFollowUpsSchema = Joi.object({
+  status: Joi.string().valid('all', ...Object.values(FOLLOW_UP_STATUS)).default(FOLLOW_UP_STATUS.PENDING),
+  ...pagination,
+});
+
+export const closeFollowUpSchema = Joi.object({
+  status: Joi.string().valid(FOLLOW_UP_STATUS.DONE, FOLLOW_UP_STATUS.CANCELLED).required(),
+});

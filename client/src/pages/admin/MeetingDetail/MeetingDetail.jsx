@@ -13,6 +13,7 @@ import MeetingStatus, {
   LocationStatus,
   OUTCOME_LABEL,
 } from '../../../components/MeetingStatus/MeetingStatus.jsx';
+import MeetingEvidence from '../../../components/MeetingEvidence/MeetingEvidence.jsx';
 import MeetingQr from '../../../components/MeetingQr/MeetingQr.jsx';
 import Modal from '../../../components/Modal/Modal.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
@@ -183,6 +184,10 @@ export default function MeetingDetail() {
           )}
         </Card>
       ))}
+
+      <div className="meeting-detail__section">
+        <MeetingEvidence meeting={meeting} />
+      </div>
 
       <Card className="meeting-detail__section" size="small" title="Audit History">
         <Timeline

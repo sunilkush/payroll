@@ -21,6 +21,7 @@ import { AreaTrend, BarTrend, Donut } from '../../components/Charts/Charts.jsx';
 import DashboardRow from '../../components/DashboardGrid/DashboardGrid.jsx';
 import DataTable from '../../components/DataTable/DataTable.jsx';
 import ListCard, { ListRow } from '../../components/ListCard/ListCard.jsx';
+import MeetingsToday from '../../components/MeetingsToday/MeetingsToday.jsx';
 import StatCard, { StatGrid } from '../../components/StatCard/StatCard.jsx';
 import UserCell from '../../components/UserCell/UserCell.jsx';
 import WelcomeHeader from '../../components/WelcomeHeader/WelcomeHeader.jsx';
@@ -168,6 +169,8 @@ export default function AdminHome() {
           to="/admin/payroll"
         />
       </StatGrid>
+
+      {company?.salesEnabled && <MeetingsToday admin />}
 
       <DashboardRow
         main={

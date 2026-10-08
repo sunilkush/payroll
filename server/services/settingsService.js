@@ -2,6 +2,7 @@ import { Company } from '../models/Company.js';
 import { ApiError } from '../utils/ApiError.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { creditCompany } from './leaveService.js';
+import { refreshQrExpiry } from './meetingService.js';
 
 // Admin ki apni company ki settings. Company ka _id hi tenant id hai.
 
@@ -32,6 +33,10 @@ export async function updateSettings({ locations, holidays, settings }) {
   // agli 1 tarikh tak balance 0 rehta. (Mahine mein ek hi baar lagta hai.)
   if (!before.settings.leaveEnabled && company.settings.leaveEnabled) {
     await creditCompany(company);
+  }
+  // Sales meetings ka check-in grace badla: khuli meetings ke QR ki "valid until" bhi badlo.
+  if (before.settings.meetingCheckInGraceMin !== company.settings.meetingCheckInGraceMin) {
+    await refreshQrExpiry(company.settings.meetingCheckInGraceMin);
   }
   return company;
 }

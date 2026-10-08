@@ -6,6 +6,7 @@ import {
   EnvironmentOutlined,
   FieldTimeOutlined,
   FileTextOutlined,
+  PhoneOutlined,
   PlusOutlined,
   QrcodeOutlined,
   ScheduleOutlined,
@@ -49,6 +50,7 @@ export const ROLE_NAV = Object.freeze({
     { to: '/admin/corrections', label: 'Punch Corrections', icon: FieldTimeOutlined, group: 'People' },
     { to: '/admin/leaves', label: 'Leaves', icon: CalendarOutlined, group: 'People', feature: 'leaveEnabled' },
     { to: '/admin/meetings', label: 'Meetings', icon: ScheduleOutlined, group: 'Sales', feature: 'salesEnabled' },
+    { to: '/admin/follow-ups', label: 'Follow-ups', icon: PhoneOutlined, group: 'Sales', feature: 'salesEnabled' },
     { to: '/admin/clients', label: 'Clients', icon: ShopOutlined, group: 'Sales', feature: 'salesEnabled' },
     { to: '/admin/payroll', label: 'Payroll', icon: WalletOutlined, group: 'Finance' },
     { to: '/admin/settings', label: 'Settings', icon: SettingOutlined, group: 'Configuration' },
@@ -61,6 +63,7 @@ export const ROLE_NAV = Object.freeze({
     { to: '/staff/leaves', label: 'My Leaves', icon: CalendarOutlined, group: 'My work', feature: 'leaveEnabled' },
     { to: '/staff/meetings', label: 'My Meetings', icon: ScheduleOutlined, group: 'Sales', ...SALES_MANAGER },
     { to: '/staff/scan', label: 'Scan Meeting QR', icon: QrcodeOutlined, group: 'Sales', ...SALES_MANAGER },
+    { to: '/staff/follow-ups', label: 'Follow-ups', icon: PhoneOutlined, group: 'Sales', ...SALES_MANAGER },
     { to: '/staff/salary', label: 'My Salary', icon: FileTextOutlined, group: 'Pay' },
   ],
 });

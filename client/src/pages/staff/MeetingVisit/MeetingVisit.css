@@ -1,0 +1,67 @@
+/* Phone ke liye bana hai; badi screen par beech mein ek patli column */
+.meeting-visit {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.meeting-visit__card {
+  margin-bottom: var(--space-3);
+}
+
+.meeting-visit__card--active {
+  border-color: var(--color-success);
+}
+
+.meeting-visit__headline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-success);
+}
+
+.meeting-visit__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+}
+
+.meeting-visit__card--active .meeting-visit__facts,
+.meeting-visit__card p {
+  margin-bottom: var(--space-3);
+}
+
+.meeting-visit__facts dt,
+.meeting-visit__muted {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.meeting-visit__facts dd {
+  margin: 0;
+}
+
+/* Sabse zaroori button: poori chaudai, ungli se dabane layak */
+.meeting-visit__big.ant-btn {
+  width: 100%;
+  min-height: 48px;
+}
+
+.meeting-visit__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--space-3);
+}
+
+.meeting-visit__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.meeting-visit__actions .ant-btn {
+  flex: 1;
+  min-height: 44px;
+}

@@ -14,6 +14,7 @@ import ChartCard from '../../components/ChartCard/ChartCard.jsx';
 import { AreaTrend, BarTrend, Donut } from '../../components/Charts/Charts.jsx';
 import DashboardRow from '../../components/DashboardGrid/DashboardGrid.jsx';
 import ListCard, { ListRow } from '../../components/ListCard/ListCard.jsx';
+import MeetingsToday from '../../components/MeetingsToday/MeetingsToday.jsx';
 import StatCard, { StatGrid } from '../../components/StatCard/StatCard.jsx';
 import WelcomeHeader from '../../components/WelcomeHeader/WelcomeHeader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -112,6 +113,8 @@ export default function StaffHome() {
           to="/staff/salary"
         />
       </StatGrid>
+
+      {company?.salesEnabled && user.isSalesManager && <MeetingsToday />}
 
       <DashboardRow
         main={

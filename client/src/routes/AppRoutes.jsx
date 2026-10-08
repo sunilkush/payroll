@@ -4,6 +4,7 @@ import { ROLES, ROLE_HOME } from '../utils/roles.js';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AppLayout from '../components/AppLayout/AppLayout.jsx';
 import Loader from '../components/Loader/Loader.jsx';
+import FollowUps from '../pages/FollowUps/FollowUps.jsx';
 import Login from '../pages/Login/Login.jsx';
 import SuperAdminHome from '../pages/superadmin/SuperAdminHome.jsx';
 import Companies from '../pages/superadmin/Companies/Companies.jsx';
@@ -65,6 +66,7 @@ export default function AppRoutes() {
           <Route path="/admin/clients" element={<Clients />} />
           <Route path="/admin/clients/new" element={<ClientForm />} />
           <Route path="/admin/clients/:id" element={<ClientForm key="edit" />} />
+          <Route path="/admin/follow-ups" element={<FollowUps />} />
           <Route path="/admin/meetings" element={<Meetings />} />
           <Route path="/admin/meetings/new" element={<MeetingForm />} />
           <Route path="/admin/meetings/:id" element={<MeetingDetail />} />
@@ -81,6 +83,7 @@ export default function AppRoutes() {
           <Route path="/staff/punch" element={<PunchScreen />} />
           <Route path="/staff/attendance" element={<MyAttendance />} />
           <Route path="/staff/corrections" element={<MyCorrections />} />
+          <Route path="/staff/follow-ups" element={<FollowUps />} />
           <Route path="/staff/meetings" element={<MyMeetings />} />
           <Route path="/staff/meetings/:id" element={<MeetingVisit />} />
           <Route path="/staff/scan" element={<ScanMeeting />} />

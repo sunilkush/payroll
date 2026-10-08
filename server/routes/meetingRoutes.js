@@ -3,17 +3,22 @@ import rateLimit from 'express-rate-limit';
 import * as meetingController from '../controllers/meetingController.js';
 import { authorize } from '../middlewares/authorize.js';
 import { validate } from '../middlewares/validate.js';
+import { singleFile } from '../services/uploadService.js';
 import { ROLES } from '../utils/constants.js';
 import { idParamSchema } from '../validators/common.js';
 import {
   cancelMeetingSchema,
   checkInSchema,
   checkOutSchema,
+  closeFollowUpSchema,
   createMeetingSchema,
+  fileParamSchema,
+  listFollowUpsSchema,
   listMeetingsSchema,
   qrSentSchema,
   scanSchema,
   updateMeetingSchema,
+  visitPhotoSchema,
 } from '../validators/meetingValidator.js';
 
 const router = Router();
@@ -40,10 +45,25 @@ router.get('/', adminOrStaff, validate(listMeetingsSchema, 'query'), meetingCont
 router.post('/scan', staffOnly, tokenLimiter(), validate(scanSchema), meetingController.scan);
 // Check-in: QR ka token + GPS. Doori, geofence aur time server par.
 router.post('/check-in', staffOnly, tokenLimiter(), validate(checkInSchema), meetingController.checkIn);
+// Dashboard ke cards + aaj ki list. Staff: apni meetings. Admin: company ki.
+router.get('/dashboard', adminOrStaff, meetingController.dashboard);
+// Excel: list wale hi filters (date, sales manager, client, status, outcome, location). Isi se saari reports banti hain.
+router.get('/export', adminOnly, validate(listMeetingsSchema, 'query'), meetingController.exportExcel);
+// Meeting ke baad ke follow-ups. Staff: apne. Admin: company ke saare.
+router.get('/follow-ups', adminOrStaff, validate(listFollowUpsSchema, 'query'), meetingController.listFollowUps);
 router.get('/:id', adminOrStaff, meetingId, meetingController.getOne);
 router.put('/:id', adminOnly, meetingId, validate(updateMeetingSchema), meetingController.update);
 router.patch('/:id/cancel', adminOnly, meetingId, validate(cancelMeetingSchema), meetingController.cancel);
 router.post('/:id/check-out', staffOnly, meetingId, validate(checkOutSchema), meetingController.checkOut);
+router.patch('/:id/follow-up', adminOrStaff, meetingId, validate(closeFollowUpSchema), meetingController.closeFollowUp);
+
+// Visit ka saboot: sales manager visit ke dauran jodta hai; admin aur wahi sales manager dekh sakte hain.
+const fileParams = validate(fileParamSchema, 'params');
+router.post('/:id/photo', staffOnly, meetingId, singleFile('photo'), validate(visitPhotoSchema), meetingController.uploadPhoto);
+router.get('/:id/photo', adminOrStaff, meetingId, meetingController.sendFile);
+router.post('/:id/attachments', staffOnly, meetingId, singleFile('file'), meetingController.uploadAttachment);
+router.get('/:id/attachments/:fileId', adminOrStaff, fileParams, meetingController.sendFile);
+router.delete('/:id/attachments/:fileId', staffOnly, fileParams, meetingController.removeAttachment);
 
 // QR sirf admin ko dikhta hai; sales manager use scan karta hai.
 router.get('/:id/qr', adminOnly, meetingId, meetingController.getQr);

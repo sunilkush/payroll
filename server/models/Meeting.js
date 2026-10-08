@@ -35,9 +35,10 @@ const fileSchema = new mongoose.Schema(
     mimeType: { type: String, required: true },
     size: { type: Number, required: true }, // bytes
     uploadedAt: { type: Date, default: Date.now },
-    // Visit photo ke liye: kahan li gayi
+    // Visit photo ke liye: kahan li gayi, aur app ke camera se li ya file chuni (phone ka bataya hua)
     lat: { type: Number },
     lng: { type: Number },
+    source: { type: String, enum: ['camera', 'upload'] },
   },
   { _id: true }
 );

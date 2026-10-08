@@ -1,0 +1,21 @@
+.meetings-today {
+  margin-bottom: var(--space-6);
+}
+
+.meetings-today__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.meetings-today__title {
+  font-size: var(--font-size-lg);
+}
+
+.meetings-today__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

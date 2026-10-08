@@ -29,7 +29,8 @@ npm run dev:client                    # doosre terminal mein, http://localhost:5
 ```
 
 App ko bhara hua dekhna ho to demo data daal sakte ho (2 companies, staff, pichhle mahine ki
-attendance, leaves aur payroll; sab nakli):
+attendance, leaves aur payroll, aur pehli company mein Sales meetings; sab nakli). Purana demo data
+ho to ye sirf Sales ka hissa jod deta hai:
 
 ```bash
 npm run seed:demo                     # logins aur password script ke end mein print hote hain
@@ -187,6 +188,9 @@ TRUST_PROXY=1                          # Nginx ke peeche
 APP_TIMEZONE=Asia/Kolkata
 SUPER_ADMIN_EMAIL=...
 SUPER_ADMIN_PASSWORD=...               # seed ke baad is line ko hata do
+# Sales meetings use karte ho to (dono optional):
+# QR_SECRET=<48+ random bytes>         # meeting QR ka secret; na ho to JWT_SECRET se nikalta hai
+# UPLOAD_DIR=/var/lib/payroster/uploads   # visit photo / attachments; na ho to server/uploads
 ```
 
 `NODE_ENV=production` hone par `FORCE_HTTPS` aur `SERVE_CLIENT` apne aap ON ho jate hain.
@@ -200,8 +204,8 @@ pm2 start ecosystem.config.cjs
 pm2 save && pm2 startup       # reboot ke baad apne aap chale
 ```
 
-Ek hi instance chalao: cron jobs (raat 11:59 auto punch-out, 1 tarikh ko leave credit) server ke
-andar chalte hain.
+Ek hi instance chalao: cron jobs (raat 11:59 auto punch-out, 1 tarikh ko leave credit, har 10 minute
+chhooti hui sales meetings) server ke andar chalte hain.
 
 ### 4. Nginx + HTTPS certificate
 
@@ -228,7 +232,9 @@ git pull && npm run install:all && npm run build && pm2 restart payroll
 
 - **MongoDB** mein authentication ON rakho aur use internet par mat kholo (sirf `127.0.0.1`).
 - **Backup:** roz `mongodump --uri "$MONGO_URI" --out /backups/$(date +%F)` ka cron lagao.
-  Payroll aur attendance ka data dobara nahi ban sakta.
+  Payroll aur attendance ka data dobara nahi ban sakta. Sales meetings ki visit photos aur attachments
+  database mein nahi, disk par hain (`server/uploads` ya `UPLOAD_DIR`): us folder ka backup alag se lo,
+  aur naya version deploy karte waqt use mat mitao.
 - **Server ka time** kuch bhi ho, attendance ki date aur cron `APP_TIMEZONE` se chalte hain.
 - **PF/ESI rates** Super Admin ki Global Settings mein hain. Live jaane se pehle CA se confirm karo,
   khaaskar "PF wage floor (% of gross)".
@@ -240,6 +246,52 @@ git pull && npm run install:all && npm run build && pm2 restart payroll
 - **Fake GPS** web browser par poori tarah nahi ruk sakta. Har punch ke saath IP aur device save
   hota hai, shak hone par wahi dekho.
 
+## Sales meetings (QR + geofence se client visit)
+
+Admin client meeting banakar sales manager ko assign karta hai; sales manager client ke yahan pahunch
+kar QR scan karta hai aur apni location ke saath check-in / check-out karta hai. Maqsad: kaun mila,
+kahan, kab aaya, kab gaya, kitni der ruka, location sahi thi ya nahi, nateeja kya raha, agla kadam kya.
+
+**Chalu karna** (default OFF): admin Settings -> "Sales Meetings" ON -> Staff form mein jise chahiye
+use "Sales manager" tick karo -> Sales -> Clients mein client jodo -> Meetings -> Create Meeting.
+
+**Flow**
+
+1. Admin meeting banata hai (client, sales manager, date / time, map par location, geofence radius;
+   default 100 m). QR saath hi ban jata hai.
+2. Admin meeting ke page se QR **Share** (phone ka share sheet, jaise WhatsApp) ya **Download** karta
+   hai. Kisi aur tareeke se bheja ho to "Mark as Sent".
+3. Sales manager: Sales -> Scan Meeting QR -> **Check In**. Server dekhta hai: QR sahi hai, meeting
+   isi bande ki hai, aaj ki hai, time window ke andar hai, GPS theek hai, aur banda geofence ke andar hai.
+4. Meeting ke baad **Check Out**: outcome (zaroori), requirement, deal value, follow-up, remarks.
+   Company ne "Visit photo required" ON kiya ho to photo ke bina check-out nahi hota.
+5. Admin ko meeting ke page par visit, location, result, photo / attachments aur poori audit history
+   dikhti hai; Meetings list se **Export Excel** (jo filters lage hain wahi Excel mein).
+
+**Status:** `SCHEDULED` -> `QR_SENT` -> `CHECKED_IN` -> `COMPLETED`. Check-in ka waqt nikal jaye to
+`MISSED` (cron, har 10 minute). Admin check-in se pehle `CANCELLED` kar sakta hai.
+
+**Jaanne layak baatein**
+
+- QR ke andar sirf ek random jaisa code hai (koi naam / ID / location nahi); database mein uska sirf
+  hash rehta hai. "Regenerate QR" ya sales manager badalne par purana QR turant bekaar ho jata hai.
+- QR sahi hona kaafi nahi: check-in ke liye geofence ke andar hona zaroori hai. Time aur doori hamesha
+  server nikalta hai; phone se aaya time / distance / status ignore hota hai.
+- Check-in ka time window: meeting ke start se N minute pehle se, end ke N minute baad tak
+  (Settings -> "Check-in window", default 30).
+- Check-out geofence ke bahar se (ya bina GPS ke) bhi ho jata hai, lekin wo darj hota hai
+  ("Outside area" / "No location"), taaki GPS ki dikkat mein visit khuli na reh jaye.
+- Ek sales manager ki ek waqt mein ek hi visit khuli ho sakti hai, aur uski do meetings ka time
+  overlap nahi ho sakta.
+- Camera (QR scan, visit photo) aur GPS **sirf HTTPS** (ya localhost) par chalte hain. Camera na chale
+  to QR ki photo / screenshot upload karne ka raasta hai.
+- Follow-ups: check-out mein follow-up date bharne par "Follow-ups" list aur ghanti mein aate hain.
+  Push / SMS / email reminder nahi hai.
+- **Location verification 100% fraud-proof nahi hai.** Browser nakli GPS nahi pakad sakta, aur visit
+  photo ke "app ke camera se li" hone ki jaankari phone deta hai. Har check-in / check-out ke saath
+  GPS accuracy, IP aur device save hota hai, aur mana hua har check-in audit history mein darj hota
+  hai; shak hone par wahi dekho.
+
 ## Phases
 
 - [x] 1. Setup + Auth + Roles
@@ -249,3 +301,5 @@ git pull && npm run install:all && npm run build && pm2 restart payroll
 - [x] 5. Leave (CL/EL)
 - [x] 6. Payroll (30-day, PF/ESI, slip PDF, Excel)
 - [x] 7. Testing + Deployment
+- [x] 8. Punch correction requests, half-day leave, attendance calendar
+- [x] 9. Sales meetings (clients, QR, geofence check-in / check-out, photo, follow-ups, dashboard, Excel)

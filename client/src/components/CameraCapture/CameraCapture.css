@@ -1,0 +1,46 @@
+.camera-capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.camera-capture__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--color-navy);
+  border-radius: var(--radius-md);
+}
+
+.camera-capture__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-capture__frame--off .camera-capture__video {
+  visibility: hidden;
+}
+
+.camera-capture__status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--color-on-dark-muted);
+}
+
+/* Bade buttons, ungli se dabane layak */
+.camera-capture__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.camera-capture__actions .ant-btn {
+  flex: 1;
+  min-height: 44px;
+}

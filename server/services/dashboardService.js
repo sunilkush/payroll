@@ -2,11 +2,21 @@ import { Attendance } from '../models/Attendance.js';
 import { Company } from '../models/Company.js';
 import { Leave } from '../models/Leave.js';
 import { LeaveBalance } from '../models/LeaveBalance.js';
+import { Meeting } from '../models/Meeting.js';
 import { Payroll } from '../models/Payroll.js';
 import { PunchCorrection } from '../models/PunchCorrection.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
-import { ATTENDANCE_STATUS, CORRECTION_STATUS, LEAVE_STATUS, PAYROLL_STATUS, ROLES } from '../utils/constants.js';
+import {
+  ATTENDANCE_STATUS,
+  CORRECTION_STATUS,
+  FOLLOW_UP_STATUS,
+  LEAVE_STATUS,
+  MEETING_OPEN_STATUSES,
+  MEETING_STATUS,
+  PAYROLL_STATUS,
+  ROLES,
+} from '../utils/constants.js';
 import {
   addDays,
   currentMonth,
@@ -17,6 +27,7 @@ import {
   toDateStr,
   todayStr,
   weekdayOf,
+  zonedTime,
 } from '../utils/dateUtil.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { getMonthly } from './attendanceService.js';
@@ -403,6 +414,16 @@ export async function getSuperAdminDashboard() {
 
 // Har role ke liye "dhyan dene layak" cheezein. Ye DB mein save nahi hotin: har baar abhi ki
 // haalat se banti hain, isliye kaam ho jane par apne aap hat jati hain.
+// Sales follow-ups jo aaj tak (aaj shamil) due hain aur abhi PENDING hain. Sales module OFF ho to 0.
+function dueFollowUps(company, filter, today) {
+  if (!company.settings.salesEnabled) return 0;
+  return Meeting.countDocuments({
+    ...filter,
+    'followUp.status': FOLLOW_UP_STATUS.PENDING,
+    'followUp.at': { $lt: zonedTime(addDays(today, 1), '00:00') },
+  });
+}
+
 export async function getNotifications(user) {
   const today = todayStr();
   const month = currentMonth();
@@ -451,6 +472,13 @@ export async function getNotifications(user) {
     }
     if (missed) add('missed-punch', 'info', `${missed} missed punch-out(s) this week`, 'Check the attendance report.', '/admin/attendance');
     if (!staffCount) add('no-staff', 'info', 'No staff added yet', 'Add staff to start tracking attendance.', '/admin/staff');
+    const overdue = await dueFollowUps(company, {}, today);
+    if (overdue) add('follow-ups-due', 'warning', `${overdue} sales follow-up(s) due`, 'See which follow-ups are pending.', '/admin/follow-ups');
+    if (company.settings.salesEnabled) {
+      // Aaj ki meetings jinka QR abhi sales manager ko bheja nahi gaya
+      const unsent = await Meeting.countDocuments({ date: today, status: MEETING_STATUS.SCHEDULED, endAt: { $gt: new Date() } });
+      if (unsent) add('qr-not-sent', 'warning', `${unsent} meeting(s) today without a sent QR`, 'Share the QR with the sales manager.', '/admin/meetings');
+    }
     return items;
   }
 
@@ -483,6 +511,18 @@ export async function getNotifications(user) {
   for (const correction of decidedCorrections) {
     const approved = correction.status === CORRECTION_STATUS.APPROVED;
     add(`correction-${correction._id}`, approved ? 'success' : 'danger', `Your punch correction was ${approved ? 'approved' : 'rejected'}`, `For ${correction.date}`, '/staff/corrections');
+  }
+  const followUps = user.isSalesManager ? await dueFollowUps(company, { salesManagerId: user._id }, today) : 0;
+  if (followUps) add('follow-ups-due', 'warning', `${followUps} follow-up(s) due`, 'Call or visit the client, then mark it done.', '/staff/follow-ups');
+  if (user.isSalesManager && company.settings.salesEnabled) {
+    const [openVisit, meetingsLeft] = await Promise.all([
+      Meeting.findOne({ salesManagerId: user._id, status: MEETING_STATUS.CHECKED_IN }).populate('clientId', 'name'),
+      Meeting.countDocuments({ salesManagerId: user._id, date: today, status: { $in: MEETING_OPEN_STATUSES }, endAt: { $gt: new Date() } }),
+    ]);
+    if (openVisit) {
+      add('visit-open', 'info', `Visit in progress at ${openVisit.clientId?.name ?? 'a client'}`, 'Check out when the meeting ends.', `/staff/meetings/${openVisit._id}`);
+    }
+    if (meetingsLeft) add('meetings-today', 'info', `${meetingsLeft} client meeting(s) left today`, 'Scan the QR when you reach the client.', '/staff/meetings');
   }
   if (latestSlip) add(`slip-${latestSlip.period}`, 'success', `Salary slip for ${monthLabel(latestSlip.period)} is ready`, 'View or download it.', '/staff/salary');
   return items;

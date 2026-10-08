@@ -33,6 +33,8 @@ export const env = {
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+  // Upload hui files (visit photo, attachments) yahan rehti hain. Backup mein ise bhi shamil karo.
+  uploadDir: process.env.UPLOAD_DIR ? path.resolve(serverRoot, process.env.UPLOAD_DIR) : path.join(serverRoot, 'uploads'),
   // Sales meeting ke QR token isi se bante hain. Na diya ho to JWT_SECRET se nikalta hai
   // (tab JWT_SECRET badalne par purane QR bekaar ho jate hain).
   qrSecret:

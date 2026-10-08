@@ -2,28 +2,34 @@ import { useState } from 'react';
 import { CheckCircleFilled } from '@ant-design/icons';
 import { Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { scanMeetingApi } from '../../../api/meetingApi.js';
+import { checkInMeetingApi, scanMeetingApi } from '../../../api/meetingApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
 import Loader from '../../../components/Loader/Loader.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import QrScanner from '../../../components/QrScanner/QrScanner.jsx';
 import { formatDate, formatTime } from '../../../utils/format.js';
+import { getCurrentPosition } from '../../../utils/geolocation.js';
 import './ScanMeeting.css';
 
-// Sales manager: meeting ka QR scan karta hai. QR ke andar sirf ek code hota hai; meeting ki
-// jaankari aur "check-in ho sakta hai ya nahi" server batata hai.
+// Sales manager: meeting ka QR scan karta hai, phir apni location ke saath check-in karta hai.
+// QR ke andar sirf ek code hota hai. Meeting ki jaankari, doori, geofence aur time: sab server tay karta hai.
 export default function ScanMeeting() {
   const navigate = useNavigate();
   // scan | verifying | result | error
   const [step, setStep] = useState('scan');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  // Check-in: token scan se aata hai; busy mein chalu kadam ka text
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState('');
+  const [checkInError, setCheckInError] = useState('');
 
   const handleScan = async (text) => {
     setStep('verifying');
     try {
       const res = await scanMeetingApi(text.trim());
+      setToken(text.trim());
       setResult(res.data);
       setStep('result');
     } catch (err) {
@@ -36,7 +42,24 @@ export default function ScanMeeting() {
   const scanAgain = () => {
     setResult(null);
     setError('');
+    setCheckInError('');
     setStep('scan');
+  };
+
+  // Location phone se, baaki sab server par. Server mana kare (door ho, GPS kharab) to wajah yahin dikhti hai
+  // aur wahi QR dobara scan kiye bina phir koshish ho sakti hai.
+  const handleCheckIn = async () => {
+    setCheckInError('');
+    try {
+      setBusy('Getting your location...');
+      const position = await getCurrentPosition();
+      setBusy('Verifying location...');
+      const res = await checkInMeetingApi(token, position);
+      navigate(`/staff/meetings/${res.data.meeting._id}`, { replace: true, state: { justCheckedIn: true } });
+    } catch (err) {
+      setCheckInError(err.message);
+      setBusy('');
+    }
   };
 
   const meeting = result?.meeting;
@@ -108,15 +131,27 @@ export default function ScanMeeting() {
             {meeting.notes && <p className="scan-meeting__muted">Note from admin: {meeting.notes}</p>}
           </Card>
 
+          <Alert>{checkInError}</Alert>
+
           {result.canCheckIn && (
-            <Alert type="info">
-              You must be within {meeting.location.radius} m of the meeting location to check in. Check-in is open until{' '}
-              {formatTime(meeting.checkInClosesAt)}.
-            </Alert>
+            <>
+              <Button className="scan-meeting__big" loading={Boolean(busy)} onClick={handleCheckIn}>
+                {busy || (checkInError ? 'Try Check-In Again' : 'Check In')}
+              </Button>
+              <p className="scan-meeting__hint">
+                Your location is checked now: you must be within {meeting.location.radius} m of the meeting location.
+                Check-in is open until {formatTime(meeting.checkInClosesAt)}.
+              </p>
+            </>
+          )}
+          {result.alreadyCheckedIn && (
+            <Button className="scan-meeting__big" onClick={() => navigate(`/staff/meetings/${meeting._id}`)}>
+              Open Visit
+            </Button>
           )}
 
           <div className="scan-meeting__actions">
-            <Button variant="secondary" onClick={scanAgain}>
+            <Button variant="secondary" disabled={Boolean(busy)} onClick={scanAgain}>
               Scan Another QR
             </Button>
             <Button variant="secondary" onClick={() => navigate('/staff/meetings')}>

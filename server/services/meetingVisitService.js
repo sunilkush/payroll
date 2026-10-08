@@ -215,6 +215,11 @@ export async function checkOut(id, user, { result, followUp, ...position }, meta
   if (meeting.status === MEETING_STATUS.COMPLETED) throw new ApiError(409, 'This meeting has already been completed.');
   if (meeting.status !== MEETING_STATUS.CHECKED_IN) throw new ApiError(409, 'You have not checked in to this meeting.');
 
+  if (company.settings.requireVisitPhoto && !meeting.visitPhoto?.path) {
+    const message = 'Take a visit photo before completing the meeting.';
+    throw new ApiError(400, message, [{ field: 'visitPhoto', message }]);
+  }
+
   const now = new Date();
   const place = locate(meeting, company, position);
   const nextFollowUp = toFollowUp(followUp, result.outcome);

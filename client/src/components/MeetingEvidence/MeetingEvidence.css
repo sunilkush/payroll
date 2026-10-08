@@ -1,0 +1,71 @@
+.meeting-evidence__shot {
+  margin-bottom: var(--space-3);
+}
+
+.meeting-evidence__photo {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.meeting-evidence__muted {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.meeting-evidence__big.ant-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-2);
+}
+
+.meeting-evidence__files {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.meeting-evidence__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.meeting-evidence__list {
+  margin: var(--space-2) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meeting-evidence__list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+/* File ka naam: link jaisa button (file token ke saath khulti hai, isliye <a href> nahi) */
+.meeting-evidence__file {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) 0;
+  overflow: hidden;
+  font: inherit;
+  color: var(--color-primary);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.meeting-evidence__list .meeting-evidence__muted {
+  margin-top: 0;
+  white-space: nowrap;
+}
