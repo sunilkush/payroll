@@ -4,6 +4,7 @@ import { validate } from '../middlewares/validate.js';
 import {
   adminIdParamSchema,
   companyIdParamSchema,
+  planRequestDecisionSchema,
   companyStatusSchema,
   createAdminSchema,
   createCompanySchema,
@@ -20,6 +21,8 @@ router.post('/', validate(createCompanySchema), companyController.create);
 router.get('/:id', companyId, companyController.getOne);
 router.put('/:id', companyId, validate(updateCompanySchema), companyController.update);
 router.patch('/:id/status', companyId, validate(companyStatusSchema), companyController.setStatus);
+// Company ke admin ki upgrade request ka faisla
+router.patch('/:id/plan-request', companyId, validate(planRequestDecisionSchema), companyController.decidePlanRequest);
 
 router.post('/:id/admins', companyId, validate(createAdminSchema), companyController.createAdmin);
 router.patch(

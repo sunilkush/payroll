@@ -1,7 +1,7 @@
 import { Company } from '../models/Company.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
-import { ROLES } from '../utils/constants.js';
+import { PLAN_STAFF_LIMIT, ROLES } from '../utils/constants.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { creditUser } from './leaveService.js';
@@ -47,11 +47,21 @@ export async function listStaff({ search, status, salesManager, page, limit }) {
   };
 }
 
+// Plan mein jitne active staff ki ijazat hai usse zyada na hon. (Band kiye hue staff nahi ginte.)
+async function assertStaffSlot(company) {
+  const limit = PLAN_STAFF_LIMIT[company.plan];
+  if (limit === null || limit === undefined) return;
+  if ((await User.countDocuments({ role: ROLES.STAFF, isActive: true })) >= limit) {
+    throw new ApiError(403, `Your plan allows up to ${limit} active staff. Upgrade your plan to add more.`);
+  }
+}
+
 export async function createStaff(data) {
+  const company = await Company.findById(getTenantId());
+  await assertStaffSlot(company);
   const staff = await User.create({ ...data, role: ROLES.STAFF });
   // Naye staff ko joining wale mahine ka leave credit turant mil jata hai
   // (1 tarikh ka cron nikal chuka hota hai).
-  const company = await Company.findById(getTenantId());
   await creditUser(staff, company);
   return staff;
 }
@@ -66,4 +76,8 @@ export async function updateStaff(id, data) {
 }
 
 // Staff delete nahi hota (attendance/payroll history bani rehti hai), sirf deactivate hota hai.
-export const setStaffStatus = (id, isActive) => updateStaff(id, { isActive });
+export async function setStaffStatus(id, isActive) {
+  // Dobara chalu karna bhi ek jagah leta hai.
+  if (isActive && !(await findStaffOrThrow(id)).isActive) await assertStaffSlot(await Company.findById(getTenantId()));
+  return updateStaff(id, { isActive });
+}

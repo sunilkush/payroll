@@ -39,12 +39,25 @@ const userSchema = new mongoose.Schema(
     // Sales meetings sirf isi staff ko assign hoti hain (company mein sales module ON ho tab).
     isSalesManager: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    // Khud register karne wale ko email verify karni hoti hai (admin ke banaye users pehle se verified).
+    emailVerified: { type: Boolean, default: true },
+    // 6 ank ke verification code ka hash (code khud kabhi save nahi hota)
+    emailCode: {
+      type: { hash: String, expiresAt: Date, attempts: { type: Number, default: 0 }, sentAt: Date },
+      select: false,
+    },
+    // Password reset link ke token ka hash
+    passwordReset: { type: { hash: String, expiresAt: Date }, select: false },
+    // Is se pehle bane login tokens nahi chalte (password reset ke baad purane sessions band).
+    passwordChangedAt: { type: Date },
   },
   {
     timestamps: true,
     toJSON: {
       transform(doc, ret) {
         delete ret.password;
+        delete ret.emailCode;
+        delete ret.passwordReset;
         delete ret.__v;
         return ret;
       },

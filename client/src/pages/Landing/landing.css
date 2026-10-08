@@ -1,0 +1,1431 @@
+/*
+ * Public landing page. Rang, font, spacing aur radius app ke design tokens (styles/variables.css) se hi aate hain;
+ * yahan sirf landing ke apne bade size (hero ka headline, section ka gap) hain.
+ * Mobile-first: base = phone, phir 768px (tablet), 992px (desktop), 1280px (badi screen).
+ */
+.landing {
+  --landing-max: 1240px;
+  --landing-section: 4rem; /* sections ke beech ka gap; desktop par bada */
+  --landing-ink: var(--color-navy);
+  --landing-muted: var(--color-text-muted);
+  --landing-line: var(--color-border);
+  --landing-shadow-lg: 0 24px 60px rgba(11, 20, 55, 0.14);
+  color: var(--landing-ink);
+  background: var(--color-surface);
+  overflow-x: clip;
+}
+
+.landing h1,
+.landing h2,
+.landing h3 {
+  letter-spacing: -0.02em;
+  color: var(--landing-ink);
+}
+
+.landing ul,
+.landing ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-container {
+  width: 100%;
+  max-width: var(--landing-max);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.landing-container--narrow {
+  max-width: 820px;
+}
+
+.landing-section {
+  padding: var(--landing-section) 0;
+  /* Navbar ke neeche na chhupe jab link se yahan aayen */
+  scroll-margin-top: 64px;
+}
+
+.landing-section--tint {
+  background: var(--color-surface-muted);
+  border-block: 1px solid var(--landing-line);
+}
+
+.landing-skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.landing-skip:focus {
+  left: var(--space-4);
+  top: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Buttons (link jo button jaise dikhte hain) ---------- */
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.landing-btn:focus-visible,
+.landing a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.landing-btn--lg {
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  font-size: 1rem;
+}
+
+.landing-btn--block {
+  width: 100%;
+}
+
+.landing-btn--primary {
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28);
+}
+
+.landing-btn--primary:hover {
+  color: var(--color-text-inverse);
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.landing-btn--outline {
+  color: var(--landing-ink);
+  background: var(--color-surface);
+  border-color: var(--landing-line);
+}
+
+.landing-btn--outline:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.landing-btn--ghost {
+  color: var(--landing-ink);
+}
+
+.landing-btn--ghost:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.landing-btn--link {
+  min-height: 0;
+  padding: 0;
+  color: var(--color-primary);
+}
+
+.landing-btn--link:hover {
+  gap: var(--space-3);
+}
+
+.landing-btn--light {
+  color: var(--color-primary-dark);
+  background: var(--color-surface);
+}
+
+.landing-btn--light:hover {
+  color: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.landing-btn--glass {
+  color: var(--color-text-inverse);
+  background: var(--color-glass);
+  border-color: var(--color-glass-border);
+}
+
+.landing-btn--glass:hover {
+  color: var(--color-text-inverse);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ---------- Brand ---------- */
+.landing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--landing-ink);
+}
+
+.landing-brand:hover {
+  color: var(--landing-ink);
+}
+
+.landing-brand--light,
+.landing-brand--light:hover {
+  color: var(--color-text-inverse);
+}
+
+.landing-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Navbar ---------- */
+.landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-surface);
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.landing-nav--scrolled {
+  background: var(--color-surface-translucent);
+  border-bottom-color: var(--landing-line);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(14px);
+}
+
+.landing-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: 64px;
+}
+
+.landing-nav__links,
+.landing-nav__login {
+  display: none;
+}
+
+.landing-nav__link {
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.landing-nav__link:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.landing-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.landing-drawer .ant-drawer-body {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+}
+
+.landing-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.landing-drawer__links {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-drawer__link {
+  padding: var(--space-3) var(--space-2);
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--landing-ink);
+  border-bottom: 1px solid var(--landing-line);
+}
+
+.landing-drawer__actions {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+/* ---------- Fade-up ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  scroll-margin-top: 72px;
+  padding: var(--space-8) 0 var(--landing-section);
+  background:
+    radial-gradient(900px 420px at 85% -10%, var(--color-primary-light), transparent 70%),
+    var(--color-surface);
+}
+
+.hero__inner {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  border-radius: 999px;
+}
+
+.landing-badge__dot {
+  width: 6px;
+  height: 6px;
+  background: var(--color-primary);
+  border-radius: 50%;
+}
+
+.hero__title {
+  font-size: 2.125rem;
+  line-height: 1.12;
+  font-weight: 700;
+}
+
+.hero__text {
+  max-width: 34rem;
+  margin-top: var(--space-4);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--landing-muted);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.hero__actions .landing-btn {
+  flex: 1 1 150px;
+}
+
+.hero__note {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--landing-muted);
+}
+
+.hero__visual {
+  position: relative;
+  min-width: 0;
+}
+
+.hero__glow {
+  position: absolute;
+  inset: 10% 5% -5%;
+  background: var(--color-primary);
+  filter: blur(70px);
+  opacity: 0.16;
+  border-radius: 50%;
+}
+
+.hero__screen {
+  position: relative;
+  /* Chhoti screen par dashboard poora dikhe: andar hi daayein-baayein scroll */
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--landing-shadow-lg);
+}
+
+.hero__float {
+  display: none;
+}
+
+/* ---------- Mock screen (app ki nakal) ---------- */
+.mock {
+  min-width: 620px;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: var(--radius-lg);
+}
+
+.mock--compact {
+  min-width: 0;
+}
+
+.mock__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px var(--space-3);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--landing-line);
+}
+
+.mock__dot {
+  width: 9px;
+  height: 9px;
+  background: var(--landing-line);
+  border-radius: 50%;
+}
+
+.mock__url {
+  margin-left: var(--space-2);
+  padding: 2px var(--space-3);
+  color: var(--landing-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: 999px;
+}
+
+.mock__body {
+  display: flex;
+}
+
+.mock__side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 132px;
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--landing-line);
+}
+
+.mock__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.mock__logo {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border-radius: 5px;
+}
+
+.mock__nav {
+  padding: 6px var(--space-2);
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+}
+
+.mock__nav--active {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.mock__main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--color-bg);
+}
+
+.mock__title {
+  margin-bottom: var(--space-3);
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+}
+
+.mock__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.mock--compact .mock__tiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mock__tile,
+.mock__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: 10px;
+}
+
+.mock__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.mock__tile-label {
+  color: var(--landing-muted);
+}
+
+.mock__tile-value {
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
+}
+
+.mock__tone--success {
+  color: var(--color-success);
+}
+
+.mock__tone--warning {
+  color: var(--color-warning);
+}
+
+.mock__tone--danger {
+  color: var(--color-danger);
+}
+
+.mock__panels {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.mock--compact .mock__panels {
+  grid-template-columns: 1fr;
+}
+
+.mock__panel {
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.mock__panel-title {
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.mock__chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 96px;
+  padding-top: var(--space-1);
+  border-bottom: 1px solid var(--landing-line);
+}
+
+.mock__chart-bar {
+  flex: 1;
+  background: linear-gradient(var(--color-primary), var(--color-accent-light));
+  border-radius: 4px 4px 0 0;
+}
+
+.mock__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 6px 0;
+  border-top: 1px solid var(--landing-line);
+}
+
+.mock__row:first-of-type {
+  border-top: 0;
+}
+
+.mock__row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mock__row-title {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mock__row-meta {
+  overflow: hidden;
+  color: var(--landing-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mock__chip {
+  flex: none;
+  padding: 2px var(--space-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  border-radius: 999px;
+}
+
+.mock__chip--success {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.mock__chip--warning {
+  color: var(--color-warning);
+  background: var(--color-warning-light);
+}
+
+.mock__chip--info {
+  color: var(--color-info);
+  background: var(--color-info-light);
+}
+
+/* ---------- Trust ---------- */
+.trust {
+  padding: var(--space-8) 0;
+  text-align: center;
+  border-top: 1px solid var(--landing-line);
+}
+
+.trust__title {
+  font-size: 1.0625rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.trust__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3) var(--space-6);
+  margin-top: var(--space-4) !important;
+}
+
+.trust__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.trust__check,
+.why__check {
+  color: var(--color-primary);
+}
+
+/* ---------- Section heading ---------- */
+.section-head {
+  max-width: 42rem;
+  margin: 0 auto var(--space-8);
+  text-align: center;
+}
+
+.section-head__eyebrow {
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  text-transform: uppercase;
+}
+
+.section-head__title {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.section-head__text {
+  margin-top: var(--space-3);
+  font-size: 1rem;
+  color: var(--landing-muted);
+}
+
+/* ---------- Features ---------- */
+.feature-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.feature-card {
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: var(--radius-lg);
+  transition:
+    opacity 0.5s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.feature-card.is-visible:hover {
+  border-color: var(--color-accent-light);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+}
+
+.feature-card__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--space-4);
+  font-size: 20px;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease;
+}
+
+.feature-card:hover .feature-card__icon {
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+}
+
+.feature-card__title {
+  font-size: 1rem;
+}
+
+.feature-card__text {
+  margin-top: var(--space-2);
+  color: var(--landing-muted);
+}
+
+/* ---------- Product showcase ---------- */
+.showcase__tabs.ant-tabs {
+  margin-bottom: var(--space-4);
+}
+
+.showcase__tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.showcase__tabs .ant-tabs-tab {
+  font-weight: var(--font-weight-medium);
+}
+
+.showcase__panel {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--landing-shadow-lg);
+  animation: landing-fade 0.3s ease;
+}
+
+.showcase__note {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  color: var(--landing-muted);
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- Why us ---------- */
+.why {
+  display: grid;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.why__visual {
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--landing-shadow-lg);
+}
+
+.why__copy .section-head__title {
+  margin-bottom: var(--space-6);
+}
+
+.why__list {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6) !important;
+  font-size: 1rem;
+}
+
+.why__list li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+/* ---------- Pricing ---------- */
+.pricing__toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.pricing__save {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: 999px;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.pricing__save--on {
+  color: var(--color-success);
+  background: var(--color-success-light);
+  border-color: transparent;
+}
+
+.pricing__grid {
+  display: grid;
+  gap: var(--space-6);
+  align-items: stretch;
+}
+
+.pricing__cell {
+  display: flex;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: var(--radius-lg);
+}
+
+.plan--popular {
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 20px 48px rgba(79, 70, 229, 0.2);
+}
+
+.plan__badge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.plan__name {
+  font-size: 1.125rem;
+}
+
+.plan__subtitle {
+  min-height: 2.6em;
+  margin-top: var(--space-1);
+  color: var(--landing-muted);
+}
+
+.plan__price {
+  margin-top: var(--space-4);
+}
+
+.plan__amount {
+  display: inline-block;
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  animation: landing-fade 0.25s ease;
+}
+
+.plan__period {
+  color: var(--landing-muted);
+}
+
+.plan__billing {
+  min-height: 1.5em;
+  margin: var(--space-1) 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--landing-muted);
+}
+
+.plan__features {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-6) !important;
+  padding-top: var(--space-4) !important;
+  border-top: 1px solid var(--landing-line);
+}
+
+.plan__features li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.plan__check {
+  font-size: 12px;
+  color: var(--color-success);
+}
+
+.pricing__notes {
+  margin-top: var(--space-8);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  color: var(--landing-muted);
+}
+
+/* ---------- How it works ---------- */
+.steps {
+  position: relative;
+  display: grid;
+  gap: var(--space-6);
+}
+
+.step {
+  position: relative;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: var(--radius-lg);
+}
+
+.step__number {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--space-4);
+  font-weight: 700;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border-radius: 50%;
+}
+
+.step__title {
+  font-size: 1.0625rem;
+}
+
+.step__text {
+  margin-top: var(--space-2);
+  color: var(--landing-muted);
+}
+
+/* ---------- Stats ---------- */
+.stats {
+  padding: var(--landing-section) 0;
+  color: var(--color-text-inverse);
+  background: var(--color-navy);
+}
+
+.landing .stats__title {
+  margin-bottom: var(--space-8);
+  font-size: 1.5rem;
+  text-align: center;
+  color: var(--color-text-inverse);
+}
+
+.stats__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stat__value {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 700;
+  /* Ginti chalte waqt chaudai na hile */
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__label {
+  color: var(--color-on-dark-muted);
+}
+
+/* ---------- Testimonials ---------- */
+.quotes {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.quote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: var(--radius-lg);
+}
+
+.quote__stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--color-chart-3);
+}
+
+.quote__text {
+  flex: 1;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.quote__person {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.quote__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: 50%;
+}
+
+.quote__name,
+.quote__role {
+  display: block;
+}
+
+.quote__name {
+  font-weight: var(--font-weight-bold);
+}
+
+.quote__role {
+  font-size: var(--font-size-sm);
+  color: var(--landing-muted);
+}
+
+/* ---------- FAQ (Ant Design Collapse) ---------- */
+.faq.ant-collapse {
+  display: grid;
+  gap: var(--space-3);
+  background: transparent;
+}
+
+.faq .ant-collapse-item {
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.faq .ant-collapse-header {
+  align-items: center !important;
+  padding: var(--space-4) !important;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.faq .ant-collapse-content-box {
+  padding: 0 var(--space-4) var(--space-4) !important;
+  color: var(--landing-muted);
+}
+
+/* ---------- Final CTA ---------- */
+.final-cta {
+  padding: var(--landing-section) 0;
+}
+
+.final-cta__inner {
+  width: calc(100% - var(--space-8));
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  color: var(--color-text-inverse);
+  background:
+    radial-gradient(600px 300px at 20% 0%, rgba(255, 255, 255, 0.16), transparent 70%),
+    linear-gradient(135deg, var(--color-primary), var(--color-navy-light));
+  border-radius: var(--radius-lg);
+}
+
+.landing .final-cta__title {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  color: var(--color-text-inverse);
+}
+
+.final-cta__text {
+  max-width: 34rem;
+  margin: var(--space-3) auto 0;
+  font-size: 1rem;
+  color: var(--color-on-dark-muted);
+}
+
+.final-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.final-cta__note {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-on-dark-muted);
+}
+
+/* ---------- Footer ---------- */
+.landing-footer {
+  padding: var(--space-8) 0 var(--space-6);
+  color: var(--color-on-dark-muted);
+  background: var(--color-navy);
+}
+
+.landing-footer a {
+  color: var(--color-on-dark-muted);
+}
+
+.landing-footer a:hover {
+  color: var(--color-text-inverse);
+}
+
+.landing-footer__top {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-4);
+}
+
+.landing-footer__about {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-3);
+  max-width: 22rem;
+}
+
+.landing-footer__heading {
+  margin-bottom: var(--space-3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-inverse);
+}
+
+.landing-footer__column ul {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.landing-footer__bottom {
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  font-size: var(--font-size-sm);
+  border-top: 1px solid var(--color-glass-border);
+}
+
+/* ---------- Phone: neeche chipka CTA ---------- */
+.landing-sticky {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-translucent);
+  border-top: 1px solid var(--landing-line);
+  backdrop-filter: blur(12px);
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.landing-sticky--on {
+  transform: none;
+}
+
+/* Chipke CTA ke peeche footer ki aakhri line na chhupe */
+.landing-footer {
+  padding-bottom: calc(var(--space-6) + 64px);
+}
+
+/* ---------- Tablet ---------- */
+@media (min-width: 768px) {
+  .landing {
+    --landing-section: 5.5rem;
+  }
+
+  .landing-container {
+    padding: 0 var(--space-6);
+  }
+
+  .hero__title {
+    font-size: 3rem;
+  }
+
+  .hero__actions .landing-btn {
+    flex: none;
+  }
+
+  .section-head__title,
+  .landing .final-cta__title {
+    font-size: 2.25rem;
+  }
+
+  .feature-grid,
+  .pricing__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quotes,
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Steps ko jodti patli line */
+  .steps::before {
+    position: absolute;
+    top: calc(var(--space-6) + 22px);
+    right: 16%;
+    left: 16%;
+    height: 2px;
+    content: '';
+    background: repeating-linear-gradient(90deg, var(--color-accent-light) 0 8px, transparent 8px 16px);
+  }
+
+  .stats__list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .stat__value {
+    font-size: 3rem;
+  }
+
+  .landing-footer__top {
+    grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr));
+  }
+
+  .landing-footer__about {
+    grid-column: auto;
+  }
+
+  .final-cta__inner {
+    padding: 4rem var(--space-8);
+  }
+}
+
+/* ---------- Desktop ---------- */
+@media (min-width: 992px) {
+  .landing-nav__links {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .landing-nav__login {
+    display: inline-flex;
+  }
+
+  .landing-nav__toggle.ant-btn {
+    display: none;
+  }
+
+  .landing-nav__inner {
+    height: 72px;
+  }
+
+  .landing-section {
+    scroll-margin-top: 72px;
+  }
+
+  .hero {
+    padding-top: 4rem;
+  }
+
+  .hero__inner {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .hero__title {
+    font-size: 3.5rem;
+  }
+
+  .hero__screen {
+    overflow: visible;
+    animation: landing-float 7s ease-in-out infinite;
+  }
+
+  /* Dashboard ke aas-paas tairte cards */
+  .hero__float {
+    position: absolute;
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    line-height: 1.25;
+    background: var(--color-surface);
+    border: 1px solid var(--landing-line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    animation: landing-float 6s ease-in-out infinite;
+  }
+
+  .hero__float strong {
+    display: block;
+    font-size: 1.125rem;
+  }
+
+  .hero__float-label {
+    font-size: var(--font-size-xs);
+    color: var(--landing-muted);
+  }
+
+  .hero__float-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    border-radius: var(--radius-sm);
+  }
+
+  .hero__float--one {
+    top: -36px;
+    left: -40px;
+  }
+
+  .hero__float--two {
+    right: -32px;
+    bottom: -28px;
+    animation-delay: -2s;
+  }
+
+  .hero__float--three {
+    bottom: -32px;
+    left: 8%;
+    animation-delay: -4s;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .why {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4rem;
+  }
+
+  .why__copy .section-head__title {
+    text-align: left;
+  }
+
+  /* Desktop par chipka CTA nahi (navbar mein button hai) */
+  .landing-sticky {
+    display: none;
+  }
+
+  .landing-footer {
+    padding-bottom: var(--space-6);
+  }
+}
+
+/* ---------- Badi screen ---------- */
+@media (min-width: 1280px) {
+  .feature-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .feature-card {
+    padding: var(--space-4);
+  }
+
+  .pricing__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  /* Saare cards barabar unchai ke; Professional upar-neeche thoda bahar nikla hua, baaki se aage */
+  .pricing__cell:has(.plan--popular) {
+    z-index: 1;
+    margin-block: calc(var(--space-4) * -1);
+  }
+
+  .plan--popular {
+    padding-block: calc(var(--space-6) + var(--space-4));
+  }
+}
+
+@keyframes landing-float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* "Kam motion" wali setting: koi tairna / fade / scale nahi */
+@media (prefers-reduced-motion: reduce) {
+  .landing *,
+  .landing *::before,
+  .landing *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

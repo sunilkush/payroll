@@ -1,15 +1,7 @@
 import { useState } from 'react';
-import {
-  ArrowRightOutlined,
-  CalendarOutlined,
-  EnvironmentOutlined,
-  FileTextOutlined,
-  LockOutlined,
-  MailOutlined,
-  SafetyCertificateOutlined,
-  WalletOutlined,
-} from '@ant-design/icons';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowRightOutlined, LockOutlined, LoginOutlined, MailOutlined } from '@ant-design/icons';
+import { Divider } from 'antd';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Alert from '../../components/Alert/Alert.jsx';
 import Button from '../../components/Button/Button.jsx';
 import FormField from '../../components/FormField/FormField.jsx';
@@ -17,21 +9,8 @@ import Loader from '../../components/Loader/Loader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { APP_NAME } from '../../utils/appInfo.js';
 import { ROLE_HOME } from '../../utils/roles.js';
+import AuthBrand, { AuthFoot, AuthTop } from './AuthBrand.jsx';
 import './Login.css';
-
-const FEATURES = [
-  { icon: <EnvironmentOutlined />, label: 'Geofence punch in / out' },
-  { icon: <CalendarOutlined />, label: 'CL / EL leave approval' },
-  { icon: <WalletOutlined />, label: 'Payroll with PF / ESI' },
-  { icon: <FileTextOutlined />, label: 'Salary slip PDF' },
-];
-
-// Brand panel ka "preview" card sirf sajawat hai (app kaisa dikhta hai uski jhalak), asli data nahi.
-const PREVIEW_STATS = [
-  { label: 'Present', value: '22' },
-  { label: 'Leave', value: '1' },
-  { label: 'Net Salary', value: '₹18,386' },
-];
 
 // Layout (mobile-first):
 //   Phone     gehra brand header (logo + headline) aur uske upar chadha hua form card
@@ -71,59 +50,14 @@ export default function Login() {
 
   return (
     <div className="login">
-      <aside className="login__brand">
-        {/* Peeche ki halki roshni (sirf sajawat) */}
-        <span className="login__glow login__glow--one" aria-hidden="true" />
-        <span className="login__glow login__glow--two" aria-hidden="true" />
-
-        <div className="login__logo">
-          <span className="login__logo-mark" aria-hidden="true">
-            P
-          </span>
-          <span className="login__logo-text">{APP_NAME}</span>
-        </div>
-
-        <div className="login__hero">
-          <span className="login__pill">
-            <SafetyCertificateOutlined /> Each company’s data kept separate and secure
-          </span>
-          <h2 className="login__headline">
-            From attendance to salary slip, <span className="login__headline-accent">all in one place.</span>
-          </h2>
-          <p className="login__lead">Manage punches, leave and payroll together, even from your phone.</p>
-        </div>
-
-        <div className="login__preview" aria-hidden="true">
-          <div className="login__preview-head">
-            <span>Attendance today</span>
-            <span className="login__preview-chip">Present</span>
-          </div>
-          <p className="login__preview-time">09:30 AM</p>
-          <p className="login__preview-place">
-            <EnvironmentOutlined /> Head Office · 18m
-          </p>
-          <dl className="login__preview-stats">
-            {PREVIEW_STATS.map((stat) => (
-              <div key={stat.label} className="login__preview-stat">
-                <dt>{stat.label}</dt>
-                <dd>{stat.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-
-        <ul className="login__features">
-          {FEATURES.map((feature) => (
-            <li key={feature.label} className="login__feature">
-              <span className="login__feature-icon">{feature.icon}</span>
-              {feature.label}
-            </li>
-          ))}
-        </ul>
-      </aside>
+      <AuthBrand />
 
       <main className="login__main">
+        <AuthTop prompt={`New to ${APP_NAME}?`} to="/register" label="Create account" />
         <form className="login__form" onSubmit={handleSubmit} noValidate>
+          <span className="login__form-icon" aria-hidden="true">
+            <LoginOutlined />
+          </span>
           <h1 className="login__title">Welcome back</h1>
           <p className="login__subtitle">Sign in to your account</p>
 
@@ -163,9 +97,18 @@ export default function Login() {
             Login
           </Button>
 
-          <p className="login__help">Forgot your password? Ask your admin to reset it.</p>
+          <p className="login__help">
+            <Link to="/forgot-password">Forgot your password?</Link>
+          </p>
+
+          <Divider plain className="login__divider">
+            New here?
+          </Divider>
+          <Link to="/register" className="login__alt">
+            Create a free account
+          </Link>
         </form>
-        <p className="login__footer">&copy; {new Date().getFullYear()} {APP_NAME}</p>
+        <AuthFoot />
       </main>
     </div>
   );

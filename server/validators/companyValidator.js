@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { COMPANY_PLANS } from '../utils/constants.js';
 import { email, idParamSchema, objectId, pagination, password, personName, phone } from './common.js';
 
 const adminFields = {
@@ -18,7 +19,7 @@ export const adminIdParamSchema = Joi.object({ id: objectId.required(), adminId:
 
 export const listCompaniesSchema = Joi.object({
   search: Joi.string().trim().max(100).allow(''),
-  status: Joi.string().valid('all', 'active', 'blocked').default('all'),
+  status: Joi.string().valid('all', 'active', 'blocked', 'upgrade').default('all'),
   ...pagination,
 });
 
@@ -28,7 +29,10 @@ export const createCompanySchema = Joi.object({
   admin: Joi.object(adminFields), // optional: company ke saath pehla admin bhi ban jata hai
 });
 
-export const updateCompanySchema = Joi.object(companyFields).min(1);
+export const updateCompanySchema = Joi.object({
+  ...companyFields,
+  plan: Joi.string().valid(...Object.values(COMPANY_PLANS)).label('Plan'),
+}).min(1);
 
 export const companyStatusSchema = Joi.object({ isActive: Joi.boolean().required() });
 
@@ -40,3 +44,8 @@ export const updateAdminSchema = Joi.object({
   isActive: Joi.boolean(),
   password, // reset password
 }).min(1);
+
+export const planRequestDecisionSchema = Joi.object({
+  action: Joi.string().valid('approve', 'reject').required(),
+  note: Joi.string().trim().max(300).allow('').label('Note'),
+});

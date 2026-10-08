@@ -15,6 +15,8 @@ import {
   MEETING_OPEN_STATUSES,
   MEETING_STATUS,
   PAYROLL_STATUS,
+  PLAN_LABEL,
+  PLAN_REQUEST_STATUS,
   ROLES,
 } from '../utils/constants.js';
 import {
@@ -441,6 +443,10 @@ export async function getNotifications(user) {
     if (noAdmin.length) {
       add('no-admin', 'warning', `${noAdmin.length} company(s) without an admin`, noAdmin.slice(0, 3).map((c) => c.name).join(', '), '/superadmin/companies');
     }
+    const upgrades = await Company.countDocuments({ 'planRequest.status': PLAN_REQUEST_STATUS.PENDING });
+    if (upgrades) {
+      add('upgrade-requests', 'warning', `${upgrades} plan upgrade request(s) waiting`, 'Open the company to approve or reject.', '/superadmin/companies?status=upgrade');
+    }
     if (blocked.length) {
       add('blocked', 'info', `${blocked.length} company(s) blocked`, 'Their users cannot log in.', '/superadmin/companies');
     }
@@ -458,6 +464,18 @@ export async function getNotifications(user) {
       User.countDocuments({ role: ROLES.STAFF, isActive: true }),
       Payroll.find({ period: previousMonth }).select('status'),
     ]);
+    // Upgrade request ka faisla (pichhle 7 din mein)
+    const request = company.planRequest;
+    if (request?.decidedAt && request.decidedAt > new Date(Date.now() - WEEK_MS)) {
+      const approved = request.status === PLAN_REQUEST_STATUS.APPROVED;
+      add(
+        'plan-request',
+        approved ? 'success' : 'danger',
+        approved ? `Your plan is now ${PLAN_LABEL[request.plan]}` : 'Your upgrade request was not approved',
+        request.decisionNote || (approved ? 'The new features are ready to use.' : 'Contact us for details.'),
+        '/admin/billing'
+      );
+    }
     if (!company.locations.length) {
       add('no-location', 'danger', 'Office location is not set', 'Staff cannot punch in until you add one.', '/admin/settings');
     }

@@ -88,9 +88,11 @@ export default function AdminHome() {
   return (
     <section>
       <WelcomeHeader user={user} subtitle={company?.name}>
-        <Button variant="secondary" icon={<WalletOutlined />} onClick={() => navigate('/admin/payroll')}>
-          Run payroll
-        </Button>
+        {company?.payrollEnabled && (
+          <Button variant="secondary" icon={<WalletOutlined />} onClick={() => navigate('/admin/payroll')}>
+            Run payroll
+          </Button>
+        )}
         <Button icon={<PlusOutlined />} onClick={() => navigate('/admin/staff/new')}>
           Add staff
         </Button>

@@ -1,11 +1,18 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { ROLES, ROLE_HOME } from '../utils/roles.js';
+import PlanGate from './PlanGate.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AppLayout from '../components/AppLayout/AppLayout.jsx';
 import Loader from '../components/Loader/Loader.jsx';
 import FollowUps from '../pages/FollowUps/FollowUps.jsx';
 import Login from '../pages/Login/Login.jsx';
+import Register from '../pages/Register/Register.jsx';
+import ForgotPassword from '../pages/Account/ForgotPassword.jsx';
+import ResetPassword from '../pages/Account/ResetPassword.jsx';
+import VerifyEmail from '../pages/Account/VerifyEmail.jsx';
+import Billing from '../pages/admin/Billing/Billing.jsx';
 import SuperAdminHome from '../pages/superadmin/SuperAdminHome.jsx';
 import Companies from '../pages/superadmin/Companies/Companies.jsx';
 import CompanyDetail from '../pages/superadmin/CompanyDetail/CompanyDetail.jsx';
@@ -34,16 +41,44 @@ import StaffHome from '../pages/staff/StaffHome.jsx';
 import PunchScreen from '../pages/staff/PunchScreen/PunchScreen.jsx';
 import MyAttendance from '../pages/staff/MyAttendance/MyAttendance.jsx';
 
+// Plan ke peeche wale pages (server ke PLAN_FEATURES jaisa): plan mein na ho to PlanGate upgrade ka message dikhata hai.
+const PAYROLL = { flag: 'payrollEnabled', name: 'Payroll', plan: 'Starter' };
+const CORRECTIONS = { flag: 'correctionsEnabled', name: 'Punch corrections', plan: 'Starter' };
+
+// Landing page alag file mein banta hai (lazy): login ke baad app use karne walon par iska bojh nahi padta.
+const Landing = lazy(() => import('../pages/Landing/Landing.jsx'));
+
 function HomeRedirect() {
   const { user, loading } = useAuth();
   if (loading) return <Loader />;
   return <Navigate to={user ? ROLE_HOME[user.role] : '/login'} replace />;
 }
 
+// Phone par "install" kiya hua app (PWA): wahan marketing page nahi, seedha login.
+const isInstalledApp = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+// "/": login hua user apne dashboard par; baaki ko public landing page.
+function Home() {
+  const { user, loading } = useAuth();
+  if (loading) return <Loader />;
+  if (user) return <Navigate to={ROLE_HOME[user.role]} replace />;
+  if (isInstalledApp()) return <Navigate to="/login" replace />;
+  return (
+    <Suspense fallback={<Loader />}>
+      <Landing />
+    </Suspense>
+  );
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route element={<ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]} />}>
         <Route element={<AppLayout />}>
@@ -62,7 +97,7 @@ export default function AppRoutes() {
           <Route path="/admin/staff/:id" element={<StaffForm key="edit" />} />
           <Route path="/admin/attendance" element={<Attendance />} />
           <Route path="/admin/attendance/:userId" element={<StaffAttendance />} />
-          <Route path="/admin/corrections" element={<PunchCorrections />} />
+          <Route path="/admin/corrections" element={<PlanGate {...CORRECTIONS}><PunchCorrections /></PlanGate>} />
           <Route path="/admin/clients" element={<Clients />} />
           <Route path="/admin/clients/new" element={<ClientForm />} />
           <Route path="/admin/clients/:id" element={<ClientForm key="edit" />} />
@@ -72,7 +107,8 @@ export default function AppRoutes() {
           <Route path="/admin/meetings/:id" element={<MeetingDetail />} />
           <Route path="/admin/meetings/:id/edit" element={<MeetingForm key="edit" />} />
           <Route path="/admin/leaves" element={<LeaveRequests />} />
-          <Route path="/admin/payroll" element={<Payroll />} />
+          <Route path="/admin/payroll" element={<PlanGate {...PAYROLL}><Payroll /></PlanGate>} />
+          <Route path="/admin/billing" element={<Billing />} />
           <Route path="/admin/settings" element={<Settings />} />
         </Route>
       </Route>
@@ -82,13 +118,13 @@ export default function AppRoutes() {
           <Route path="/staff" element={<StaffHome />} />
           <Route path="/staff/punch" element={<PunchScreen />} />
           <Route path="/staff/attendance" element={<MyAttendance />} />
-          <Route path="/staff/corrections" element={<MyCorrections />} />
+          <Route path="/staff/corrections" element={<PlanGate {...CORRECTIONS}><MyCorrections /></PlanGate>} />
           <Route path="/staff/follow-ups" element={<FollowUps />} />
           <Route path="/staff/meetings" element={<MyMeetings />} />
           <Route path="/staff/meetings/:id" element={<MeetingVisit />} />
           <Route path="/staff/scan" element={<ScanMeeting />} />
           <Route path="/staff/leaves" element={<MyLeaves />} />
-          <Route path="/staff/salary" element={<MySalary />} />
+          <Route path="/staff/salary" element={<PlanGate {...PAYROLL} name="Salary slips"><MySalary /></PlanGate>} />
         </Route>
       </Route>
 

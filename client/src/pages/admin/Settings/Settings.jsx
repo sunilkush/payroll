@@ -81,7 +81,12 @@ const toPayload = (form) => ({
 });
 
 export default function Settings() {
-  const { refresh } = useAuth();
+  const { refresh, company } = useAuth();
+  // Plan mein jo feature nahi hai uska toggle band rehta hai, aur neeche likha hota hai kaun sa plan chahiye.
+  const gate = (feature, planName, hint) =>
+    company?.features?.includes(feature)
+      ? { hint }
+      : { disabled: true, hint: `Available on the ${planName} plan and above. Upgrade in Plan & Billing.` };
   const [form, setForm] = useState(null);
   const [loadError, setLoadError] = useState('');
   const { toast } = useFeedback();
@@ -273,7 +278,7 @@ export default function Settings() {
             name="workTimeEnabled"
             checked={form.workTimeEnabled}
             onChange={(event) => setField('workTimeEnabled', event.target.checked)}
-            hint="Shows who came late or left early, and hours worked, in attendance. It does not change salary."
+            {...gate('workTime', 'Professional', "Shows who came late or left early, and hours worked, in attendance. It does not change salary.")}
           />
           {form.workTimeEnabled && (
             <div className="settings__grid">
@@ -352,7 +357,7 @@ export default function Settings() {
             name="leaveEnabled"
             checked={form.leaveEnabled}
             onChange={(event) => setField('leaveEnabled', event.target.checked)}
-            hint="Staff can apply for leave and CL/EL is credited every month only when this is ON. Turning it ON credits this month immediately."
+            {...gate('leave', 'Starter', "Staff can apply for leave and CL/EL is credited every month only when this is ON. Turning it ON credits this month immediately.")}
           />
           {form.leaveEnabled && (
             <>
@@ -408,7 +413,7 @@ export default function Settings() {
             name="salesEnabled"
             checked={form.salesEnabled}
             onChange={(event) => setField('salesEnabled', event.target.checked)}
-            hint="Create client meetings and assign them to sales managers. Mark who is a sales manager on the staff form."
+            {...gate('sales', 'Professional', "Create client meetings and assign them to sales managers. Mark who is a sales manager on the staff form.")}
           />
           {form.salesEnabled && (
             <>
@@ -444,6 +449,7 @@ export default function Settings() {
             name="pfEnabled"
             checked={form.pfEnabled}
             onChange={(event) => setField('pfEnabled', event.target.checked)}
+            {...gate('statutory', 'Professional')}
           />
           {form.pfEnabled && (
             <Checkbox
@@ -459,6 +465,7 @@ export default function Settings() {
             name="esiEnabled"
             checked={form.esiEnabled}
             onChange={(event) => setField('esiEnabled', event.target.checked)}
+            {...gate('statutory', 'Professional')}
           />
         </Card>
 

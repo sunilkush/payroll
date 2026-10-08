@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { startTestServer } from '../helpers.js';
+import { env } from '../../config/env.js';
 import mongoose from 'mongoose';
 import { Attendance } from '../../models/Attendance.js';
 import { Client } from '../../models/Client.js';
@@ -12,6 +13,7 @@ import { LeaveBalance } from '../../models/LeaveBalance.js';
 import { Meeting } from '../../models/Meeting.js';
 import { User } from '../../models/User.js';
 import { markMissedPunchOuts } from '../../services/attendanceService.js';
+import { outbox } from '../../services/mailService.js';
 import { markMissedMeetings } from '../../services/meetingService.js';
 import { hashToken, meetingToken } from '../../services/qrService.js';
 import { addDays, daysOfMonth, todayStr, weekdayOf, zonedTime } from '../../utils/dateUtil.js';
@@ -129,11 +131,11 @@ describe('companies (super admin)', () => {
     assert.equal(res.status, 409);
     const list = await api.call('/companies', { token: superAdmin });
     assert.equal(list.body.data.total, 2, 'fail hui company bani nahi rehni chahiye');
-    assert.deepEqual(list.body.data.counts, { all: 2, active: 2, blocked: 0 });
+    assert.deepEqual(list.body.data.counts, { all: 2, active: 2, blocked: 0, upgrade: 0 });
     // counts par search lagu hota hai, status filter nahi
     const filtered = await api.call('/companies?status=blocked&search=alpha', { token: superAdmin });
     assert.equal(filtered.body.data.total, 0);
-    assert.deepEqual(filtered.body.data.counts, { all: 1, active: 1, blocked: 0 });
+    assert.deepEqual(filtered.body.data.counts, { all: 1, active: 1, blocked: 0, upgrade: 0 });
   });
 
   test('ADMIN /companies nahi khol sakta -> 403', async () => {
@@ -2040,5 +2042,331 @@ describe('working time (late / jaldi jaana)', () => {
     assert.equal(day.late, false, 'grace 30 min ke andar');
 
     assert.equal((await monthOf(A.staff)).summary.late, undefined, 'A mein working time OFF hai');
+  });
+});
+
+describe('free registration (company + admin khud banta hai)', () => {
+  const body = (overrides = {}) => ({
+    companyName: 'Gupta Traders',
+    name: 'Amit Gupta',
+    email: 'amit@gupta-traders.test',
+    phone: '9812345678',
+    password: 'Password@1',
+    ...overrides,
+  });
+  const register = (overrides) => api.call('/auth/register', { method: 'POST', body: body(overrides) });
+  const R = {}; // { token, companyId }
+  const addStaff = (index, token = R.token) =>
+    api.call('/staff', { method: 'POST', token, body: staffBody({ name: `Staff ${index}`, email: `staff${index}@gupta-traders.test`, employeeCode: `G${index}` }) });
+
+  test('validation', async () => {
+    assert.equal((await api.call('/auth/register', { method: 'POST', body: {} })).status, 400);
+    assert.equal((await register({ email: 'not-an-email' })).status, 400);
+    assert.equal((await register({ password: 'short' })).status, 400);
+    assert.equal((await register({ companyName: 'A' })).status, 400);
+    assert.equal(await User.countDocuments({ email: 'amit@gupta-traders.test' }), 0);
+  });
+
+  test('register: FREE plan ki company + admin banta hai aur seedha login ho jata hai', async () => {
+    const res = await register({ role: 'SUPER_ADMIN', plan: 'ENTERPRISE', companyId: A.id });
+    assert.equal(res.status, 201);
+    const { user, company, token } = res.body.data;
+    assert.equal(user.role, 'ADMIN', 'body ka role nahi chalta');
+    assert.equal(user.password, undefined);
+    assert.notEqual(user.companyId, A.id, 'apni nayi company, kisi aur ki nahi');
+    assert.equal(company.name, 'Gupta Traders');
+    assert.equal(company.plan, 'FREE', 'body ka plan nahi chalta');
+    assert.equal(company.staffLimit, 10);
+    R.token = token;
+    R.companyId = company._id;
+
+    const me = await api.call('/auth/me', { token });
+    assert.equal(me.status, 200);
+    assert.equal(me.body.data.company._id, R.companyId);
+    assert.ok(await api.login('amit@gupta-traders.test'), 'baad mein email / password se login');
+
+    // Email verify hone tak company ka koi data nahi khulta
+    assert.equal(user.emailVerified, false);
+    const blocked = await api.call('/staff', { token });
+    assert.equal(blocked.status, 403);
+    assert.equal(blocked.body.errors[0].field, 'emailVerified');
+    assert.equal((await api.call('/dashboard', { token })).status, 403);
+
+    const mail = outbox.findLast((item) => item.to === 'amit@gupta-traders.test');
+    const [code] = mail.text.match(/\b\d{6}\b/);
+    assert.match(mail.subject, new RegExp(`^${code} is your`));
+    const verify = (value, as = token) => api.call('/auth/verify-email', { method: 'POST', token: as, body: { code: value } });
+    assert.equal((await verify('12')).status, 400, '6 ank chahiye');
+    assert.equal((await verify(code === '000000' ? '111111' : '000000')).status, 400, 'galat code');
+    assert.equal((await api.call('/auth/verify-email', { method: 'POST', body: { code } })).status, 401, 'bina login nahi');
+    assert.equal((await api.call('/auth/resend-verification', { method: 'POST', token })).status, 429, 'turant dobara nahi');
+    const verified = await verify(code);
+    assert.equal(verified.status, 200);
+    assert.equal(verified.body.data.user.emailVerified, true);
+    assert.equal(verified.body.data.user.emailCode, undefined);
+    assert.equal((await api.call('/auth/resend-verification', { method: 'POST', token })).status, 409);
+
+    // Nayi company khali hai aur doosron ka data nahi dikhta
+    assert.equal((await api.call('/staff', { token })).body.data.total, 0);
+    assert.equal((await api.call(`/staff/${A.staffId}`, { token })).status, 404);
+    assert.equal((await api.call('/companies', { token })).status, 403);
+  });
+
+  test('wahi email ya wahi company naam dobara nahi; adhoori company nahi bachti', async () => {
+    const before = await mongoose.connection.db.collection('companies').countDocuments();
+    let res = await register({ companyName: 'Doosri Company' });
+    assert.equal(res.status, 409);
+    assert.equal(res.body.errors[0].field, 'email');
+    res = await register({ companyName: 'GUPTA traders', email: 'other@gupta-traders.test' });
+    assert.equal(res.status, 409);
+    assert.equal(res.body.errors[0].field, 'companyName');
+    res = await register({ companyName: 'Teesri Company', email: 'ravi@alpha.test' });
+    assert.equal(res.status, 409, 'kisi aur company ke staff ka email');
+    assert.equal(await mongoose.connection.db.collection('companies').countDocuments(), before);
+  });
+
+  test('FREE plan: 10 active staff tak; band kiya hua staff nahi ginta', async () => {
+    for (let index = 1; index <= 10; index += 1) assert.equal((await addStaff(index)).status, 201);
+    let res = await addStaff(11);
+    assert.equal(res.status, 403);
+    assert.match(res.body.message, /up to 10 active staff/);
+
+    const first = (await api.call('/staff?search=G1&limit=100', { token: R.token })).body.data.items.find((item) => item.employeeCode === 'G1');
+    await api.call(`/staff/${first._id}/status`, { method: 'PATCH', token: R.token, body: { isActive: false } });
+    assert.equal((await addStaff(11)).status, 201, 'ek jagah khali hui');
+    res = await api.call(`/staff/${first._id}/status`, { method: 'PATCH', token: R.token, body: { isActive: true } });
+    assert.equal(res.status, 403, 'dobara chalu karna bhi jagah leta hai');
+  });
+
+  test('plan sirf Super Admin badalta hai; badhane par aur staff jud sakte hain; purani companies par hadd nahi', async () => {
+    const put = (token, plan) => api.call(`/companies/${R.companyId}`, { method: 'PUT', token, body: { plan } });
+    assert.equal((await put(R.token, 'ENTERPRISE')).status, 403);
+    assert.equal((await put(superAdmin, 'GOLD')).status, 400);
+    const res = await put(superAdmin, 'STARTER');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.company.plan, 'STARTER');
+    assert.equal((await api.call('/auth/me', { token: R.token })).body.data.company.staffLimit, 50);
+    assert.equal((await addStaff(12)).status, 201);
+
+    const a = (await api.call('/auth/me', { token: A.admin })).body.data.company;
+    assert.equal(a.plan, 'ENTERPRISE');
+    assert.equal(a.staffLimit, null);
+  });
+
+  test('registration band ho to 403', async () => {
+    env.allowRegistration = false;
+    try {
+      const res = await register({ companyName: 'Band Company', email: 'band@company.test' });
+      assert.equal(res.status, 403);
+      assert.match(res.body.message, /registrations are closed/);
+    } finally {
+      env.allowRegistration = true;
+    }
+  });
+});
+
+describe('email verification ke kinare aur password reset', () => {
+  const post = (url, body, token) => api.call(url, { method: 'POST', token, body });
+  const lastMail = (to) => outbox.findLast((item) => item.to === to);
+  const E = {};
+
+  test('code: 5 galat koshish ke baad band; expire hua code nahi chalta; naya code chalta hai', async () => {
+    const res = await post('/auth/register', { companyName: 'Verify Co', name: 'Neha Jain', email: 'neha@verify.test', password: 'Password@1' });
+    E.token = res.body.data.token;
+    E.userId = res.body.data.user._id;
+    const code = lastMail('neha@verify.test').text.match(/\b\d{6}\b/)[0];
+    const wrong = code === '999999' ? '888888' : '999999';
+    for (let i = 0; i < 5; i += 1) assert.equal((await post('/auth/verify-email', { code: wrong }, E.token)).status, 400);
+    assert.equal((await post('/auth/verify-email', { code }, E.token)).status, 429, 'sahi code bhi ab nahi');
+
+    // Naya code (60 second ka intezaar test mein hata kar)
+    await User.updateOne({ _id: E.userId }, { $set: { 'emailCode.sentAt': new Date(Date.now() - 2 * 60000) } });
+    assert.equal((await post('/auth/resend-verification', undefined, E.token)).status, 200);
+    const fresh = lastMail('neha@verify.test').text.match(/\b\d{6}\b/)[0];
+    await User.updateOne({ _id: E.userId }, { $set: { 'emailCode.expiresAt': new Date(Date.now() - 1000) } });
+    assert.equal((await post('/auth/verify-email', { code: fresh }, E.token)).status, 400, 'expire ho chuka');
+    await User.updateOne({ _id: E.userId }, { $set: { 'emailCode.expiresAt': new Date(Date.now() + 60000) } });
+    assert.equal((await post('/auth/verify-email', { code: fresh }, E.token)).status, 200);
+    assert.equal((await api.call('/staff', { token: E.token })).status, 200);
+  });
+
+  test('purane users (admin ke banaye) par verification nahi lagti', async () => {
+    assert.equal((await api.call('/auth/me', { token: A.staff })).body.data.user.emailVerified, true);
+    assert.equal((await api.call('/attendance/today', { token: A.staff })).status, 200);
+  });
+
+  test('forgot password: jawab hamesha ek jaisa; link sirf asli, active user ko', async () => {
+    const before = outbox.length;
+    let res = await post('/auth/forgot-password', { email: 'koi-nahi@nowhere.test' });
+    assert.equal(res.status, 200);
+    const generic = res.body.message;
+    assert.equal(outbox.length, before, 'anjaan email par koi mail nahi');
+    assert.equal((await post('/auth/forgot-password', { email: 'not-an-email' })).status, 400);
+
+    res = await post('/auth/forgot-password', { email: 'ravi@alpha.test' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.message, generic);
+    const mail = lastMail('ravi@alpha.test');
+    assert.match(mail.subject, /Reset your/);
+    E.resetToken = mail.text.match(/reset-password\?token=([\w-]+)/)[1];
+    const saved = await User.findOne({ email: 'ravi@alpha.test' }).select('+passwordReset').lean();
+    assert.notEqual(saved.passwordReset.hash, E.resetToken, 'DB mein sirf hash');
+  });
+
+  test('reset password: naya password chalta hai, purana nahi, purane login band, link ek hi baar', async () => {
+    const reset = (token, password = 'NayaPass@123') => post('/auth/reset-password', { token, password });
+    assert.equal((await reset('x'.repeat(43))).status, 400, 'galat token');
+    assert.equal((await reset(E.resetToken, 'short')).status, 400);
+
+    const oldToken = A.staff;
+    assert.equal((await api.call('/auth/me', { token: oldToken })).status, 200);
+    await new Promise((resolve) => setTimeout(resolve, 2100)); // token ka iat second mein hota hai
+    assert.equal((await reset(E.resetToken)).status, 200);
+
+    assert.equal((await api.call('/auth/me', { token: oldToken })).status, 401, 'purana session band');
+    assert.equal(await api.login('ravi@alpha.test', 'Password@1'), undefined, 'purana password nahi');
+    A.staff = await api.login('ravi@alpha.test', 'NayaPass@123');
+    assert.ok(A.staff);
+    assert.equal((await api.call('/auth/me', { token: A.staff })).status, 200);
+    assert.equal((await reset(E.resetToken, 'Teesra@12345')).status, 400, 'link dobara nahi chalta');
+  });
+
+  test('expire hua reset link nahi chalta', async () => {
+    await post('/auth/forgot-password', { email: 'ravi@alpha.test' });
+    const token = lastMail('ravi@alpha.test').text.match(/reset-password\?token=([\w-]+)/)[1];
+    await User.updateOne({ email: 'ravi@alpha.test' }, { $set: { 'passwordReset.expiresAt': new Date(Date.now() - 1000) } });
+    assert.equal((await post('/auth/reset-password', { token, password: 'Chautha@1234' })).status, 400);
+    assert.ok(await api.login('ravi@alpha.test', 'NayaPass@123'), 'password nahi badla');
+  });
+});
+
+describe('plans: features ki rok aur upgrade request', () => {
+  // "Gupta Traders" (register wale test se) ab STARTER par hai; "Verify Co" FREE par.
+  const call = (method, url, token, body) => api.call(url, { method, token, body });
+  const settings = (token, body) => call('PUT', '/settings', token, { settings: body });
+  const P = {};
+
+  test('setup: do khud-register companies ke admin', async () => {
+    P.starter = await api.login('amit@gupta-traders.test');
+    P.free = await api.login('neha@verify.test');
+    const me = (await call('GET', '/auth/me', P.free)).body.data.company;
+    P.freeCompanyId = me._id;
+    assert.equal(me.plan, 'FREE');
+    assert.deepEqual(me.features, []);
+    assert.equal(me.payrollEnabled, false);
+    assert.deepEqual((await call('GET', '/auth/me', P.starter)).body.data.company.features, ['leave', 'corrections', 'payroll']);
+    assert.equal((await call('GET', '/auth/me', A.admin)).body.data.company.features.length, 7, 'purani companies: sab kuch');
+  });
+
+  test('FREE: staff aur attendance chalte hain; payroll, corrections, leave, PF, sales nahi', async () => {
+    assert.equal((await call('GET', '/staff', P.free)).status, 200);
+    assert.equal((await call('GET', '/dashboard', P.free)).status, 200);
+    assert.equal((await call('GET', `/attendance/report?month=${month}`, P.free)).status, 200);
+
+    let res = await call('GET', `/payroll?month=${month}`, P.free);
+    assert.equal(res.status, 403);
+    assert.match(res.body.message, /Payroll is available on the Starter plan/);
+    assert.equal((await call('POST', '/payroll/generate', P.free, { month })).status, 403);
+    assert.equal((await call('GET', '/punch-corrections', P.free)).status, 403);
+
+    const gated = [
+      ['leaveEnabled', 'Starter'],
+      ['pfEnabled', 'Professional'],
+      ['esiEnabled', 'Professional'],
+      ['workTimeEnabled', 'Professional'],
+      ['salesEnabled', 'Professional'],
+    ];
+    for (const [key, plan] of gated) {
+      res = await settings(P.free, { [key]: true });
+      assert.equal(res.status, 403, key);
+      assert.match(res.body.message, new RegExp(`${plan} plan`), key);
+      assert.equal(res.body.errors[0].field, `settings.${key}`);
+    }
+    // OFF karna aur baaki settings hamesha chalti hain
+    assert.equal((await settings(P.free, { leaveEnabled: false, maxGpsAccuracy: 80 })).status, 200);
+    assert.equal((await call('GET', '/meetings', P.free)).status, 403);
+  });
+
+  test('STARTER: leave aur payroll chalte hain; PF / sales / Excel export nahi', async () => {
+    assert.equal((await settings(P.starter, { leaveEnabled: true })).status, 200);
+    assert.equal((await call('GET', `/payroll?month=${month}`, P.starter)).status, 200);
+    assert.equal((await call('GET', '/punch-corrections', P.starter)).status, 200);
+    assert.equal((await settings(P.starter, { pfEnabled: true })).status, 403);
+    assert.equal((await settings(P.starter, { salesEnabled: true })).status, 403);
+    const res = await api.raw(`/payroll/export?month=${month}`, { token: P.starter });
+    assert.equal(res.status, 403);
+    assert.match((await res.json()).message, /Excel export is available on the Professional plan/);
+  });
+
+  test('billing: plan, usage aur upgrade request (sirf admin, sirf bada plan, ek hi pending)', async () => {
+    let res = await call('GET', '/billing', P.free);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data, { plan: 'FREE', staffLimit: 10, activeStaff: 0, features: [], request: null });
+    assert.equal((await call('GET', '/billing', A.staff)).status, 403);
+    assert.equal((await call('GET', '/billing', superAdmin)).status, 403);
+
+    const ask = (plan, note, token = P.free) => call('POST', '/billing/upgrade-request', token, { plan, note });
+    assert.equal((await ask('GOLD')).status, 400);
+    assert.equal((await ask('FREE')).status, 400, 'wahi plan');
+    assert.equal((await ask('STARTER', undefined, P.starter)).status, 400, 'Starter se Starter nahi');
+    res = await ask('PROFESSIONAL', 'Sales team ke liye chahiye');
+    assert.equal(res.status, 201);
+    assert.equal(res.body.data.request.status, 'PENDING');
+    assert.equal((await ask('STARTER')).status, 409, 'ek pending pehle se');
+    assert.equal((await call('GET', '/billing', P.free)).body.data.request.plan, 'PROFESSIONAL');
+
+    // Super Admin ko ghanti aur list mein
+    const bell = (await call('GET', '/dashboard/notifications', superAdmin)).body.data.items.map((item) => item.id);
+    assert.ok(bell.includes('upgrade-requests'));
+    const list = await call('GET', '/companies?status=upgrade', superAdmin);
+    assert.equal(list.body.data.total, 1);
+    assert.equal(list.body.data.counts.upgrade, 1);
+    assert.equal(list.body.data.items[0].planRequest.note, 'Sales team ke liye chahiye');
+  });
+
+  test('cancel aur reject: plan nahi badalta', async () => {
+    assert.equal((await call('DELETE', '/billing/upgrade-request', P.free)).status, 200);
+    assert.equal((await call('DELETE', '/billing/upgrade-request', P.free)).status, 404);
+    assert.equal((await call('GET', '/billing', P.free)).body.data.request, null);
+
+    await call('POST', '/billing/upgrade-request', P.free, { plan: 'STARTER' });
+    const decide = (token, body) => call('PATCH', `/companies/${P.freeCompanyId}/plan-request`, token, body);
+    assert.equal((await decide(P.free, { action: 'approve' })).status, 403, 'admin khud manzoor nahi kar sakta');
+    assert.equal((await decide(superAdmin, { action: 'maybe' })).status, 400);
+    const res = await decide(superAdmin, { action: 'reject', note: 'Payment nahi mila' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.company.plan, 'FREE');
+    assert.equal(res.body.data.company.planRequest.status, 'REJECTED');
+    assert.equal((await decide(superAdmin, { action: 'approve' })).status, 409, 'ab koi pending nahi');
+    const bell = (await call('GET', '/dashboard/notifications', P.free)).body.data.items.find((item) => item.id === 'plan-request');
+    assert.equal(bell.tone, 'danger');
+    assert.equal(bell.description, 'Payment nahi mila');
+  });
+
+  test('approve: plan badalta hai aur naye features turant chalte hain', async () => {
+    await call('POST', '/billing/upgrade-request', P.free, { plan: 'PROFESSIONAL' });
+    const res = await call('PATCH', `/companies/${P.freeCompanyId}/plan-request`, superAdmin, { action: 'approve' });
+    assert.equal(res.body.data.company.plan, 'PROFESSIONAL');
+    assert.equal(res.body.data.company.planRequest.status, 'APPROVED');
+
+    const billing = (await call('GET', '/billing', P.free)).body.data;
+    assert.equal(billing.plan, 'PROFESSIONAL');
+    assert.equal(billing.staffLimit, 250);
+    assert.equal((await settings(P.free, { salesEnabled: true, pfEnabled: true, leaveEnabled: true })).status, 200);
+    assert.equal((await call('GET', '/clients', P.free)).status, 200);
+    assert.equal((await call('GET', `/payroll?month=${month}`, P.free)).status, 200);
+    const bell = (await call('GET', '/dashboard/notifications', P.free)).body.data.items.find((item) => item.id === 'plan-request');
+    assert.equal(bell.tone, 'success');
+  });
+
+  test('plan ghatane par bade features band ho jate hain', async () => {
+    const res = await call('PUT', `/companies/${P.freeCompanyId}`, superAdmin, { plan: 'FREE' });
+    assert.equal(res.status, 200);
+    const { settings: saved } = res.body.data.company;
+    assert.deepEqual([saved.salesEnabled, saved.pfEnabled, saved.leaveEnabled], [false, false, false]);
+    assert.equal(saved.maxGpsAccuracy, 80, 'baaki settings nahi chhedi');
+    assert.equal((await call('GET', '/clients', P.free)).status, 403);
+    assert.equal((await call('GET', `/payroll?month=${month}`, P.free)).status, 403);
+    assert.equal((await call('GET', '/leaves/balance', A.staff)).status, 200, 'doosri company par asar nahi');
   });
 });

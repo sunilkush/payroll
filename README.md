@@ -188,6 +188,12 @@ TRUST_PROXY=1                          # Nginx ke peeche
 APP_TIMEZONE=Asia/Kolkata
 SUPER_ADMIN_EMAIL=...
 SUPER_ADMIN_PASSWORD=...               # seed ke baad is line ko hata do
+# Email: verification code aur password reset (public registration ke liye zaroori)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASS=...
+MAIL_FROM=PayRoster <no-reply@payroll.example.com>
 # Sales meetings use karte ho to (dono optional):
 # QR_SECRET=<48+ random bytes>         # meeting QR ka secret; na ho to JWT_SECRET se nikalta hai
 # UPLOAD_DIR=/var/lib/payroster/uploads   # visit photo / attachments; na ho to server/uploads
@@ -245,6 +251,42 @@ git pull && npm run install:all && npm run build && pm2 restart payroll
   Content-Security-Policy mein ijazat di gayi hai.
 - **Fake GPS** web browser par poori tarah nahi ruk sakta. Har punch ke saath IP aur device save
   hota hai, shak hone par wahi dekho.
+
+## Free registration, plans aur account
+
+Landing page (`/`) ke "Start Free" se koi bhi `/register` par company ka naam, apna naam, email aur password
+dekar account bana sakta hai. Isse ek nayi company (plan `FREE`) aur uska admin banta hai. Super Admin ki banayi
+companies pehle ki tarah banti hain.
+
+**Email (SMTP).** Verification code aur password reset email se jate hain. `server/.env` mein `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` bharo.
+
+- SMTP diya ho: naya account banate hi email par 6 ank ka code jata hai. Verify hone tak us account ko company ka
+  koi data nahi milta (code 15 minute chalta hai, 5 galat koshish ke baad naya maangna padta hai).
+- SMTP na diya ho: email verify nahi karwayi jati (account seedha chalu), aur development mein code / reset link
+  server ke console par chhapta hai. **Public launch se pehle SMTP zaroor lagao.**
+- "Forgot your password?" (login page): email par link jata hai (30 minute, ek hi baar). Naya password lagte hi
+  us user ke purane sabhi login band ho jate hain. Email register ho ya na ho, jawab ek hi aata hai.
+- Bachav: ek IP se ghante mein `REGISTER_RATE_LIMIT_MAX` (default 5) accounts / reset requests.
+  Registration band karna ho to `ALLOW_REGISTRATION=false`.
+
+**Plans** (`server/utils/constants.js`: `PLAN_STAFF_LIMIT`, `PLAN_FEATURES`):
+
+| Plan | Active staff | Features |
+|---|---|---|
+| Free | 10 | Staff, geofence attendance, attendance calendar, dashboard |
+| Starter | 50 | + Leave (CL / EL), punch corrections, payroll aur salary slips |
+| Professional | 250 | + PF / ESI, working hours, sales meetings, Excel export |
+| Enterprise | koi hadd nahi | Professional jaisa |
+
+- Plan ke bahar ka feature server par band hai (403, kaun sa plan chahiye ye bata kar), menu mein nahi dikhta, aur
+  Settings mein uska toggle band rehta hai. Staff ki hadd par naya staff jodna / band staff chalu karna mana hai.
+- Purani aur Super Admin ki banayi companies `ENTERPRISE` par hain, yaani un par koi rok nahi.
+- **Upgrade:** admin "Plan & Billing" se request bhejta hai -> Super Admin ko ghanti aur Companies ke
+  "Upgrade requests" tab mein dikhti hai -> company ke page par Approve / Reject. Approve karte hi plan badal jata hai.
+  Online payment (gateway) abhi nahi hai; payment bahar se lo, phir approve karo.
+- Plan ghatane par jo settings naye plan mein nahi aati (leave, PF / ESI, working hours, sales) wo band ho jati hain;
+  data bana rehta hai.
 
 ## Sales meetings (QR + geofence se client visit)
 

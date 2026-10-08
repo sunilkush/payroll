@@ -8,6 +8,10 @@ import { runWithTenant } from '../utils/tenantContext.js';
 // company ke scope mein kaam kar sakta hai.
 export const tenant = (req, res, next) => {
   if (!req.user) return next(new ApiError(401, 'Please log in to continue.'));
+  // Khud register kiya hua account: email verify hone tak company ka koi data nahi khulta.
+  if (!req.user.emailVerified) {
+    return next(new ApiError(403, 'Please verify your email to continue.', [{ field: 'emailVerified', message: 'Email not verified' }]));
+  }
 
   let companyId = null;
   if (req.user.role === ROLES.SUPER_ADMIN) {

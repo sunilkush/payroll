@@ -1,5 +1,6 @@
 import { Company } from '../models/Company.js';
 import { ApiError } from '../utils/ApiError.js';
+import { FEATURE_LABEL, FEATURE_MIN_PLAN, PLAN_FEATURES, PLAN_LABEL, SETTING_FEATURE } from '../utils/constants.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { creditCompany } from './leaveService.js';
 import { refreshQrExpiry } from './meetingService.js';
@@ -21,6 +22,14 @@ export async function updateSettings({ locations, holidays, settings }) {
   // Sirf bheje gaye keys badalte hain, baaki settings waisi hi rehti hain.
   for (const [key, value] of Object.entries(settings ?? {})) {
     changes[`settings.${key}`] = value;
+  }
+
+  // Jo feature plan mein nahi hai use ON nahi kar sakte (OFF karna hamesha chalta hai).
+  for (const [key, feature] of Object.entries(SETTING_FEATURE)) {
+    if (settings?.[key] === true && !PLAN_FEATURES[before.plan].includes(feature)) {
+      const message = `${FEATURE_LABEL[feature]} is available on the ${PLAN_LABEL[FEATURE_MIN_PLAN[feature]]} plan and above. Upgrade your plan to use it.`;
+      throw new ApiError(403, message, [{ field: `settings.${key}`, message }]);
+    }
   }
 
   // Working time: start aur end mein se ek hi badla ho to bhi doosre (purane) ke saath jaancho.

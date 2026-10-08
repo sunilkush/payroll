@@ -10,6 +10,8 @@ export default function ProtectedRoute({ allowedRoles }) {
 
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  // Khud register kiya hua account: email verify hone tak sirf verify wala page.
+  if (user.emailVerified === false) return <Navigate to="/verify-email" replace />;
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to={ROLE_HOME[user.role]} replace />;
   }

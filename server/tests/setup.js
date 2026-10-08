@@ -9,6 +9,7 @@ process.env.JWT_SECRET = 'test-secret-sirf-tests-ke-liye-0123456789';
 process.env.JWT_EXPIRES_IN = '1h';
 process.env.BCRYPT_ROUNDS = '4'; // tests tez chalein
 process.env.LOGIN_RATE_LIMIT_MAX = '100000';
+process.env.REGISTER_RATE_LIMIT_MAX = '100000';
 process.env.APP_TIMEZONE = 'Asia/Kolkata';
 process.env.FORCE_HTTPS = 'false';
 // Responsive (browser) check isse 'true' karke chalata hai taaki server client/dist bhi serve kare.

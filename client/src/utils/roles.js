@@ -2,6 +2,7 @@ import {
   BankOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  CreditCardOutlined,
   DashboardOutlined,
   EnvironmentOutlined,
   FieldTimeOutlined,
@@ -47,24 +48,25 @@ export const ROLE_NAV = Object.freeze({
     { to: '/admin', label: 'Dashboard', icon: DashboardOutlined, group: 'Overview', end: true },
     { to: '/admin/staff', label: 'Staff', icon: TeamOutlined, group: 'People' },
     { to: '/admin/attendance', label: 'Attendance', icon: ClockCircleOutlined, group: 'People' },
-    { to: '/admin/corrections', label: 'Punch Corrections', icon: FieldTimeOutlined, group: 'People' },
+    { to: '/admin/corrections', label: 'Punch Corrections', icon: FieldTimeOutlined, group: 'People', feature: 'correctionsEnabled' },
     { to: '/admin/leaves', label: 'Leaves', icon: CalendarOutlined, group: 'People', feature: 'leaveEnabled' },
     { to: '/admin/meetings', label: 'Meetings', icon: ScheduleOutlined, group: 'Sales', feature: 'salesEnabled' },
     { to: '/admin/follow-ups', label: 'Follow-ups', icon: PhoneOutlined, group: 'Sales', feature: 'salesEnabled' },
     { to: '/admin/clients', label: 'Clients', icon: ShopOutlined, group: 'Sales', feature: 'salesEnabled' },
-    { to: '/admin/payroll', label: 'Payroll', icon: WalletOutlined, group: 'Finance' },
+    { to: '/admin/payroll', label: 'Payroll', icon: WalletOutlined, group: 'Finance', feature: 'payrollEnabled' },
     { to: '/admin/settings', label: 'Settings', icon: SettingOutlined, group: 'Configuration' },
+    { to: '/admin/billing', label: 'Plan & Billing', icon: CreditCardOutlined, group: 'Configuration' },
   ],
   [ROLES.STAFF]: [
     { to: '/staff', label: 'Dashboard', icon: DashboardOutlined, group: 'Overview', end: true },
     { to: '/staff/punch', label: 'Punch', icon: EnvironmentOutlined, group: 'My work' },
     { to: '/staff/attendance', label: 'My Attendance', icon: ClockCircleOutlined, group: 'My work' },
-    { to: '/staff/corrections', label: 'Punch Corrections', icon: FieldTimeOutlined, group: 'My work' },
+    { to: '/staff/corrections', label: 'Punch Corrections', icon: FieldTimeOutlined, group: 'My work', feature: 'correctionsEnabled' },
     { to: '/staff/leaves', label: 'My Leaves', icon: CalendarOutlined, group: 'My work', feature: 'leaveEnabled' },
     { to: '/staff/meetings', label: 'My Meetings', icon: ScheduleOutlined, group: 'Sales', ...SALES_MANAGER },
     { to: '/staff/scan', label: 'Scan Meeting QR', icon: QrcodeOutlined, group: 'Sales', ...SALES_MANAGER },
     { to: '/staff/follow-ups', label: 'Follow-ups', icon: PhoneOutlined, group: 'Sales', ...SALES_MANAGER },
-    { to: '/staff/salary', label: 'My Salary', icon: FileTextOutlined, group: 'Pay' },
+    { to: '/staff/salary', label: 'My Salary', icon: FileTextOutlined, group: 'Pay', feature: 'payrollEnabled' },
   ],
 });
 
@@ -76,7 +78,7 @@ export const ROLE_ACTIONS = Object.freeze({
   ],
   [ROLES.ADMIN]: [
     { to: '/admin/staff/new', label: 'Add staff', icon: PlusOutlined },
-    { to: '/admin/payroll', label: 'Run payroll', icon: WalletOutlined },
+    { to: '/admin/payroll', label: 'Run payroll', icon: WalletOutlined, feature: 'payrollEnabled' },
     { to: '/admin/leaves', label: 'Review leave requests', icon: CalendarOutlined, feature: 'leaveEnabled' },
     { to: '/admin/meetings/new', label: 'Create meeting', icon: ScheduleOutlined, feature: 'salesEnabled' },
     { to: '/admin/attendance', label: 'Attendance report', icon: ClockCircleOutlined },
@@ -84,9 +86,9 @@ export const ROLE_ACTIONS = Object.freeze({
   [ROLES.STAFF]: [
     { to: '/staff/punch', label: 'Punch in / out', icon: EnvironmentOutlined },
     { to: '/staff/scan', label: 'Scan meeting QR', icon: QrcodeOutlined, ...SALES_MANAGER },
-    { to: '/staff/corrections', label: 'Fix a missed punch', icon: FieldTimeOutlined },
+    { to: '/staff/corrections', label: 'Fix a missed punch', icon: FieldTimeOutlined, feature: 'correctionsEnabled' },
     { to: '/staff/leaves', label: 'Apply for leave', icon: CalendarOutlined, feature: 'leaveEnabled' },
-    { to: '/staff/salary', label: 'View salary slips', icon: FileTextOutlined },
+    { to: '/staff/salary', label: 'View salary slips', icon: FileTextOutlined, feature: 'payrollEnabled' },
   ],
 });
 

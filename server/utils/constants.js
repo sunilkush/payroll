@@ -6,6 +6,66 @@ export const ROLES = Object.freeze({
 
 export const ROLE_VALUES = Object.values(ROLES);
 
+// Company ka plan. Khud register karne wali company FREE se shuru hoti hai; Super Admin ki banayi (aur purani)
+// companies ENTERPRISE par hain, yaani koi hadd nahi. Plan sirf Super Admin badal sakta hai.
+export const COMPANY_PLANS = Object.freeze({
+  FREE: 'FREE',
+  STARTER: 'STARTER',
+  PROFESSIONAL: 'PROFESSIONAL',
+  ENTERPRISE: 'ENTERPRISE',
+});
+
+// Plan mein kitne active staff ho sakte hain. null = koi hadd nahi.
+// (Landing page ke pricing mein bhi yahi numbers hain: client/src/pages/Landing/landingConfig.js)
+export const PLAN_STAFF_LIMIT = Object.freeze({ FREE: 10, STARTER: 50, PROFESSIONAL: 250, ENTERPRISE: null });
+
+// Chhote se bade tak (upgrade = is list mein aage ka plan)
+export const PLAN_ORDER = Object.freeze(['FREE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE']);
+export const PLAN_LABEL = Object.freeze({ FREE: 'Free', STARTER: 'Starter', PROFESSIONAL: 'Professional', ENTERPRISE: 'Enterprise' });
+
+// Plan mein kaun se features milte hain. Staff, geofence attendance aur dashboard har plan mein hain.
+//   leave        CL / EL leave management
+//   corrections  punch correction requests
+//   payroll      payroll aur salary slips
+//   statutory    PF / ESI
+//   workTime     working hours (late / early out)
+//   sales        sales meetings (QR visit)
+//   exports      Excel exports
+const STARTER_FEATURES = ['leave', 'corrections', 'payroll'];
+const PRO_FEATURES = [...STARTER_FEATURES, 'statutory', 'workTime', 'sales', 'exports'];
+export const PLAN_FEATURES = Object.freeze({
+  FREE: Object.freeze([]),
+  STARTER: Object.freeze(STARTER_FEATURES),
+  PROFESSIONAL: Object.freeze(PRO_FEATURES),
+  ENTERPRISE: Object.freeze(PRO_FEATURES),
+});
+
+export const FEATURE_LABEL = Object.freeze({
+  leave: 'Leave management',
+  corrections: 'Punch corrections',
+  payroll: 'Payroll',
+  statutory: 'PF & ESI',
+  workTime: 'Working hours',
+  sales: 'Sales meetings',
+  exports: 'Excel export',
+});
+
+// Feature sabse pehle kis plan mein milta hai (error message mein batane ke liye)
+export const FEATURE_MIN_PLAN = Object.freeze(
+  Object.fromEntries(Object.keys(FEATURE_LABEL).map((feature) => [feature, PLAN_ORDER.find((plan) => PLAN_FEATURES[plan].includes(feature))]))
+);
+
+// Company ki kaun si setting kis feature ke peeche hai (plan mein feature na ho to setting ON nahi ho sakti)
+export const SETTING_FEATURE = Object.freeze({
+  leaveEnabled: 'leave',
+  pfEnabled: 'statutory',
+  esiEnabled: 'statutory',
+  workTimeEnabled: 'workTime',
+  salesEnabled: 'sales',
+});
+
+export const PLAN_REQUEST_STATUS = Object.freeze({ PENDING: 'PENDING', APPROVED: 'APPROVED', REJECTED: 'REJECTED' });
+
 export const PAYROLL_STATUS = Object.freeze({ DRAFT: 'DRAFT', FINAL: 'FINAL' });
 
 export const LEAVE_TYPES = Object.freeze(['CL', 'EL']);

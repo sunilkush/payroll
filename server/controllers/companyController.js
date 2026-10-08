@@ -1,3 +1,4 @@
+import * as billingService from '../services/billingService.js';
 import * as companyService from '../services/companyService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -34,4 +35,10 @@ export const createAdmin = asyncHandler(async (req, res) => {
 export const updateAdmin = asyncHandler(async (req, res) => {
   const admin = await companyService.updateAdmin(req.params.id, req.params.adminId, req.body);
   res.json({ success: true, data: { admin } });
+});
+
+// Admin ki upgrade request: manzoor (plan badalta hai) ya na-manzoor
+export const decidePlanRequest = asyncHandler(async (req, res) => {
+  const company = await billingService.decidePlanRequest(req.params.id, req.body);
+  res.json({ success: true, data: { company } });
 });

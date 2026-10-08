@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { COMPANY_PLANS, PLAN_REQUEST_STATUS } from '../utils/constants.js';
 
 const locationSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -19,6 +20,20 @@ const companySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     address: { type: String, trim: true, default: '' },
+    // Kitne staff rakh sakte hain, ye plan tay karta hai (PLAN_STAFF_LIMIT). Default mein koi hadd nahi.
+    plan: { type: String, enum: Object.values(COMPANY_PLANS), default: COMPANY_PLANS.ENTERPRISE },
+    // Admin ki upgrade request (ek waqt mein ek). Super Admin manzoor kare to plan badalta hai.
+    planRequest: {
+      plan: { type: String, enum: Object.values(COMPANY_PLANS) },
+      note: { type: String, trim: true },
+      status: { type: String, enum: Object.values(PLAN_REQUEST_STATUS) },
+      requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      requestedAt: { type: Date },
+      decidedAt: { type: Date },
+      decisionNote: { type: String, trim: true },
+    },
+    // Company ne website se khud account banaya (Super Admin ne nahi).
+    selfRegistered: { type: Boolean, default: false },
     locations: { type: [locationSchema], default: [] },
     holidays: { type: [holidaySchema], default: [] },
     settings: {

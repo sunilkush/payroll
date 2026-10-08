@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import * as meetingController from '../controllers/meetingController.js';
 import { authorize } from '../middlewares/authorize.js';
+import { requireFeature } from '../middlewares/requireFeature.js';
 import { validate } from '../middlewares/validate.js';
 import { singleFile } from '../services/uploadService.js';
 import { ROLES } from '../utils/constants.js';
@@ -48,7 +49,7 @@ router.post('/check-in', staffOnly, tokenLimiter(), validate(checkInSchema), mee
 // Dashboard ke cards + aaj ki list. Staff: apni meetings. Admin: company ki.
 router.get('/dashboard', adminOrStaff, meetingController.dashboard);
 // Excel: list wale hi filters (date, sales manager, client, status, outcome, location). Isi se saari reports banti hain.
-router.get('/export', adminOnly, validate(listMeetingsSchema, 'query'), meetingController.exportExcel);
+router.get('/export', adminOnly, requireFeature('exports'), validate(listMeetingsSchema, 'query'), meetingController.exportExcel);
 // Meeting ke baad ke follow-ups. Staff: apne. Admin: company ke saare.
 router.get('/follow-ups', adminOrStaff, validate(listFollowUpsSchema, 'query'), meetingController.listFollowUps);
 router.get('/:id', adminOrStaff, meetingId, meetingController.getOne);

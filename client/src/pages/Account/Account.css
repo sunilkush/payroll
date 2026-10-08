@@ -1,0 +1,24 @@
+/* Verify email / forgot / reset password: layout Login ka hi hai (Login.css). */
+.account .login__subtitle {
+  margin-bottom: var(--space-4);
+}
+
+/* 6 ank ke dabbe: poori chaudai mein barabar */
+.account__otp.ant-otp {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.account__otp .ant-otp-input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.account .login__help .ant-btn {
+  vertical-align: baseline;
+}

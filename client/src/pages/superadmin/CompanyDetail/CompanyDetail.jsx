@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   createAdminApi,
+  decidePlanRequestApi,
   getCompanyApi,
   setCompanyStatusApi,
   updateAdminApi,
@@ -24,6 +25,13 @@ import { useFeedback } from '../../../utils/useFeedback.js';
 import './CompanyDetail.css';
 
 const BACK = { to: '/superadmin/companies', label: 'Companies' };
+// Plan = kitne active staff (server ke PLAN_STAFF_LIMIT jaisa hi)
+const PLAN_OPTIONS = [
+  { value: 'FREE', label: 'Free (up to 10 staff)' },
+  { value: 'STARTER', label: 'Starter (up to 50 staff)' },
+  { value: 'PROFESSIONAL', label: 'Professional (up to 250 staff)' },
+  { value: 'ENTERPRISE', label: 'Enterprise (unlimited staff)' },
+];
 const ADMIN_COLUMNS = ['Name', 'Email', 'Phone', 'Status', 'Added', 'Actions'];
 
 export default function CompanyDetail() {
@@ -36,7 +44,7 @@ export default function CompanyDetail() {
   const notify = ({ type, text }) => text && toast[type](text);
   const [busy, setBusy] = useState(false);
 
-  const [details, setDetails] = useState({ name: '', address: '' });
+  const [details, setDetails] = useState({ name: '', address: '', plan: 'ENTERPRISE' });
   const [detailErrors, setDetailErrors] = useState({});
 
   // modal: null | { type: 'add' } | { type: 'reset', admin }
@@ -49,7 +57,7 @@ export default function CompanyDetail() {
     try {
       const res = await getCompanyApi(id);
       setData(res.data);
-      setDetails({ name: res.data.company.name, address: res.data.company.address });
+      setDetails({ name: res.data.company.name, address: res.data.company.address, plan: res.data.company.plan });
       setLoadError('');
     } catch (err) {
       setLoadError(err.message);
@@ -92,6 +100,18 @@ export default function CompanyDetail() {
   if (!data) return <Loader />;
 
   const { company, admins, staffCount } = data;
+
+  // Admin ki upgrade request: manzoor karte hi plan badal jata hai.
+  const handlePlanRequest = async (action) => {
+    const approve = action === 'approve';
+    const ok = await confirm({
+      title: approve ? 'Approve this upgrade?' : 'Reject this upgrade request?',
+      content: approve ? 'The company moves to the requested plan right away. Approve only after payment is settled.' : 'The plan stays as it is and the admin is told the request was not approved.',
+      okText: approve ? 'Approve' : 'Reject',
+      danger: !approve,
+    });
+    if (ok) run(() => decidePlanRequestApi(id, action), approve ? 'Plan upgraded.' : 'Request rejected.');
+  };
 
   const handleDetailsChange = (event) => {
     setDetails((prev) => ({ ...prev, [event.target.name]: event.target.value }));
@@ -168,7 +188,7 @@ export default function CompanyDetail() {
     }
   };
 
-  const unchanged = details.name === company.name && details.address === company.address;
+  const unchanged = details.name === company.name && details.address === company.address && details.plan === company.plan;
 
   return (
     <section className="company-detail">
@@ -179,8 +199,23 @@ export default function CompanyDetail() {
         </Button>
       </PageHeader>
 
+      {company.planRequest?.status === 'PENDING' && (
+        <Alert type="warning">
+          <strong>Upgrade requested:</strong> {PLAN_OPTIONS.find((option) => option.value === company.planRequest.plan)?.label} ·{' '}
+          {formatDate(company.planRequest.requestedAt)}
+          {company.planRequest.note && ` · "${company.planRequest.note}"`}{' '}
+          <Button size="sm" disabled={busy} onClick={() => handlePlanRequest('approve')}>
+            Approve
+          </Button>{' '}
+          <Button size="sm" variant="danger" disabled={busy} onClick={() => handlePlanRequest('reject')}>
+            Reject
+          </Button>
+        </Alert>
+      )}
+
       <SummaryTiles
         items={[
+          { label: 'Plan', value: PLAN_OPTIONS.find((option) => option.value === company.plan)?.label.split(' (')[0] },
           { label: 'Admins', value: admins.length },
           { label: 'Staff', value: staffCount },
           { label: 'Office locations', value: company.locations.length },
@@ -209,6 +244,15 @@ export default function CompanyDetail() {
           value={details.address}
           onChange={handleDetailsChange}
           error={detailErrors.address}
+        />
+        <FormField
+          label="Plan"
+          name="plan"
+          options={PLAN_OPTIONS}
+          value={details.plan}
+          onChange={handleDetailsChange}
+          error={detailErrors.plan}
+          hint={company.selfRegistered ? 'This company signed up on its own (free registration).' : 'Sets how many active staff the company can have.'}
         />
         <div className="company-detail__actions">
           <Button type="submit" disabled={busy || unchanged}>

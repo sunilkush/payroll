@@ -24,13 +24,20 @@ const STATUS_TABS = [
   { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
   { value: 'blocked', label: 'Blocked' },
+  { value: 'upgrade', label: 'Upgrade requests' },
 ];
+const PLAN_NAME = { FREE: 'Free', STARTER: 'Starter', PROFESSIONAL: 'Professional', ENTERPRISE: 'Enterprise' };
 
 export default function Companies() {
   const { message } = App.useApp();
   const navigate = useNavigate();
 
-  const [query, setQuery] = useState({ search: '', status: 'all', page: 1 });
+  // Ghanti ka "upgrade requests" link ?status=upgrade ke saath aata hai
+  const [query, setQuery] = useState(() => ({
+    search: '',
+    status: new URLSearchParams(window.location.search).get('status') === 'upgrade' ? 'upgrade' : 'all',
+    page: 1,
+  }));
   // Badalne par toolbar (search box) khali ho jata hai
   const [toolbarKey, setToolbarKey] = useState(0);
   const [result, setResult] = useState({ items: [], total: 0, totalPages: 1, counts: null });
@@ -147,7 +154,13 @@ export default function Companies() {
         {result.items.map((company) => (
           <tr key={company._id}>
             <td>
-              <UserCell square name={company.name} sub={company.address} to={`/superadmin/companies/${company._id}`} />
+              <UserCell
+                square
+                name={company.name}
+                sub={[PLAN_NAME[company.plan], company.address].filter(Boolean).join(' · ')}
+                to={`/superadmin/companies/${company._id}`}
+                extra={company.planRequest?.status === 'PENDING' && <Tag color="warning">Upgrade requested</Tag>}
+              />
             </td>
             <td>
               <Tag icon={<UserOutlined />} color={company.adminCount ? 'blue' : 'warning'}>

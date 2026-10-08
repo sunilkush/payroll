@@ -53,6 +53,19 @@ export const env = {
     windowMin: toInt(process.env.LOGIN_RATE_LIMIT_WINDOW_MIN, 15),
     max: toInt(process.env.LOGIN_RATE_LIMIT_MAX, 20),
   },
+  // Website se free account banana. Band karna ho (sirf Super Admin companies banaye) to ALLOW_REGISTRATION=false.
+  allowRegistration: toBool(process.env.ALLOW_REGISTRATION, true),
+  // Ek IP se ek ghante mein kitne naye accounts ban sakte hain (bot / spam se bachav).
+  registerRateLimitMax: toInt(process.env.REGISTER_RATE_LIMIT_MAX, 5),
+  // Email (verification code, password reset). SMTP_HOST khali ho to email nahi jati; tab verification maanga nahi jata.
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: toInt(process.env.SMTP_PORT, 587),
+    secure: toBool(process.env.SMTP_SECURE, false),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.MAIL_FROM || 'PayRoster <no-reply@localhost>',
+  },
   superAdmin: {
     name: process.env.SUPER_ADMIN_NAME || 'Super Admin',
     email: process.env.SUPER_ADMIN_EMAIL,

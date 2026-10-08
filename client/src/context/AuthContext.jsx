@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getMeApi, loginApi } from '../api/authApi.js';
+import { getMeApi, loginApi, registerApi } from '../api/authApi.js';
 import { tokenStore, UNAUTHORIZED_EVENT } from '../api/axiosInstance.js';
 
 const AuthContext = createContext(null);
@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 const LOGGED_OUT = { user: null, company: null };
 
 export function AuthProvider({ children }) {
-  // company: { _id, name, leaveEnabled, salesEnabled, requireVisitPhoto } - Super Admin ke liye null.
+  // company: { _id, name, plan, staffLimit, features, payrollEnabled, correctionsEnabled, leaveEnabled, salesEnabled, requireVisitPhoto } - Super Admin ke liye null.
   const [session, setSession] = useState(LOGGED_OUT);
   // Page reload par token se user wapas laane tak loading true rehta hai.
   const [loading, setLoading] = useState(() => Boolean(tokenStore.get()));
@@ -41,14 +41,22 @@ export function AuthProvider({ children }) {
     return res.data.user;
   }, []);
 
+  // Naya free account banate hi user login ho jata hai (server token bhi deta hai).
+  const register = useCallback(async (payload) => {
+    const res = await registerApi(payload);
+    tokenStore.set(res.data.token);
+    setSession({ user: res.data.user, company: res.data.company });
+    return res.data.user;
+  }, []);
+
   const logout = useCallback(() => {
     tokenStore.clear();
     setSession(LOGGED_OUT);
   }, []);
 
   const value = useMemo(
-    () => ({ ...session, loading, login, logout, refresh }),
-    [session, loading, login, logout, refresh]
+    () => ({ ...session, loading, login, register, logout, refresh }),
+    [session, loading, login, register, logout, refresh]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

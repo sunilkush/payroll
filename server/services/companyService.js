@@ -1,8 +1,9 @@
 import { Company } from '../models/Company.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
-import { ROLES } from '../utils/constants.js';
+import { PLAN_REQUEST_STATUS, ROLES } from '../utils/constants.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
+import { planChange } from './billingService.js';
 
 // Ye service sirf Super Admin routes se chalti hai (cross-company), isliye yahan
 // tenant context nahi hota aur User queries mein companyId khud dena padta hai.
@@ -42,10 +43,11 @@ export async function listCompanies({ search, status, page, limit }) {
   if (search) filter.name = new RegExp(escapeRegex(search), 'i');
   if (status === 'active') filter.isActive = true;
   if (status === 'blocked') filter.isActive = false;
+  if (status === 'upgrade') filter['planRequest.status'] = PLAN_REQUEST_STATUS.PENDING;
 
   // Status tabs ki ginti: search lagu hota hai, status nahi (taaki har tab par apni ginti dikhe).
-  const { isActive: _status, ...searchOnly } = filter;
-  const [companies, total, all, active] = await Promise.all([
+  const { isActive: _status, 'planRequest.status': _request, ...searchOnly } = filter;
+  const [companies, total, all, active, upgrade] = await Promise.all([
     Company.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -54,6 +56,7 @@ export async function listCompanies({ search, status, page, limit }) {
     Company.countDocuments(filter),
     Company.countDocuments(searchOnly),
     Company.countDocuments({ ...searchOnly, isActive: true }),
+    Company.countDocuments({ ...searchOnly, 'planRequest.status': PLAN_REQUEST_STATUS.PENDING }),
   ]);
 
   const counts = await countUsersByCompany(companies.map((c) => c._id));
@@ -70,7 +73,7 @@ export async function listCompanies({ search, status, page, limit }) {
     page,
     limit,
     totalPages: Math.max(1, Math.ceil(total / limit)),
-    counts: { all, active, blocked: all - active },
+    counts: { all, active, blocked: all - active, upgrade },
   };
 }
 
@@ -99,8 +102,10 @@ export async function getCompany(id) {
   return { company, admins, staffCount };
 }
 
-export async function updateCompany(id, data) {
-  const company = await Company.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
+export async function updateCompany(id, { plan, ...data }) {
+  // Plan badle to jo settings naye plan mein nahi aati wo band ho jati hain.
+  const changes = { ...data, ...(plan && planChange(plan)) };
+  const company = await Company.findByIdAndUpdate(id, { $set: changes }, { new: true, runValidators: true });
   if (!company) throw new ApiError(404, 'Company not found.');
   return company;
 }

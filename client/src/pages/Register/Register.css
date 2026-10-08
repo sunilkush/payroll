@@ -1,0 +1,21 @@
+/* Register ka layout Login ka hi hai (Login.css); yahan sirf itna ki paanch fields chhoti screen par bhi aa jayein. */
+.register .login__subtitle {
+  margin-bottom: var(--space-4);
+}
+
+.register .form-field {
+  margin-bottom: var(--space-3);
+}
+
+@media (min-width: 992px) {
+  .register .login__form {
+    padding-block: var(--space-6);
+  }
+
+  .register .login__form-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-3);
+    font-size: 18px;
+  }
+}

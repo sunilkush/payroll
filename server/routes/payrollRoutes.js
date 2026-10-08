@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as payrollController from '../controllers/payrollController.js';
 import { authorize } from '../middlewares/authorize.js';
+import { requireFeature } from '../middlewares/requireFeature.js';
 import { validate } from '../middlewares/validate.js';
 import { ROLES } from '../utils/constants.js';
 import { idParamSchema } from '../validators/common.js';
@@ -13,7 +14,7 @@ const payrollId = validate(idParamSchema, 'params');
 router.post('/generate', adminOnly, validate(payrollMonthSchema), payrollController.generate);
 router.post('/finalize', adminOnly, validate(payrollMonthSchema), payrollController.finalize);
 router.get('/', adminOnly, validate(payrollQuerySchema, 'query'), payrollController.list);
-router.get('/export', adminOnly, validate(payrollQuerySchema, 'query'), payrollController.exportExcel);
+router.get('/export', adminOnly, requireFeature('exports'), validate(payrollQuerySchema, 'query'), payrollController.exportExcel);
 router.get('/my', authorize(ROLES.STAFF), payrollController.my);
 
 router.patch('/:id', adminOnly, payrollId, validate(updatePayrollSchema), payrollController.update);
