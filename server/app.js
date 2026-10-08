@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { env, serverRoot } from './config/env.js';
+import homeRoutes from './routes/homeRoutes.js';
 import routes from './routes/index.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import { httpsRedirect } from './middlewares/httpsRedirect.js';
@@ -12,6 +13,8 @@ const app = express();
 const NO_CACHE_FILES = new Set(['sw.js', 'registerSW.js', 'manifest.webmanifest']);
 
 app.set('trust proxy', env.trustProxy);
+app.set('views', path.join(serverRoot, 'views'));
+app.set('view engine', 'pug');
 if (env.forceHttps) app.use(httpsRedirect);
 
 // Security headers; HTTPS par HSTS bhi bhejta hai. Content-Security-Policy mein sirf wahi bahar ki
@@ -35,6 +38,12 @@ app.use(express.json({ limit: '1mb' }));
 if (env.nodeEnv === 'development') app.use(morgan('dev'));
 
 app.use('/api/v1', routes);
+
+// Server ka index page (Pug): API ka haal ek nazar mein. Hamesha /api par milta hai. Jab React build
+// isi server se nahi jata (dev, ya API alag server par) tab / par bhi; warna / React app ka hai.
+app.use('/server-assets', express.static(path.join(serverRoot, 'public'), { maxAge: '1h' }));
+app.use('/api', homeRoutes);
+if (!env.serveClient) app.use('/', homeRoutes);
 
 // Production: React build (client/dist) isi server se. /api ke alawa har URL par index.html
 // jata hai taaki page refresh par React Router ke routes chalein.

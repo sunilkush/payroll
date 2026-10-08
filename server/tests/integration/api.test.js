@@ -96,6 +96,23 @@ describe('auth', () => {
     assert.equal(res.body.data.company, null);
   });
 
+  test('server ka index page (Pug): / aur /api par HTML, stylesheet milti hai', async () => {
+    for (const url of ['/', '/api']) {
+      const res = await fetch(`${api.origin}${url}`);
+      assert.equal(res.status, 200, url);
+      assert.match(res.headers.get('content-type'), /text\/html/);
+      const html = await res.text();
+      assert.match(html, /PayRoster/);
+      assert.match(html, /API is running/);
+      assert.match(html, /\/api\/v1\/health/);
+      // Bina login ka page hai: andar ki koi detail na jaye
+      assert.doesNotMatch(html, /mongodb/i);
+    }
+    const css = await fetch(`${api.origin}/server-assets/css/home.css`);
+    assert.equal(css.status, 200);
+    assert.match(css.headers.get('content-type'), /text\/css/);
+  });
+
   test('unknown route -> 404 JSON', async () => {
     const res = await api.call('/kuch-nahi');
     assert.equal(res.status, 404);
