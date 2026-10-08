@@ -1,0 +1,51 @@
+# Render Blueprint: https://render.com par "New > Blueprint" se ye repo chuno, baaki sab yahan se banta hai.
+# Ek hi web service API aur React build dono serve karti hai (SERVE_CLIENT production mein apne aap true).
+#
+# Jo yahan likhna NAHI padta (code khud nikal leta hai, dekho server/config/env.js):
+#   PORT                 Render deta hai
+#   CLIENT_URL           Render ke RENDER_EXTERNAL_URL se (apna domain jodo tab CLIENT_URL set karo)
+#   TRUST_PROXY          Render par apne aap 1
+#   FORCE_HTTPS          production mein apne aap true
+services:
+  - type: web
+    name: payroster
+    runtime: node
+    plan: free
+    region: singapore
+    # Server: sirf chalne wale packages. Client: build ke liye devDependencies (vite) bhi chahiye,
+    # isliye --include=dev (NODE_ENV=production mein npm unhe warna chhod deta hai).
+    buildCommand: cd server && npm ci --omit=dev && cd ../client && npm ci --include=dev && npm run build
+    # Pehla Super Admin (SUPER_ADMIN_* se) na ho to bana deta hai, ho to kuch nahi badalta; phir server.
+    startCommand: npm run seed:superadmin; npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata
+      # MongoDB Atlas ka connection string (dashboard mein daalna hai, repo mein nahi)
+      - key: MONGO_URI
+        sync: false
+      # Render khud lamba random secret bana deta hai
+      - key: JWT_SECRET
+        generateValue: true
+      - key: QR_SECRET
+        generateValue: true
+      - key: SUPER_ADMIN_NAME
+        value: Super Admin
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+    # Upload hui files (visit photo, attachments): free plan par disk nahi milti, har deploy / restart
+    # par ye files mit jati hain. Paid plan par neeche ki lines kholo taaki files bani rahein.
+    # disk:
+    #   name: uploads
+    #   mountPath: /var/data/uploads
+    #   sizeGB: 1
+    # aur envVars mein:
+    #   - key: UPLOAD_DIR
+    #     value: /var/data/uploads
