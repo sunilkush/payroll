@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -35,13 +35,19 @@ const pwa = VitePWA({
   },
 });
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Dev server ki settings client/.env se (dekho .env.example); na likho to default.
+  const env = loadEnv(mode, process.cwd(), '');
+  const devPort = Number(env.VITE_DEV_PORT) || 5173;
+  const apiTarget = env.VITE_DEV_API_TARGET || 'http://localhost:5000';
+
+  return {
   plugins: [react(), pwa],
   server: {
-    port: 5173,
+    port: devPort,
     // Dev mein /api calls backend par jaati hain, isliye CORS ki dikkat nahi aati.
     proxy: {
-      '/api': 'http://localhost:5000',
+      '/api': apiTarget,
     },
   },
   build: {
@@ -66,4 +72,5 @@ export default defineConfig({
       },
     },
   },
+  };
 });

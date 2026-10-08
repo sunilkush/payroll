@@ -177,8 +177,38 @@ router.use('/staff', auth, tenant, authorize(ROLES.ADMIN), staffRoutes);
 
 **HTTPS zaroori hai.** Browser bina HTTPS ke location nahi deta, yaani punch in/out chalega hi nahi.
 
-Production mein ek hi Node server API aur React build dono serve karta hai, aur uske aage Nginx
-HTTPS sambhalta hai.
+Production mein ek hi Node server API aur React build dono serve karta hai. Do tareeke hain:
+**Render** (sabse aasaan, neeche) ya **apna server** (Nginx + PM2, uske baad ke steps).
+
+### Render par deploy
+
+Repo mein `render.yaml` (Blueprint) hai, isliye Render par build / start command haath se nahi likhne.
+URL, port aur proxy ki settings code khud Render se le leta hai (`server/config/env.js`).
+
+1. **MongoDB Atlas** par free cluster banao, ek database user banao, aur Network Access mein
+   `0.0.0.0/0` allow karo (Render ka IP badalta rehta hai). Connection string copy karo
+   (`mongodb+srv://USER:PASSWORD@cluster.../payroll`).
+2. Code GitHub ke `main` par push karo.
+3. render.com > **New > Blueprint** > ye repo chuno. Render teen values maangega:
+   `MONGO_URI` (step 1 wala), `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`.
+   `JWT_SECRET` aur `QR_SECRET` Render khud bana deta hai.
+4. Deploy poora hone par `https://<service-naam>.onrender.com` kholo aur Super Admin se login karo
+   (pehli baar start hote hi Super Admin apne aap ban jata hai). API ka haal: `/api`.
+
+Dhyan rahe:
+
+- **Free plan so jata hai**: 15 minute koi request na aaye to service band ho jati hai aur agli
+  request par ~1 minute mein jaagti hai. Soyi hui service mein cron jobs (raat ka auto punch-out,
+  mahine ka leave credit) **nahi chalte**. Asli use ke liye paid plan lo.
+- **Upload hui files** (visit photo, attachments) free plan par har deploy / restart mein mit jati
+  hain. Paid plan par `render.yaml` ke neeche wali `disk` lines kholo.
+- Email (verification / password reset) chahiye to dashboard mein `SMTP_*` variables jodo.
+- Apna domain jodo to `CLIENT_URL=https://apna-domain.com` set karo (comma se kai de sakte ho).
+- Har `git push` (main) par Render apne aap naya version deploy karta hai.
+
+### Apna server (Nginx + PM2)
+
+Node server ke aage Nginx HTTPS sambhalta hai.
 
 ### 1. Server par code aur build
 

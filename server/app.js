@@ -33,7 +33,7 @@ app.use(
     },
   })
 );
-app.use(cors({ origin: env.clientUrl }));
+app.use(cors({ origin: env.clientUrls }));
 app.use(express.json({ limit: '1mb' }));
 if (env.nodeEnv === 'development') app.use(morgan('dev'));
 

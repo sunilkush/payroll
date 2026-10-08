@@ -7,7 +7,9 @@ async function start() {
   await connectDB();
   startJobs();
   const server = app.listen(env.port, () => {
-    console.log(`Server running on http://localhost:${env.port} (${env.nodeEnv})`);
+    // Hosting (Render) par asli URL env.clientUrl hai; apne computer par localhost
+    const url = env.isProduction ? env.clientUrl : `http://localhost:${env.port}`;
+    console.log(`Server running on port ${env.port} (${env.nodeEnv}): ${url}`);
   });
 
   // Deploy/restart par chalu requests poori hone do, phir DB band karo.
