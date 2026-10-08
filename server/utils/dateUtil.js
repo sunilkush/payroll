@@ -41,6 +41,17 @@ const timeFormatter = new Intl.DateTimeFormat('en-IN', {
   hour12: true,
 });
 
+const clockFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: env.timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+// App timezone mein din ke kitne minute beet chuke: 09:30 -> 570 (working time se tulna ke liye)
+export function minutesOfDay(date) {
+  const [hour, minute] = clockFormatter.format(date).split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+// 'HH:mm' -> minute: '09:30' -> 570
+export const timeToMinutes = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+
 // App timezone ka time, user ko dikhane ke liye: '10:30 am'
 export const toTimeStr = (date) => timeFormatter.format(date);
 

@@ -1980,3 +1980,65 @@ describe('sales meetings: missed (cron) + grace badalna', () => {
     assert.equal(done.qr?.expiresAt, undefined, 'poori ho chuki meeting ko nahi chhedta');
   });
 });
+
+describe('working time (late / jaldi jaana)', () => {
+  // B ke staff ka pichhle mahine ka pehla working day (punch correction wale test se): 09:30 se 18:15 IST.
+  const [day1] = workingDays;
+  const settings = (body, token = B.admin) => api.call('/settings', { method: 'PUT', token, body: { settings: body } });
+  const monthOf = async (token = B.staff) => (await api.call(`/attendance?month=${prevMonth}`, { token })).body.data;
+  const dayOf = async () => (await monthOf()).days.find((day) => day.date === day1);
+
+  test('default OFF: report waisi hi (late ki ginti nahi), staff ko working time nahi dikhta', async () => {
+    const data = await monthOf();
+    assert.equal(data.summary.late, undefined);
+    assert.equal(data.summary.earlyOut, undefined);
+    const day = data.days.find((item) => item.date === day1);
+    assert.equal(day.late, undefined);
+    assert.equal(day.workedMinutes, 525, '09:30 se 18:15 = 8h 45m');
+    assert.equal((await api.call('/attendance/today', { token: B.staff })).body.data.workTime, null);
+  });
+
+  test('validation: time ka format, end start ke baad, sirf admin', async () => {
+    assert.equal((await settings({ workStartTime: '9:30' })).status, 400);
+    assert.equal((await settings({ lateGraceMin: 500 })).status, 400);
+    assert.equal((await settings({ workTimeEnabled: true }, B.staff)).status, 403);
+    let res = await settings({ workStartTime: '10:00', workEndTime: '09:00' });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.errors[0].field, 'settings.workEndTime');
+    // Sirf end bheja: purane start (09:30) ke saath jaancha jata hai
+    res = await settings({ workEndTime: '09:00' });
+    assert.equal(res.status, 400);
+  });
+
+  test('ON: grace ke andar late nahi, end se pehle jaana "early out"', async () => {
+    const res = await settings({ workTimeEnabled: true, workStartTime: '09:30', workEndTime: '18:30', lateGraceMin: 10 });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.company.settings.workEndTime, '18:30');
+
+    const day = await dayOf();
+    assert.equal(day.late, false, '09:30 par aaya');
+    assert.equal(day.earlyOut, true, '18:15 par gaya, office 18:30 tak');
+    const data = await monthOf();
+    assert.equal(data.summary.late, 0);
+    assert.equal(data.summary.earlyOut, 1);
+    assert.equal(data.summary.present, 1, 'baaki ginti nahi badli');
+
+    assert.deepEqual((await api.call('/attendance/today', { token: B.staff })).body.data.workTime, { start: '09:30', end: '18:30', lateGraceMin: 10 });
+    const report = await api.call(`/attendance/report?month=${prevMonth}`, { token: B.admin });
+    assert.equal(report.body.data.rows[0].summary.earlyOut, 1);
+  });
+
+  test('time badalne par purane din bhi naye time se ginte hain; doosri company par asar nahi', async () => {
+    await settings({ workStartTime: '09:00', workEndTime: '18:00' });
+    let day = await dayOf();
+    assert.equal(day.late, true, '09:30 > 09:00 + 10 min');
+    assert.equal(day.earlyOut, false, '18:15 > 18:00');
+    assert.equal((await monthOf()).summary.late, 1);
+
+    await settings({ lateGraceMin: 30 });
+    day = await dayOf();
+    assert.equal(day.late, false, 'grace 30 min ke andar');
+
+    assert.equal((await monthOf(A.staff)).summary.late, undefined, 'A mein working time OFF hai');
+  });
+});

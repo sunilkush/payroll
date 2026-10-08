@@ -38,6 +38,10 @@ export default function Attendance() {
     };
   }, [month]);
 
+  // Working time ON ho to server late / earlyOut bhi bhejta hai.
+  const tracksTime = rows[0]?.summary.late !== undefined;
+  const columns = tracksTime ? [...COLUMNS, 'Late', 'Early Out'] : COLUMNS;
+
   return (
     <section className="attendance">
       <PageHeader title="Attendance Report" subtitle="Monthly totals per staff. Click a name for the day-by-day view.">
@@ -46,7 +50,7 @@ export default function Attendance() {
 
       <Alert>{error}</Alert>
 
-      <Table columns={COLUMNS} primary={0} loading={loading} empty="No staff found. Add staff first to see their attendance.">
+      <Table columns={columns} primary={0} loading={loading} empty="No staff found. Add staff first to see their attendance.">
         {rows.map(({ staff, summary }) => (
           <tr key={staff._id}>
             <td>
@@ -63,6 +67,8 @@ export default function Attendance() {
             <td>{summary.weekOff}</td>
             <td>{summary.holiday}</td>
             <td className={summary.missedPunchOut ? 'attendance__missed' : undefined}>{summary.missedPunchOut}</td>
+            {tracksTime && <td className={summary.late ? 'attendance__missed' : undefined}>{summary.late}</td>}
+            {tracksTime && <td>{summary.earlyOut}</td>}
           </tr>
         ))}
       </Table>

@@ -49,20 +49,18 @@
   padding: var(--space-1) 0;
 }
 
-/* File ka naam: link jaisa button (file token ke saath khulti hai, isliye <a href> nahi) */
-.meeting-evidence__file {
+/* File ka naam: Ant Design ka link button (file token ke saath khulti hai, isliye <a href> nahi) */
+.meeting-evidence__file.ant-btn {
   flex: 1;
+  justify-content: flex-start;
   min-width: 0;
-  padding: var(--space-2) 0;
+  padding-inline: 0;
   overflow: hidden;
-  font: inherit;
-  color: var(--color-primary);
-  text-align: left;
+}
+
+.meeting-evidence__file.ant-btn > span:last-child {
+  overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  background: none;
-  border: 0;
 }
 
 .meeting-evidence__list .meeting-evidence__muted {

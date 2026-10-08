@@ -23,6 +23,14 @@ export async function updateSettings({ locations, holidays, settings }) {
     changes[`settings.${key}`] = value;
   }
 
+  // Working time: start aur end mein se ek hi badla ho to bhi doosre (purane) ke saath jaancho.
+  const workStart = settings?.workStartTime ?? before.settings.workStartTime;
+  const workEnd = settings?.workEndTime ?? before.settings.workEndTime;
+  if (workEnd <= workStart) {
+    const message = 'Work end time must be after work start time.';
+    throw new ApiError(400, message, [{ field: 'settings.workEndTime', message }]);
+  }
+
   const company = await Company.findByIdAndUpdate(
     before._id,
     { $set: changes },

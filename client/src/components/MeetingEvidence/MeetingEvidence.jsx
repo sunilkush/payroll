@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CameraOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons';
-import { Card } from 'antd';
+import { Button as AntButton, Card, Upload } from 'antd';
 import {
   getMeetingFileApi,
   removeAttachmentApi,
@@ -59,7 +59,6 @@ function VisitPhoto({ meetingId, version }) {
 // Padhne wale (admin, poori hui visit) ko sirf photo aur files dikhti hain; kuch na ho to card hi nahi banta.
 export default function MeetingEvidence({ meeting, editable = false, required = false, error, onChange }) {
   const { toast, confirm } = useFeedback();
-  const fileRef = useRef(null);
   const [shooting, setShooting] = useState(false);
   const [busy, setBusy] = useState('');
 
@@ -87,11 +86,7 @@ export default function MeetingEvidence({ meeting, editable = false, required = 
     });
   };
 
-  const handleAttach = (event) => {
-    const [file] = event.target.files;
-    event.target.value = '';
-    if (file) run('attach', () => uploadAttachmentApi(meeting._id, file));
-  };
+  const handleAttach = (file) => run('attach', () => uploadAttachmentApi(meeting._id, file));
 
   const handleRemove = async (file) => {
     const ok = await confirm({ title: `Remove ${file.name}?`, okText: 'Remove', danger: true });
@@ -155,9 +150,9 @@ export default function MeetingEvidence({ meeting, editable = false, required = 
           <ul className="meeting-evidence__list">
             {attachments.map((file) => (
               <li key={file._id}>
-                <button type="button" className="meeting-evidence__file" onClick={() => openFile(file)}>
-                  <PaperClipOutlined /> {file.name}
-                </button>
+                <AntButton type="link" className="meeting-evidence__file" icon={<PaperClipOutlined />} onClick={() => openFile(file)}>
+                  {file.name}
+                </AntButton>
                 <span className="meeting-evidence__muted">{formatSize(file.size)}</span>
                 {editable && (
                   <Button
@@ -174,18 +169,20 @@ export default function MeetingEvidence({ meeting, editable = false, required = 
           </ul>
           {editable && attachments.length < MAX_ATTACHMENTS && (
             <>
-              <Button variant="secondary" icon={<PaperClipOutlined />} loading={busy === 'attach'} onClick={() => fileRef.current.click()}>
-                Add Attachment
-              </Button>
-              <p className="meeting-evidence__muted">Photo or PDF, up to 5 MB each. Up to {MAX_ATTACHMENTS} files.</p>
-              <input
-                ref={fileRef}
-                type="file"
+              {/* beforeUpload false: Upload khud kuch nahi bhejta, file hamare API (login token ke saath) se jati hai */}
+              <Upload
                 accept="image/jpeg,image/png,image/webp,application/pdf"
-                className="visually-hidden"
-                aria-label="Attachment"
-                onChange={handleAttach}
-              />
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  handleAttach(file);
+                  return false;
+                }}
+              >
+                <Button variant="secondary" icon={<PaperClipOutlined />} loading={busy === 'attach'}>
+                  Add Attachment
+                </Button>
+              </Upload>
+              <p className="meeting-evidence__muted">Photo or PDF, up to 5 MB each. Up to {MAX_ATTACHMENTS} files.</p>
             </>
           )}
         </div>

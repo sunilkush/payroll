@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CameraOutlined, PictureOutlined } from '@ant-design/icons';
+import { Upload } from 'antd';
 import QrScannerLib from 'qr-scanner';
 import Alert from '../Alert/Alert.jsx';
 import Button from '../Button/Button.jsx';
@@ -26,7 +27,6 @@ function reasonFor(error) {
 // Camera na chale (permission mana / camera nahi / http) to QR ki photo upload karne ka raasta hai.
 export default function QrScanner({ onScan }) {
   const videoRef = useRef(null);
-  const fileRef = useRef(null);
   // onScan badle to camera dobara start na ho
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
@@ -72,10 +72,8 @@ export default function QrScanner({ onScan }) {
     };
   }, [attempt]);
 
-  const handleFile = async (event) => {
-    const [file] = event.target.files;
-    event.target.value = ''; // wahi file dobara chunne par bhi chale
-    if (!file) return;
+  // Upload ka beforeUpload: file yahin browser mein padhte hain, server par kuch nahi jata (isliye false).
+  const handleFile = async (file) => {
     setFileError('');
     try {
       const result = await QrScannerLib.scanImage(file, { returnDetailedScanResult: true });
@@ -110,10 +108,18 @@ export default function QrScanner({ onScan }) {
             Try Camera Again
           </Button>
         )}
-        <Button variant="secondary" icon={<PictureOutlined />} onClick={() => fileRef.current.click()}>
-          Upload QR Image
-        </Button>
-        <input ref={fileRef} type="file" accept="image/*" className="visually-hidden" aria-label="QR image" onChange={handleFile} />
+        <Upload
+          accept="image/*"
+          showUploadList={false}
+          beforeUpload={(file) => {
+            handleFile(file);
+            return false;
+          }}
+        >
+          <Button variant="secondary" icon={<PictureOutlined />}>
+            Upload QR Image
+          </Button>
+        </Upload>
       </div>
     </div>
   );

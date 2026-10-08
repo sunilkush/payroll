@@ -4,7 +4,7 @@ import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { Leave } from '../models/Leave.js';
 import { ATTENDANCE_STATUS, LEAVE_STATUS, ROLES } from '../utils/constants.js';
-import { datesBetween, daysOfMonth, toDateStr, todayStr, weekdayOf } from '../utils/dateUtil.js';
+import { datesBetween, daysOfMonth, minutesOfDay, timeToMinutes, toDateStr, todayStr, weekdayOf } from '../utils/dateUtil.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { checkGeofence } from './geoService.js';
 
@@ -82,6 +82,10 @@ export async function getToday(user) {
     attendance,
     // lat/lng bhi: staff ke Punch page ka map office aur uski range dikhata hai
     locations: company.locations.map(({ name, lat, lng, radius }) => ({ name, lat, lng, radius })),
+    // Working time ON ho to staff ko office ka time dikhe; warna null
+    workTime: company.settings.workTimeEnabled
+      ? { start: company.settings.workStartTime, end: company.settings.workEndTime, lateGraceMin: company.settings.lateGraceMin }
+      : null,
   };
 }
 
@@ -102,6 +106,15 @@ function buildMonth({ user, records, leaves, company, month }) {
   const recordByDate = new Map(records.map((record) => [record.date, record]));
   const holidayByDate = new Map(company.holidays.map((holiday) => [holiday.date, holiday.name]));
   const summary = { present: 0, absent: 0, weekOff: 0, holiday: 0, leave: 0, missedPunchOut: 0 };
+
+  // Working time ON ho to hi late / jaldi jaana ginte hain (purani companies ki report waisi hi rahe).
+  const work = company.settings.workTimeEnabled
+    ? {
+        lateAfter: timeToMinutes(company.settings.workStartTime) + company.settings.lateGraceMin,
+        end: timeToMinutes(company.settings.workEndTime),
+      }
+    : null;
+  if (work) Object.assign(summary, { late: 0, earlyOut: 0 });
 
   const days = daysOfMonth(month).map((date) => {
     const record = recordByDate.get(date);
@@ -124,6 +137,14 @@ function buildMonth({ user, records, leaves, company, month }) {
         summary.present += 1;
       }
       if (record.missedPunchOut) summary.missedPunchOut += 1;
+      if (record.punchOut) day.workedMinutes = Math.max(0, Math.round((record.punchOut.time - record.punchIn.time) / 60000));
+      // Half day leave wale din der se aana / jaldi jaana galti nahi hai.
+      if (work && !halfLeave) {
+        day.late = minutesOfDay(record.punchIn.time) > work.lateAfter;
+        day.earlyOut = Boolean(record.punchOut) && minutesOfDay(record.punchOut.time) < work.end;
+        if (day.late) summary.late += 1;
+        if (day.earlyOut) summary.earlyOut += 1;
+      }
     } else if (date > today || date < trackedFrom) {
       day.status = null;
     } else if (holidayByDate.has(date)) {

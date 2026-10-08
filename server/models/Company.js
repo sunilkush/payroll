@@ -35,6 +35,13 @@ const companySchema = new mongoose.Schema(
       elCarryForwardMax: { type: Number, default: 30, min: 0 },
       // Is se kharab (zyada meter) GPS accuracy par punch reject hota hai.
       maxGpsAccuracy: { type: Number, default: 100, min: 1 },
+      // Office ka working time. ON ho to attendance mein late aana / jaldi jaana aur kaam ke ghante dikhte hain
+      // (sirf jaankari; salary par asar nahi). Time 'HH:mm', app timezone mein.
+      workTimeEnabled: { type: Boolean, default: false },
+      workStartTime: { type: String, default: '09:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+      workEndTime: { type: String, default: '18:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+      // Start ke itne minute baad tak punch in "late" nahi ginta.
+      lateGraceMin: { type: Number, default: 10, min: 0 },
       // Sales meetings module ON/OFF (client visit, QR + geofence check-in).
       salesEnabled: { type: Boolean, default: false },
       // Meeting poori karne ke liye visit ki photo zaroori hai ya nahi.

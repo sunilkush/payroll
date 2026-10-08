@@ -27,7 +27,12 @@ export const attendanceSummaryItems = (summary) => [
   { label: 'Week Off', value: summary.weekOff },
   { label: 'Holiday', value: summary.holiday },
   { label: 'Missed Punch Out', value: summary.missedPunchOut },
+  // Company ne working time ON kiya ho tabhi aate hain
+  ...(summary.late === undefined ? [] : [{ label: 'Late', value: summary.late }, { label: 'Early Out', value: summary.earlyOut }]),
 ];
+
+// 525 -> '8h 45m'
+const formatWorked = (minutes) => `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 
 // Correction request se bane punch ki GPS location nahi hoti.
 const punchLocation = (punch) =>
@@ -100,6 +105,11 @@ export default function AttendanceMonth({ month, userId, onLoad, onFix }) {
                 {day.punchOut && ` - ${formatTime(day.punchOut.time)}`}
               </span>
             )}
+            {(day.late || day.earlyOut) && (
+              <span className="attendance-calendar__time attendance-month__missed">
+                {[day.late && 'Late', day.earlyOut && 'Early out'].filter(Boolean).join(' · ')}
+              </span>
+            )}
             {dayNote(day) && <span className="attendance-calendar__time">{dayNote(day)}</span>}
           </>
         )}
@@ -149,12 +159,22 @@ export default function AttendanceMonth({ month, userId, onLoad, onFix }) {
                 {selectedDay.punchIn && (
                   <dl className="attendance-calendar__punches">
                     <dt>Punch in</dt>
-                    <dd>{formatTime(selectedDay.punchIn.time)}</dd>
+                    <dd>
+                      {formatTime(selectedDay.punchIn.time)}
+                      {selectedDay.late && <span className="attendance-month__missed"> Late</span>}
+                    </dd>
                     <dt>Punch out</dt>
                     <dd>
                       {selectedDay.punchOut ? formatTime(selectedDay.punchOut.time) : '-'}
                       {selectedDay.missedPunchOut && <span className="attendance-month__missed"> Missed</span>}
+                      {selectedDay.earlyOut && <span className="attendance-month__missed"> Early</span>}
                     </dd>
+                    {selectedDay.workedMinutes != null && (
+                      <>
+                        <dt>Worked</dt>
+                        <dd>{formatWorked(selectedDay.workedMinutes)}</dd>
+                      </>
+                    )}
                     <dt>Location</dt>
                     <dd>{punchLocation(selectedDay.punchIn)}</dd>
                   </dl>
@@ -186,10 +206,14 @@ export default function AttendanceMonth({ month, userId, onLoad, onFix }) {
                 <AttendanceStatus status={day.status} />
                 {dayNote(day) && <span className="attendance-month__note">{dayNote(day)}</span>}
               </td>
-              <td>{day.punchIn && formatTime(day.punchIn.time)}</td>
+              <td>
+                {day.punchIn && formatTime(day.punchIn.time)}
+                {day.late && <span className="attendance-month__missed"> Late</span>}
+              </td>
               <td>
                 {day.missedPunchOut && <span className="attendance-month__missed">Missed</span>}
                 {day.punchOut && formatTime(day.punchOut.time)}
+                {day.earlyOut && <span className="attendance-month__missed"> Early</span>}
               </td>
               <td>{day.punchIn && punchLocation(day.punchIn)}</td>
               {onFix && (

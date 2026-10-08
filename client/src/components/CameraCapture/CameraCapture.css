@@ -44,3 +44,12 @@
   flex: 1;
   min-height: 44px;
 }
+
+.camera-capture__actions .ant-upload-wrapper {
+  flex: 1;
+}
+
+.camera-capture__actions .ant-upload-wrapper .ant-upload,
+.camera-capture__actions .ant-upload-wrapper .ant-btn {
+  width: 100%;
+}

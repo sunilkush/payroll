@@ -11,7 +11,7 @@ import LocationMap from '../../../components/LocationMap/LocationMap.jsx';
 import PageHeader from '../../../components/PageHeader/PageHeader.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
-import { WEEKDAYS } from '../../../utils/format.js';
+import { endAfter, WEEKDAYS } from '../../../utils/format.js';
 import { getCurrentPosition } from '../../../utils/geolocation.js';
 import { useFeedback } from '../../../utils/useFeedback.js';
 import './Settings.css';
@@ -39,6 +39,10 @@ const toForm = (company) => ({
   pfEnabled: company.settings.pfEnabled,
   pfCapAtCeiling: company.settings.pfCapAtCeiling,
   esiEnabled: company.settings.esiEnabled,
+  workTimeEnabled: company.settings.workTimeEnabled,
+  workStartTime: company.settings.workStartTime,
+  workEndTime: company.settings.workEndTime,
+  lateGraceMin: String(company.settings.lateGraceMin),
   salesEnabled: company.settings.salesEnabled,
   requireVisitPhoto: company.settings.requireVisitPhoto,
   meetingCheckInGraceMin: String(company.settings.meetingCheckInGraceMin),
@@ -66,6 +70,10 @@ const toPayload = (form) => ({
     pfEnabled: form.pfEnabled,
     pfCapAtCeiling: form.pfCapAtCeiling,
     esiEnabled: form.esiEnabled,
+    workTimeEnabled: form.workTimeEnabled,
+    workStartTime: form.workStartTime,
+    workEndTime: form.workEndTime,
+    lateGraceMin: toNumber(form.lateGraceMin),
     salesEnabled: form.salesEnabled,
     requireVisitPhoto: form.requireVisitPhoto,
     meetingCheckInGraceMin: toNumber(form.meetingCheckInGraceMin),
@@ -257,6 +265,51 @@ export default function Settings() {
               />
             ))}
           </div>
+        </Card>
+
+        <Card className="settings__section" size="small" title="Working Hours">
+          <Checkbox
+            label="Track working hours"
+            name="workTimeEnabled"
+            checked={form.workTimeEnabled}
+            onChange={(event) => setField('workTimeEnabled', event.target.checked)}
+            hint="Shows who came late or left early, and hours worked, in attendance. It does not change salary."
+          />
+          {form.workTimeEnabled && (
+            <div className="settings__grid">
+              <FormField
+                label="Work start time"
+                name="workStartTime"
+                type="time"
+                value={form.workStartTime}
+                onChange={(event) => setField('workStartTime', event.target.value)}
+                error={fieldErrors['settings.workStartTime']}
+                required
+              />
+              <FormField
+                label="Work end time"
+                name="workEndTime"
+                type="time"
+                value={form.workEndTime}
+                // AM / PM na chuna ho to picker AM maanta hai; start se pehle ho to dopahar ka maan lo
+                onChange={(event) => setField('workEndTime', endAfter(form.workStartTime, event.target.value))}
+                error={fieldErrors['settings.workEndTime']}
+                required
+              />
+              <FormField
+                label="Late grace (minutes)"
+                name="lateGraceMin"
+                type="number"
+                min="0"
+                max="180"
+                value={form.lateGraceMin}
+                onChange={(event) => setField('lateGraceMin', event.target.value)}
+                error={fieldErrors['settings.lateGraceMin']}
+                hint="A punch in this many minutes after the start time is still on time."
+                required
+              />
+            </div>
+          )}
         </Card>
 
         <Card className="settings__section" size="small" title="Holidays (paid)">

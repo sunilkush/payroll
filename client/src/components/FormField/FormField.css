@@ -16,6 +16,7 @@
 }
 
 .form-field__select,
+.form-field__number,
 .form-field__picker {
   width: 100%;
 }

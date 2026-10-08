@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CameraOutlined, PictureOutlined } from '@ant-design/icons';
+import { Upload } from 'antd';
 import Alert from '../Alert/Alert.jsx';
 import Button from '../Button/Button.jsx';
 import './CameraCapture.css';
@@ -34,7 +35,6 @@ function toJpeg(source, width, height) {
 //   onCapture(blob, source)  source: 'camera' | 'upload'
 export default function CameraCapture({ onCapture, onCancel }) {
   const videoRef = useRef(null);
-  const fileRef = useRef(null);
   // starting | live | denied | missing | insecure | failed
   const [state, setState] = useState('starting');
   const [attempt, setAttempt] = useState(0);
@@ -74,10 +74,7 @@ export default function CameraCapture({ onCapture, onCancel }) {
     onCapture(await toJpeg(video, video.videoWidth, video.videoHeight), 'camera');
   };
 
-  const handleFile = async (event) => {
-    const [file] = event.target.files;
-    event.target.value = '';
-    if (!file) return;
+  const handleFile = async (file) => {
     setFileError('');
     try {
       const image = await createImageBitmap(file);
@@ -118,12 +115,22 @@ export default function CameraCapture({ onCapture, onCancel }) {
             {(state === 'denied' || state === 'failed') && (
               <Button onClick={() => setAttempt((count) => count + 1)}>Try Camera Again</Button>
             )}
-            <Button variant="secondary" icon={<PictureOutlined />} onClick={() => fileRef.current.click()}>
-              Choose a Photo
-            </Button>
+            {/* capture: phone par seedha camera khule */}
+            <Upload
+              accept="image/*"
+              capture="environment"
+              showUploadList={false}
+              beforeUpload={(file) => {
+                handleFile(file);
+                return false;
+              }}
+            >
+              <Button variant="secondary" icon={<PictureOutlined />}>
+                Choose a Photo
+              </Button>
+            </Upload>
           </>
         )}
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="visually-hidden" aria-label="Photo" onChange={handleFile} />
       </div>
     </div>
   );

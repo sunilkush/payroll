@@ -41,13 +41,13 @@ export default function NotificationPanel() {
         <ul className="notification-panel__list">
           {items.map((item) => (
             <li key={item.id}>
-              <button type="button" className="notification-panel__item" onClick={() => handleOpen(item)}>
+              <Button type="text" className="notification-panel__item" onClick={() => handleOpen(item)}>
                 <span className={`notification-panel__dot notification-panel__dot--${item.tone}`} aria-hidden="true" />
                 <span className="notification-panel__text">
                   <span className="notification-panel__item-title">{item.title}</span>
                   {item.description && <span className="notification-panel__item-desc">{item.description}</span>}
                 </span>
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

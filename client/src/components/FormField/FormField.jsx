@@ -1,4 +1,4 @@
-import { DatePicker, Input, Select, TimePicker } from 'antd';
+import { DatePicker, Input, InputNumber, Select, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import './FormField.css';
@@ -12,7 +12,8 @@ const VALUE_FORMAT = { date: 'YYYY-MM-DD', time: 'HH:mm' };
 // Label + Ant Design control + error/hint. Baaki props seedhe control par jaate hain.
 // multiline -> TextArea, options ([{ value, label }]) -> Select, type="password" -> Input.Password,
 // type="date" -> DatePicker (calendar; value 'YYYY-MM-DD', min / max bhi isi format mein),
-// type="time" -> TimePicker (value 'HH:mm'), warna Input (type number/email... chalte hain).
+// type="time" -> TimePicker (value 'HH:mm'), type="number" -> InputNumber (value string hi rehti hai),
+// warna Input (type email / tel... chalte hain).
 // onChange hamesha event jaisa milta hai: event.target.name / event.target.value.
 export default function FormField({
   label,
@@ -78,6 +79,20 @@ export default function FormField({
           ? { minDate: min ? dayjs(min, valueFormat) : undefined, maxDate: max ? dayjs(max, valueFormat) : undefined }
           : { use12Hours: true, needConfirm: false })}
         {...pickerProps}
+      />
+    );
+  } else if (type === 'number') {
+    // Pages number ko string mein rakhte hain ('' = khali); InputNumber number / null deta hai.
+    const { value, step, ...numberProps } = controlProps;
+    control = (
+      <InputNumber
+        {...common}
+        {...numberProps}
+        className="form-field__number"
+        // step="any" (lat / lng) HTML ka tareeka hai; InputNumber mein step sirf +/- ke liye hota hai
+        step={step === undefined || step === 'any' ? undefined : Number(step)}
+        value={value === '' || value === undefined || value === null ? null : value}
+        onChange={(next) => onChange({ target: { name, value: next === null || next === undefined ? '' : String(next) } })}
       />
     );
   } else if (multiline) {

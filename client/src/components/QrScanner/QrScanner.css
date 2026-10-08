@@ -52,3 +52,8 @@
 .qr-scanner__actions .ant-btn {
   min-height: 44px;
 }
+
+/* Upload ka wrapper bhi button jaisa hi faile */
+.qr-scanner__actions .ant-upload-wrapper .ant-btn {
+  width: 100%;
+}
