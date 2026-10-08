@@ -21,19 +21,33 @@ const toBool = (value, fallback) => (value === undefined || value === '' ? fallb
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Render (render.com) apne aap ye do variables deta hai: RENDER=true aur RENDER_EXTERNAL_URL
+// Render (render.com) har service ko ye variables apne aap deta hai: RENDER=true, RENDER_EXTERNAL_URL
 // (jaise https://payroster.onrender.com). Inse URL / proxy ki settings khud ban jati hain,
 // dashboard mein alag se likhni nahi padtin.
-const onRender = Boolean(process.env.RENDER);
+const onRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID);
 const publicUrl = (process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+
+// Browser (Chrome, Edge, Firefox) kuch ports par page kholta hi nahi (ERR_UNSAFE_PORT), bhale server
+// chal raha ho. Aam galti PORT=6000 hai. Poori list lambi hai; yahan wo hain jo dev mein chun liye jate hain.
+// Hosting par ye port browser tak pahunchta hi nahi (aage proxy hota hai), isliye wahan check nahi.
+const BROWSER_BLOCKED_PORTS = [2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080];
+if (!isProduction && !onRender && BROWSER_BLOCKED_PORTS.includes(Number(process.env.PORT))) {
+  throw new Error(
+    `PORT=${process.env.PORT} is blocked by browsers (ERR_UNSAFE_PORT). Use another port in server/.env, e.g. 5000 or 5050.`
+  );
+}
 
 // Frontend ke origins (CORS). CLIENT_URL mein comma se kai de sakte ho (apna domain + onrender.com wala).
 // Pehla wala "asli" maana jata hai: email ke links usi par bante hain.
-const clientUrls = (process.env.CLIENT_URL || publicUrl || 'http://localhost:5173')
+// Render par local .env se copy hua localhost wala CLIENT_URL chhod dete hain, warna email ke links
+// localhost par bante.
+const isLocalUrl = (url) => /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url);
+const clientUrls = (process.env.CLIENT_URL || '')
   .split(',')
   .map((url) => url.trim().replace(/\/+$/, ''))
-  .filter(Boolean);
+  .filter((url) => url && !(onRender && isLocalUrl(url)));
 if (publicUrl && !clientUrls.includes(publicUrl)) clientUrls.push(publicUrl);
+if (!clientUrls.length) clientUrls.push('http://localhost:5173');
 
 const hostOf = (url) => {
   try {
@@ -67,8 +81,9 @@ export const env = {
   clientUrls,
   timezone: process.env.APP_TIMEZONE || 'Asia/Kolkata',
   // Server ke aage kitne reverse proxy hain (Nginx = 1). Isi se asli client IP aur HTTPS ka pata chalta hai.
-  // Render par hamesha ek proxy hota hai, isliye wahan default 1.
-  trustProxy: toInt(process.env.TRUST_PROXY, onRender ? 1 : 0),
+  // Render par hamesha proxy hota hai, isliye wahan kam se kam 1 (dashboard mein galti se 0 likha ho
+  // tab bhi): warna server ko HTTPS ka pata nahi chalta aur FORCE_HTTPS redirect ka chakkar ban jata hai.
+  trustProxy: onRender ? Math.max(1, toInt(process.env.TRUST_PROXY, 1)) : toInt(process.env.TRUST_PROXY, 0),
   // HTTP request ko HTTPS par bhej do. Geolocation (punch) bina HTTPS ke chalti hi nahi.
   forceHttps: toBool(process.env.FORCE_HTTPS, isProduction),
   // client/dist ko isi server se serve karo (ek hi domain, ek hi certificate).
