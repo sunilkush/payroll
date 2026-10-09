@@ -13,6 +13,9 @@ block content
         span.home__dot(aria-hidden='true')
         = database.connected ? 'API is running' : 'API is running, database is not connected'
 
+      if clientMissing
+        p.home__notice The web app has not been built on this server yet, so only the API is available.
+
       dl.home__list
         .home__row
           dt Version
@@ -32,7 +35,8 @@ block content
             code= apiBase
 
     nav.home__links(aria-label='Links')
-      a.home__button.home__button--primary(href=clientUrl) Open #{appName}
+      unless clientMissing
+        a.home__button.home__button--primary(href=clientUrl) Open #{appName}
       a.home__button(href=`${apiBase}/health`) Health check
 
     footer.home__footer &copy; #{new Date().getFullYear()} #{appName}

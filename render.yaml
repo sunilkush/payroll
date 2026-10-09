@@ -14,7 +14,8 @@ services:
     region: singapore
     # Server: sirf chalne wale packages. Client: build ke liye devDependencies (vite) bhi chahiye,
     # isliye --include=dev (NODE_ENV=production mein npm unhe warna chhod deta hai).
-    buildCommand: cd server && npm ci --omit=dev && cd ../client && npm ci --include=dev && npm run build
+    # (npm run render-build repo ke root se bhi chalta hai aur server/ folder se bhi.)
+    buildCommand: npm run render-build
     # Pehla Super Admin (SUPER_ADMIN_* se) na ho to bana deta hai, ho to kuch nahi badalta; phir server.
     startCommand: npm run seed:superadmin; npm start
     healthCheckPath: /api/v1/health
