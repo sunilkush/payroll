@@ -9,8 +9,13 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+// Backend alag domain par ho (frontend Vercel par, API Render par) tab VITE_API_URL mein uska URL.
+// Khali ho to isi domain ka /api (dev ka Vite proxy, ya ek hi server se dono).
+// Aakhir ka "/" ya "/api/v1" galti se likh diya ho to hata dete hain.
+const API_ORIGIN = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '').replace(/\/api(\/v1)?$/, '');
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || ''}/api/v1`,
+  baseURL: `${API_ORIGIN}/api/v1`,
 });
 
 api.interceptors.request.use((config) => {
