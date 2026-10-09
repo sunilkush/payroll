@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
@@ -11,6 +12,20 @@ import { httpsRedirect } from './middlewares/httpsRedirect.js';
 
 const app = express();
 const NO_CACHE_FILES = new Set(['sw.js', 'registerSW.js', 'manifest.webmanifest']);
+
+// React build (client/dist) isi server se jata hai ya nahi. SERVE_CLIENT on ho par build bana hi na ho
+// (hosting par build command mein client ka build chhoot gaya) to har page 500 dene ki jagah server
+// ka Pug wala page dikhate hain, jo batata hai ki web app abhi bana nahi.
+const clientDist = path.resolve(serverRoot, '../client/dist');
+const clientBuilt = env.serveClient && fs.existsSync(path.join(clientDist, 'index.html'));
+const clientMissing = env.serveClient && !clientBuilt;
+if (clientMissing) {
+  console.warn(
+    'Client build not found (client/dist/index.html). Serving the server status page at / instead. ' +
+      'Build the web app first: set the build command to "npm run render-build" (Render) or run "npm run build".'
+  );
+}
+app.locals.clientMissing = clientMissing;
 
 app.set('trust proxy', env.trustProxy);
 app.set('views', path.join(serverRoot, 'views'));
@@ -43,12 +58,11 @@ app.use('/api/v1', routes);
 // isi server se nahi jata (dev, ya API alag server par) tab / par bhi; warna / React app ka hai.
 app.use('/server-assets', express.static(path.join(serverRoot, 'public'), { maxAge: '1h' }));
 app.use('/api', homeRoutes);
-if (!env.serveClient) app.use('/', homeRoutes);
+if (!clientBuilt) app.use('/', homeRoutes);
 
 // Production: React build (client/dist) isi server se. /api ke alawa har URL par index.html
 // jata hai taaki page refresh par React Router ke routes chalein.
-if (env.serveClient) {
-  const clientDist = path.resolve(serverRoot, '../client/dist');
+if (clientBuilt) {
   app.use(
     express.static(clientDist, {
       index: false,

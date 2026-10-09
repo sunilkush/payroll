@@ -195,6 +195,12 @@ URL, port aur proxy ki settings code khud Render se le leta hai (`server/config/
 4. Deploy poora hone par `https://<service-naam>.onrender.com` kholo aur Super Admin se login karo
    (pehli baar start hote hi Super Admin apne aap ban jata hai). API ka haal: `/api`.
 
+**Blueprint ki jagah service haath se banayi ho** (New > Web Service) to Render ke Settings mein:
+Build Command `npm run render-build`, Start Command `npm start` (Root Directory khali ya `server`,
+dono chalte hain). Build command mein client ka build na ho to site par React app ki jagah server
+ka status page ("The web app has not been built on this server yet") dikhta hai.
+Local `.env` ki `PORT`, `CLIENT_URL`, `TRUST_PROXY` Render par mat daalo; zaroorat nahi hai.
+
 Dhyan rahe:
 
 - **Free plan so jata hai**: 15 minute koi request na aaye to service band ho jati hai aur agli
