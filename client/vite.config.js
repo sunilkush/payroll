@@ -41,6 +41,14 @@ export default defineConfig(({ mode }) => {
   const devPort = Number(env.VITE_DEV_PORT) || 5173;
   const apiTarget = env.VITE_DEV_API_TARGET || 'http://localhost:5000';
 
+  // Vercel par sirf frontend hota hai; backend ka URL na diya ho to har API call Vercel par hi jati
+  // aur app chupchaap kaam nahi karta. Isliye build yahin rok do, saaf message ke saath.
+  if (env.VERCEL && !/^https?:\/\//.test(env.VITE_API_URL || '')) {
+    throw new Error(
+      'VITE_API_URL is not set. In Vercel > Settings > Environment Variables add VITE_API_URL with your backend URL (e.g. https://your-api.onrender.com) and redeploy.'
+    );
+  }
+
   return {
   plugins: [react(), pwa],
   server: {

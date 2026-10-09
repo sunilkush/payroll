@@ -212,6 +212,21 @@ Dhyan rahe:
 - Apna domain jodo to `CLIENT_URL=https://apna-domain.com` set karo (comma se kai de sakte ho).
 - Har `git push` (main) par Render apne aap naya version deploy karta hai.
 
+### Frontend Vercel par (API Render par)
+
+Frontend (React) alag se Vercel par chal sakta hai; API Render wali hi rehti hai. Config
+`client/vercel.json` mein hai (page refresh par React Router ke routes, PWA files ka cache).
+
+1. vercel.com > **Add New > Project** > ye repo chuno. **Root Directory: `client`** rakho
+   (Framework "Vite" apne aap pakda jata hai; build / output command badalne nahi).
+2. **Environment Variables** mein `VITE_API_URL` = backend ka URL, jaise
+   `https://payroll-hjsa.onrender.com` (aakhir mein `/api` nahi). Ye na ho to build ruk jata hai.
+3. Deploy karo. Vercel ka URL milega, jaise `https://payroster.vercel.app`.
+4. **Render** ke env mein `CLIENT_URL` = wahi Vercel URL daalo (comma se kai de sakte ho) aur Render
+   ko redeploy karo. Iske bina browser API calls ko rok deta hai (CORS) aur login nahi hota.
+
+`VITE_API_URL` build ke waqt padha jata hai: badlo to Vercel par dobara deploy karna padta hai.
+
 ### Apna server (Nginx + PM2)
 
 Node server ke aage Nginx HTTPS sambhalta hai.
