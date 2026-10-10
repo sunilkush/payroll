@@ -16,6 +16,7 @@ const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? fallback : parsed;
 };
+
 // 'true'/'false' string -> boolean; set na ho to fallback
 const toBool = (value, fallback) => (value === undefined || value === '' ? fallback : value === 'true');
 
