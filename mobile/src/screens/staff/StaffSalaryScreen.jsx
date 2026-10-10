@@ -170,7 +170,7 @@ export default function StaffSalaryScreen({ navigation }) {
                   </View>
                 </View>
                 <Text style={styles.paymentDate}>
-                  Payment Date: {selectedSlip.paymentDate || selectedSlip.updatedAt ? new Date(selectedSlip.paymentDate || selectedSlip.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '28 Sep 2025'}
+                  Payment Date: {selectedSlip.paymentDate || selectedSlip.updatedAt ? new Date(selectedSlip.paymentDate || selectedSlip.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Pending'}
                 </Text>
               </View>
 
@@ -238,7 +238,7 @@ export default function StaffSalaryScreen({ navigation }) {
                 <View style={styles.breakdownRow}>
                   <Text style={styles.breakdownLabel}>Professional Tax</Text>
                   <Text style={styles.breakdownValue}>
-                    {formatCurrency(selectedSlip.deductions?.pt || selectedSlip.deductions?.other || 200)}
+                    {formatCurrency(selectedSlip.deductions?.pt || selectedSlip.deductions?.other || 0)}
                   </Text>
                 </View>
                 <View style={styles.dividerLine} />

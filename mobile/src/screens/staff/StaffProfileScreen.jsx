@@ -79,7 +79,7 @@ export default function StaffProfileScreen({ navigation }) {
         <View style={styles.avatarContainer}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {(user?.name || 'Rahul Sharma')
+              {(user?.name || 'EM')
                 .split(' ')
                 .map((n) => n[0])
                 .join('')
@@ -92,9 +92,9 @@ export default function StaffProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.userName}>{user?.name || 'Rahul Sharma'}</Text>
+        <Text style={styles.userName}>{user?.name || 'Employee'}</Text>
         <Text style={styles.userCode}>
-          Employee ID: {user?.employeeCode || 'EMP001'}
+          Employee ID: {user?.employeeCode || '—'}
         </Text>
       </View>
 
@@ -159,40 +159,40 @@ export default function StaffProfileScreen({ navigation }) {
             <ScrollView showsVerticalScrollIndicator={false}>
               {activeModal === 'personal' && (
                 <View style={styles.modalBody}>
-                  <InfoRow label="Full Name" value={user?.name || 'Rahul Sharma'} />
-                  <InfoRow label="Email Address" value={user?.email || 'rahul.sharma@company.com'} />
-                  <InfoRow label="Phone Number" value={user?.phone || '+91 98765 43210'} />
-                  <InfoRow label="Date of Birth" value="15 Aug 1994" />
-                  <InfoRow label="Gender" value="Male" />
+                  <InfoRow label="Full Name" value={user?.name || '—'} />
+                  <InfoRow label="Email Address" value={user?.email || '—'} />
+                  <InfoRow label="Phone Number" value={user?.phone || 'Not added'} />
+                  <InfoRow label="Date of Birth" value={user?.dob ? formatDate(user.dob) : 'Not specified'} />
+                  <InfoRow label="Gender" value={user?.gender || 'Not specified'} />
                 </View>
               )}
 
               {activeModal === 'work' && (
                 <View style={styles.modalBody}>
-                  <InfoRow label="Employee ID" value={user?.employeeCode || 'EMP001'} />
-                  <InfoRow label="Company" value={company?.name || 'Feature Payroll Corp'} />
-                  <InfoRow label="Department" value={user?.department || 'Information Technology'} />
-                  <InfoRow label="Designation" value={user?.designation || 'Senior Software Engineer'} />
-                  <InfoRow label="Joining Date" value={user?.joiningDate ? formatDate(user.joiningDate) : '15 Jan 2022'} />
-                  <InfoRow label="Work Mode" value="Full Time / Hybrid" />
+                  <InfoRow label="Employee ID" value={user?.employeeCode || '—'} />
+                  <InfoRow label="Company" value={company?.name || user?.companyName || 'Not specified'} />
+                  <InfoRow label="Department" value={user?.department || 'General'} />
+                  <InfoRow label="Designation" value={user?.designation || 'Staff'} />
+                  <InfoRow label="Joining Date" value={user?.joiningDate ? formatDate(user.joiningDate) : 'Not specified'} />
+                  <InfoRow label="Work Mode" value={user?.workMode || 'Full Time'} />
                 </View>
               )}
 
               {activeModal === 'bank' && (
                 <View style={styles.modalBody}>
-                  <InfoRow label="Bank Name" value="HDFC Bank" />
-                  <InfoRow label="Account Number" value="•••• •••• 9842" />
-                  <InfoRow label="IFSC Code" value="HDFC0001234" />
-                  <InfoRow label="Account Type" value="Salary Account" />
+                  <InfoRow label="Bank Name" value={user?.bankDetails?.bankName || user?.bankName || 'Not added'} />
+                  <InfoRow label="Account Number" value={user?.bankDetails?.accountNumber || user?.accountNumber || 'Not added'} />
+                  <InfoRow label="IFSC Code" value={user?.bankDetails?.ifscCode || user?.ifscCode || 'Not added'} />
+                  <InfoRow label="Account Type" value={user?.bankDetails?.accountType || 'Salary Account'} />
                 </View>
               )}
 
               {activeModal === 'pf' && (
                 <View style={styles.modalBody}>
-                  <InfoRow label="EPF UAN Number" value="101294820194" />
-                  <InfoRow label="EPF Member ID" value="DLCPM0019283000" />
-                  <InfoRow label="EPF Rate" value="12% (Statutory)" />
-                  <InfoRow label="ESI Insurance No." value="3192840192" />
+                  <InfoRow label="EPF UAN Number" value={user?.uanNumber || user?.pfNumber || 'Not available'} />
+                  <InfoRow label="EPF Member ID" value={user?.pfMemberId || user?.employeeCode || 'Not available'} />
+                  <InfoRow label="EPF Rate" value={user?.epfRate ? `${user.epfRate}%` : '12% (Statutory)'} />
+                  <InfoRow label="ESI Insurance No." value={user?.esiNumber || 'Not available'} />
                   <InfoRow label="ESI Applicable" value={user?.esiApplicable !== false ? 'Yes' : 'No'} />
                 </View>
               )}

@@ -104,7 +104,7 @@ export default function StaffHomeScreen({ navigation }) {
   const monthlyList = Array.isArray(dashboardData?.monthly) ? dashboardData.monthly : [];
   const monthlySummary = monthlyList.length > 0 ? monthlyList[monthlyList.length - 1] : null;
 
-  // Fallback net salary calculation if payroll hasn't been finalized yet
+  // Dynamic net salary calculation
   const displaySalary =
     salaryKpi?.value ??
     (user?.salaryStructure
@@ -116,12 +116,41 @@ export default function StaffHomeScreen({ navigation }) {
       ? (user.salary.basic || 0) +
         (user.salary.hra || 0) +
         (user.salary.allowances || 0)
-      : 28500);
+      : 0);
 
   const salaryPeriod = salaryKpi?.label || monthLabel(new Date());
   const salaryStatus = salaryKpi
     ? { label: 'Paid', variant: 'success' }
     : { label: 'Processing', variant: 'primary' };
+
+  const totalDaysInMonth = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1,
+    0
+  ).getDate();
+  const presentCount = monthlySummary?.present ?? (dashboardData?.today?.punchIn ? 1 : 0);
+  const totalDaysCount = monthlySummary?.totalDays ?? totalDaysInMonth;
+
+  const leaveBalance =
+    leaveKpi?.balance ??
+    (leaveKpi ? Number(leaveKpi?.cl || 0) + Number(leaveKpi?.el || 0) : null) ??
+    (user?.leaves?.remaining ?? 0);
+
+  const recentActivities = dashboardData?.activity?.length
+    ? dashboardData.activity.map((a) => ({
+        title: a.text || a.title || 'Work activity',
+        sub: a.detail || a.sub || 'Logged in system',
+        time: a.at ? formatDate(a.at) : 'Recent',
+        icon: 'clock-check-outline',
+      }))
+    : recentDays.length
+    ? recentDays.slice(-3).reverse().map((d) => ({
+        title: `Attendance: ${d.status || 'Logged'}`,
+        sub: `${d.date}${d.punchIn?.time ? ` • In: ${d.punchIn.time}` : ''}`,
+        time: d.date,
+        icon: 'calendar-check-outline',
+      }))
+    : [];
 
   return (
     <ScreenWrapper
@@ -138,8 +167,8 @@ export default function StaffHomeScreen({ navigation }) {
             <MaterialCommunityIcons name="weather-sunny" size={15} color="#eab308" style={{ marginRight: 4 }} />
             <Text style={styles.greetingText}>{greeting()}</Text>
           </View>
-          <Text style={styles.userNameText}>{user?.name || 'Rahul Sharma'}</Text>
-          <Text style={styles.userRoleSubtitle}>Employee</Text>
+          <Text style={styles.userNameText}>{user?.name || 'Employee'}</Text>
+          <Text style={styles.userRoleSubtitle}>{user?.designation || 'Staff Member'}</Text>
         </View>
 
         <View style={styles.topRightActions}>
@@ -157,7 +186,7 @@ export default function StaffHomeScreen({ navigation }) {
             onPress={() => navigation.navigate('StaffProfile')}
             activeOpacity={0.8}
           >
-            <Text style={styles.avatarText}>{initials(user?.name || 'Rahul Sharma')}</Text>
+            <Text style={styles.avatarText}>{initials(user?.name || 'EM')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -166,19 +195,21 @@ export default function StaffHomeScreen({ navigation }) {
       <View style={styles.salaryCard}>
         <View style={styles.salaryTopRow}>
           <Text style={styles.salaryPeriodLabel}>
-            Net Salary - {salaryPeriod || 'September 2025'}
+            Net Salary - {salaryPeriod}
           </Text>
           <View style={styles.paidPill}>
-            <Text style={styles.paidPillText}>Paid</Text>
+            <Text style={styles.paidPillText}>{salaryStatus.label}</Text>
           </View>
         </View>
 
         <Text style={styles.salaryAmount}>
-          {formatCurrency(displaySalary || 28500)}
+          {formatCurrency(displaySalary)}
         </Text>
 
         <Text style={styles.salaryCreditedText}>
-          Salary credited on 28 {typeof salaryPeriod === 'string' && salaryPeriod.length >= 3 ? salaryPeriod.slice(0, 8) : 'Sep 2025'}
+          {salaryKpi?.paidAt
+            ? `Salary credited on ${formatDate(salaryKpi.paidAt)}`
+            : `Payroll period: ${salaryPeriod}`}
         </Text>
       </View>
 
@@ -192,7 +223,7 @@ export default function StaffHomeScreen({ navigation }) {
             <Text style={styles.metricCardTitle}>Working Days</Text>
           </View>
           <Text style={styles.metricCardVal}>
-            {monthlySummary?.present ?? 26} <Text style={styles.metricCardValSub}>/ {monthlySummary?.totalDays ?? 30}</Text>
+            {presentCount} <Text style={styles.metricCardValSub}>/ {totalDaysCount}</Text>
           </Text>
         </View>
 
@@ -204,35 +235,35 @@ export default function StaffHomeScreen({ navigation }) {
             <Text style={styles.metricCardTitle}>Leave Balance</Text>
           </View>
           <Text style={styles.metricCardVal}>
-            {(Number(leaveKpi?.cl || 0) + Number(leaveKpi?.el || 0)) || 8} <Text style={styles.metricCardValSub}>Days</Text>
+            {leaveBalance} <Text style={styles.metricCardValSub}>Days</Text>
           </Text>
         </View>
       </View>
 
-      {/* 4. Four Quick Action Tiles (4-Column Row) */}
+      {/* 4. Six Quick Action Tiles (Showing All Feature Icons) */}
       <View style={styles.quickGrid}>
+        <TouchableOpacity
+          style={styles.quickTile}
+          onPress={() => navigation.navigate('StaffPunch')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.quickIconCircle}>
+            <MaterialCommunityIcons name="fingerprint" size={24} color={colors.primary} />
+          </View>
+          <Text style={styles.quickLabel}>Punch In/Out</Text>
+          <Text style={styles.quickSub}>Quick punch</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.quickTile}
           onPress={() => navigation.navigate('StaffAttendance')}
           activeOpacity={0.7}
         >
           <View style={styles.quickIconCircle}>
-            <MaterialCommunityIcons name="fingerprint" size={24} color={colors.primary} />
+            <MaterialCommunityIcons name="calendar-check" size={24} color={colors.primary} />
           </View>
           <Text style={styles.quickLabel}>Attendance</Text>
-          <Text style={styles.quickSub}>Check in/out</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickTile}
-          onPress={() => navigation.navigate('StaffSalary')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.quickIconCircle}>
-            <MaterialCommunityIcons name="file-document-outline" size={24} color={colors.primary} />
-          </View>
-          <Text style={styles.quickLabel}>My Payslips</Text>
-          <Text style={styles.quickSub}>View salary slips</Text>
+          <Text style={styles.quickSub}>View history</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -244,7 +275,7 @@ export default function StaffHomeScreen({ navigation }) {
             <MaterialCommunityIcons name="calendar-arrow-right" size={24} color={colors.primary} />
           </View>
           <Text style={styles.quickLabel}>Apply Leave</Text>
-          <Text style={styles.quickSub}>Request time off</Text>
+          <Text style={styles.quickSub}>Time off</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -253,10 +284,34 @@ export default function StaffHomeScreen({ navigation }) {
           activeOpacity={0.7}
         >
           <View style={styles.quickIconCircle}>
-            <MaterialCommunityIcons name="wallet-outline" size={24} color={colors.primary} />
+            <MaterialCommunityIcons name="file-document-outline" size={24} color={colors.primary} />
           </View>
-          <Text style={styles.quickLabel}>Salary Details</Text>
-          <Text style={styles.quickSub}>Earnings & deductions</Text>
+          <Text style={styles.quickLabel}>My Payslips</Text>
+          <Text style={styles.quickSub}>Salary slips</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickTile}
+          onPress={() => navigation.navigate('StaffCorrections')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.quickIconCircle}>
+            <MaterialCommunityIcons name="clock-edit-outline" size={24} color={colors.primary} />
+          </View>
+          <Text style={styles.quickLabel}>Corrections</Text>
+          <Text style={styles.quickSub}>Attendance fix</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickTile}
+          onPress={() => navigation.navigate('StaffMeetings')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.quickIconCircle}>
+            <MaterialCommunityIcons name="video-outline" size={24} color={colors.primary} />
+          </View>
+          <Text style={styles.quickLabel}>Meetings</Text>
+          <Text style={styles.quickSub}>Schedule & join</Text>
         </TouchableOpacity>
       </View>
 
@@ -264,16 +319,31 @@ export default function StaffHomeScreen({ navigation }) {
       <View style={styles.activitySection}>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         <Card style={styles.activityCard} elevation="sm">
-          <View style={styles.activityItem}>
-            <View style={styles.activityIconCircle}>
-              <MaterialCommunityIcons name="file-document-outline" size={22} color={colors.primary} />
+          {recentActivities.length === 0 ? (
+            <View style={styles.emptyActivityRow}>
+              <MaterialCommunityIcons name="information-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.emptyActivityText}>No recent activity logged</Text>
             </View>
-            <View style={styles.activityTextContainer}>
-              <Text style={styles.activityTitle}>September payslip</Text>
-              <Text style={styles.activitySub}>Available to download</Text>
-            </View>
-            <Text style={styles.activityTime}>2 hours ago</Text>
-          </View>
+          ) : (
+            recentActivities.map((item, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.activityItem,
+                  index < recentActivities.length - 1 && styles.activityItemBorder,
+                ]}
+              >
+                <View style={styles.activityIconCircle}>
+                  <MaterialCommunityIcons name={item.icon || 'clock-outline'} size={20} color={colors.primary} />
+                </View>
+                <View style={styles.activityTextContainer}>
+                  <Text style={styles.activityTitle}>{item.title}</Text>
+                  <Text style={styles.activitySub}>{item.sub}</Text>
+                </View>
+                <Text style={styles.activityTime}>{item.time}</Text>
+              </View>
+            ))
+          )}
         </Card>
       </View>
 
@@ -445,19 +515,21 @@ const styles = StyleSheet.create({
   },
   quickGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 8,
     marginBottom: 22,
   },
   quickTile: {
-    flex: 1,
+    width: '31.5%',
     backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.outlineVariant,
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 4,
     alignItems: 'center',
+    marginBottom: 4,
     ...shadows.sm,
   },
   quickIconCircle: {
@@ -499,9 +571,26 @@ const styles = StyleSheet.create({
     borderColor: colors.outlineVariant,
     ...shadows.sm,
   },
+  emptyActivityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  emptyActivityText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  activityItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.outlineVariant,
+    paddingBottom: 10,
+    marginBottom: 10,
   },
   activityIconCircle: {
     width: 40,
