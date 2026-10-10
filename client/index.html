@@ -9,9 +9,47 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>PayRoster</title>
+    <!-- Instant loading indicator: yeh CSS inline hai taaki koi extra request na lage.
+         React mount hote hi #root ka content aa jata hai aur yeh spinner apne aap hat jata hai. -->
+    <style>
+      body { margin: 0; background: #f6f7f9; }
+      #app-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        height: 100vh;
+        gap: 16px;
+      }
+      #app-loader .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e5e7eb;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      #app-loader .brand {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #4f46e5;
+        letter-spacing: -0.02em;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* React mount hote hi #root mein content aata hai — tab loader chhupa do */
+      #root:not(:empty) + script ~ #app-loader,
+      #root:not(:empty) ~ #app-loader { display: none; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- Yeh loader tab tak dikhta hai jab tak React ka JS download + mount nahi ho jata -->
+    <div id="app-loader" aria-label="Loading PayRoster">
+      <div class="spinner"></div>
+      <div class="brand">PayRoster</div>
+    </div>
   </body>
 </html>
+

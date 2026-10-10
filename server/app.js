@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -49,6 +50,8 @@ app.use(
   })
 );
 app.use(cors({ origin: env.clientUrls }));
+// Gzip/deflate: JS, CSS, JSON ~60-80% chhote ho jaate hain, page tez khulta hai.
+app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 if (env.nodeEnv === 'development') app.use(morgan('dev'));
 
@@ -66,10 +69,17 @@ if (clientBuilt) {
   app.use(
     express.static(clientDist, {
       index: false,
-      maxAge: '1h',
-      // PWA: service worker aur manifest hamesha taaze jayein, warna naya build phone tak der se pahunchta hai
+      // Vite build mein har file ka naam content-hash se banta hai (jaise index-a1b2c3.js),
+      // isliye 1 saal cache safe hai — content badle to naam badal jata hai.
+      maxAge: '365d',
+      immutable: true,
+      // PWA: service worker aur manifest hamesha taaze jayein, warna naya build phone tak der se pahunchta hai.
+      // index.html bhi fresh chahiye taaki naye hashed filenames mil sakein.
       setHeaders(res, filePath) {
-        if (NO_CACHE_FILES.has(path.basename(filePath))) res.setHeader('Cache-Control', 'no-cache');
+        const base = path.basename(filePath);
+        if (NO_CACHE_FILES.has(base) || base === 'index.html') {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
       },
     })
   );

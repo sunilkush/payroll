@@ -6,47 +6,60 @@ import PlanGate from './PlanGate.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AppLayout from '../components/AppLayout/AppLayout.jsx';
 import Loader from '../components/Loader/Loader.jsx';
-import FollowUps from '../pages/FollowUps/FollowUps.jsx';
-import Login from '../pages/Login/Login.jsx';
-import Register from '../pages/Register/Register.jsx';
-import ForgotPassword from '../pages/Account/ForgotPassword.jsx';
-import ResetPassword from '../pages/Account/ResetPassword.jsx';
-import VerifyEmail from '../pages/Account/VerifyEmail.jsx';
-import Billing from '../pages/admin/Billing/Billing.jsx';
-import SuperAdminHome from '../pages/superadmin/SuperAdminHome.jsx';
-import Companies from '../pages/superadmin/Companies/Companies.jsx';
-import CompanyDetail from '../pages/superadmin/CompanyDetail/CompanyDetail.jsx';
-import AdminHome from '../pages/admin/AdminHome.jsx';
-import Staff from '../pages/admin/Staff/Staff.jsx';
-import StaffForm from '../pages/admin/StaffForm/StaffForm.jsx';
-import Attendance from '../pages/admin/Attendance/Attendance.jsx';
-import StaffAttendance from '../pages/admin/StaffAttendance/StaffAttendance.jsx';
-import LeaveRequests from '../pages/admin/LeaveRequests/LeaveRequests.jsx';
-import PunchCorrections from '../pages/admin/PunchCorrections/PunchCorrections.jsx';
-import Clients from '../pages/admin/Clients/Clients.jsx';
-import ClientForm from '../pages/admin/ClientForm/ClientForm.jsx';
-import Meetings from '../pages/admin/Meetings/Meetings.jsx';
-import MeetingForm from '../pages/admin/MeetingForm/MeetingForm.jsx';
-import MeetingDetail from '../pages/admin/MeetingDetail/MeetingDetail.jsx';
-import Settings from '../pages/admin/Settings/Settings.jsx';
-import MyCorrections from '../pages/staff/MyCorrections/MyCorrections.jsx';
-import MyMeetings from '../pages/staff/MyMeetings/MyMeetings.jsx';
-import MeetingVisit from '../pages/staff/MeetingVisit/MeetingVisit.jsx';
-import ScanMeeting from '../pages/staff/ScanMeeting/ScanMeeting.jsx';
-import MyLeaves from '../pages/staff/MyLeaves/MyLeaves.jsx';
-import MySalary from '../pages/staff/MySalary/MySalary.jsx';
-import Payroll from '../pages/admin/Payroll/Payroll.jsx';
-import GlobalSettings from '../pages/superadmin/GlobalSettings/GlobalSettings.jsx';
-import StaffHome from '../pages/staff/StaffHome.jsx';
-import PunchScreen from '../pages/staff/PunchScreen/PunchScreen.jsx';
-import MyAttendance from '../pages/staff/MyAttendance/MyAttendance.jsx';
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Lazy imports: har page apna alag chunk banta hai, user jab page khole tabhi download hota hai.
+// Pehle saare ~35 pages ek hi bundle mein the — ab sirf zaroorat ka code load hoga.
+// ────────────────────────────────────────────────────────────────────────────────
+
+// Public pages
+const Landing        = lazy(() => import('../pages/Landing/Landing.jsx'));
+const Login          = lazy(() => import('../pages/Login/Login.jsx'));
+const Register       = lazy(() => import('../pages/Register/Register.jsx'));
+const ForgotPassword = lazy(() => import('../pages/Account/ForgotPassword.jsx'));
+const ResetPassword  = lazy(() => import('../pages/Account/ResetPassword.jsx'));
+const VerifyEmail    = lazy(() => import('../pages/Account/VerifyEmail.jsx'));
+
+// Shared pages
+const FollowUps      = lazy(() => import('../pages/FollowUps/FollowUps.jsx'));
+
+// Super Admin pages
+const SuperAdminHome = lazy(() => import('../pages/superadmin/SuperAdminHome.jsx'));
+const Companies      = lazy(() => import('../pages/superadmin/Companies/Companies.jsx'));
+const CompanyDetail  = lazy(() => import('../pages/superadmin/CompanyDetail/CompanyDetail.jsx'));
+const GlobalSettings = lazy(() => import('../pages/superadmin/GlobalSettings/GlobalSettings.jsx'));
+
+// Admin pages
+const AdminHome       = lazy(() => import('../pages/admin/AdminHome.jsx'));
+const Staff           = lazy(() => import('../pages/admin/Staff/Staff.jsx'));
+const StaffForm       = lazy(() => import('../pages/admin/StaffForm/StaffForm.jsx'));
+const Attendance      = lazy(() => import('../pages/admin/Attendance/Attendance.jsx'));
+const StaffAttendance = lazy(() => import('../pages/admin/StaffAttendance/StaffAttendance.jsx'));
+const LeaveRequests   = lazy(() => import('../pages/admin/LeaveRequests/LeaveRequests.jsx'));
+const PunchCorrections = lazy(() => import('../pages/admin/PunchCorrections/PunchCorrections.jsx'));
+const Clients         = lazy(() => import('../pages/admin/Clients/Clients.jsx'));
+const ClientForm      = lazy(() => import('../pages/admin/ClientForm/ClientForm.jsx'));
+const Meetings        = lazy(() => import('../pages/admin/Meetings/Meetings.jsx'));
+const MeetingForm     = lazy(() => import('../pages/admin/MeetingForm/MeetingForm.jsx'));
+const MeetingDetail   = lazy(() => import('../pages/admin/MeetingDetail/MeetingDetail.jsx'));
+const Settings        = lazy(() => import('../pages/admin/Settings/Settings.jsx'));
+const Payroll         = lazy(() => import('../pages/admin/Payroll/Payroll.jsx'));
+const Billing         = lazy(() => import('../pages/admin/Billing/Billing.jsx'));
+
+// Staff pages
+const StaffHome      = lazy(() => import('../pages/staff/StaffHome.jsx'));
+const PunchScreen    = lazy(() => import('../pages/staff/PunchScreen/PunchScreen.jsx'));
+const MyAttendance   = lazy(() => import('../pages/staff/MyAttendance/MyAttendance.jsx'));
+const MyCorrections  = lazy(() => import('../pages/staff/MyCorrections/MyCorrections.jsx'));
+const MyMeetings     = lazy(() => import('../pages/staff/MyMeetings/MyMeetings.jsx'));
+const MeetingVisit   = lazy(() => import('../pages/staff/MeetingVisit/MeetingVisit.jsx'));
+const ScanMeeting    = lazy(() => import('../pages/staff/ScanMeeting/ScanMeeting.jsx'));
+const MyLeaves       = lazy(() => import('../pages/staff/MyLeaves/MyLeaves.jsx'));
+const MySalary       = lazy(() => import('../pages/staff/MySalary/MySalary.jsx'));
 
 // Plan ke peeche wale pages (server ke PLAN_FEATURES jaisa): plan mein na ho to PlanGate upgrade ka message dikhata hai.
 const PAYROLL = { flag: 'payrollEnabled', name: 'Payroll', plan: 'Starter' };
 const CORRECTIONS = { flag: 'correctionsEnabled', name: 'Punch corrections', plan: 'Starter' };
-
-// Landing page alag file mein banta hai (lazy): login ke baad app use karne walon par iska bojh nahi padta.
-const Landing = lazy(() => import('../pages/Landing/Landing.jsx'));
 
 function HomeRedirect() {
   const { user, loading } = useAuth();
@@ -72,6 +85,7 @@ function Home() {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<Loader />}>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
@@ -130,5 +144,6 @@ export default function AppRoutes() {
 
       <Route path="*" element={<HomeRedirect />} />
     </Routes>
+    </Suspense>
   );
 }

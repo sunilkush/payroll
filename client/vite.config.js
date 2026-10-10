@@ -59,6 +59,10 @@ export default defineConfig(({ mode }) => {
     },
   },
   build: {
+    // Modern browsers: chhota output (arrow functions, optional chaining bina polyfill).
+    target: 'es2020',
+    // Har lazy-loaded page ka CSS alag: pehle page ke saath hi aata hai, baaki nahi.
+    cssCodeSplit: true,
     // Ant Design badi library hai. Use alag file mein rakhne se hamara code badalne par
     // users ko sirf chhoti app file dobara download karni padti hai, library cache se aati hai.
     chunkSizeWarningLimit: 1200,
@@ -66,16 +70,20 @@ export default defineConfig(({ mode }) => {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
-          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) {
+          if (/[/\\]node_modules[/\\](react|react-dom|react-router|react-router-dom|scheduler)[/\\]/.test(id)) {
             return 'react';
           }
           // Charts (dashboard) aur maps (settings / punch) alag: jo page inhe use nahi karta
           // uske liye ye cache se bahar bhi rahein to app ki baaki files chhoti rehti hain.
-          if (/[\\/]node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor|internmap|decimal\.js-light|es-toolkit|immer|reselect|redux|@reduxjs)[\\/]/.test(id)) {
+          if (/[/\\]node_modules[/\\](recharts|d3-[^/\\]+|victory-vendor|internmap|decimal\.js-light|es-toolkit|immer|reselect|redux|@reduxjs)[/\\]/.test(id)) {
             return 'charts';
           }
-          if (/[\\/]node_modules[\\/]leaflet[\\/]/.test(id)) return 'maps';
-          return 'vendor'; // antd, icons, dayjs, axios
+          if (/[/\\]node_modules[/\\]leaflet[/\\]/.test(id)) return 'maps';
+          // Ant Design icons bade hain (~500KB+), alag rakhne se vendor chunk chhota rehta hai.
+          if (/[/\\]node_modules[/\\]@ant-design[/\\]icons[/\\]/.test(id)) return 'antd-icons';
+          // QR scanner/generator sirf specific pages mein lagta hai
+          if (/[/\\]node_modules[/\\](qr-scanner|qrcode)[/\\]/.test(id)) return 'qr';
+          return 'vendor'; // antd, dayjs, axios
         },
       },
     },
