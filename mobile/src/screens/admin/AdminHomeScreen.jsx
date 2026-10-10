@@ -195,6 +195,51 @@ export default function AdminHomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.moduleRow}
+          onPress={() => navigation.navigate('AdminMeetings')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.moduleIconCircle, { backgroundColor: '#e0f2fe' }]}>
+            <MaterialCommunityIcons name="briefcase-outline" size={22} color={colors.info} />
+          </View>
+          <View style={styles.moduleInfo}>
+            <Text style={styles.moduleTitle}>Field Visits & Meetings</Text>
+            <Text style={styles.moduleDesc}>Schedule client visits, track GPS & view outcomes</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.moduleRow}
+          onPress={() => navigation.navigate('AdminClients')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.moduleIconCircle, { backgroundColor: '#fdf2f8' }]}>
+            <MaterialCommunityIcons name="domain" size={22} color="#db2777" />
+          </View>
+          <View style={styles.moduleInfo}>
+            <Text style={styles.moduleTitle}>Client Directory</Text>
+            <Text style={styles.moduleDesc}>Manage client accounts, GPS & contacts</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.moduleRow}
+          onPress={() => navigation.navigate('AdminBilling')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.moduleIconCircle, { backgroundColor: '#f0fdf4' }]}>
+            <MaterialCommunityIcons name="credit-card-outline" size={22} color={colors.success} />
+          </View>
+          <View style={styles.moduleInfo}>
+            <Text style={styles.moduleTitle}>Plan & Billing</Text>
+            <Text style={styles.moduleDesc}>Staff capacity, features & upgrade requests</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.moduleRow}
           onPress={() => navigation.navigate('AdminSettings')}
           activeOpacity={0.7}
         >

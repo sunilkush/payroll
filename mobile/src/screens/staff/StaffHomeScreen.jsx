@@ -186,6 +186,18 @@ export default function StaffHomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.actionCard}
+          onPress={() => navigation.navigate('StaffMeetings')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIconCircle, { backgroundColor: '#e0f2fe' }]}>
+            <MaterialCommunityIcons name="briefcase-clock-outline" size={24} color={colors.info} />
+          </View>
+          <Text style={styles.actionLabel}>Client Visits</Text>
+          <Text style={styles.actionDesc}>Sales & field visits</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionCard}
           onPress={() => navigation.navigate('StaffProfile')}
           activeOpacity={0.7}
         >

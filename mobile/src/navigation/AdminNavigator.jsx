@@ -1,9 +1,12 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen.jsx';
+import AdminBillingScreen from '../screens/admin/AdminBillingScreen.jsx';
+import AdminClientsScreen from '../screens/admin/AdminClientsScreen.jsx';
 import AdminCorrectionsScreen from '../screens/admin/AdminCorrectionsScreen.jsx';
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen.jsx';
 import AdminLeavesScreen from '../screens/admin/AdminLeavesScreen.jsx';
+import AdminMeetingsScreen from '../screens/admin/AdminMeetingsScreen.jsx';
 import AdminPayrollScreen from '../screens/admin/AdminPayrollScreen.jsx';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
 import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
@@ -93,6 +96,30 @@ export default function AdminNavigator() {
       <Tab.Screen
         name="AdminCorrections"
         component={AdminCorrectionsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="AdminBilling"
+        component={AdminBillingScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="AdminClients"
+        component={AdminClientsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="AdminMeetings"
+        component={AdminMeetingsScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

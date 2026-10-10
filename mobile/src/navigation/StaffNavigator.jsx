@@ -4,6 +4,7 @@ import StaffAttendanceScreen from '../screens/staff/StaffAttendanceScreen.jsx';
 import StaffCorrectionsScreen from '../screens/staff/StaffCorrectionsScreen.jsx';
 import StaffHomeScreen from '../screens/staff/StaffHomeScreen.jsx';
 import StaffLeavesScreen from '../screens/staff/StaffLeavesScreen.jsx';
+import StaffMeetingsScreen from '../screens/staff/StaffMeetingsScreen.jsx';
 import StaffProfileScreen from '../screens/staff/StaffProfileScreen.jsx';
 import StaffPunchScreen from '../screens/staff/StaffPunchScreen.jsx';
 import StaffSalaryScreen from '../screens/staff/StaffSalaryScreen.jsx';
@@ -93,6 +94,14 @@ export default function StaffNavigator() {
       <Tab.Screen
         name="StaffCorrections"
         component={StaffCorrectionsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="StaffMeetings"
+        component={StaffMeetingsScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

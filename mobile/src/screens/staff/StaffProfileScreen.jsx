@@ -74,6 +74,14 @@ export default function StaffProfileScreen({ navigation }) {
       />
 
       <Button
+        title="Client Field Visits"
+        onPress={() => navigation.navigate('StaffMeetings')}
+        variant="outline"
+        icon="briefcase-clock-outline"
+        style={styles.salaryBtn}
+      />
+
+      <Button
         title="Sign Out"
         onPress={handleLogout}
         variant="danger"
