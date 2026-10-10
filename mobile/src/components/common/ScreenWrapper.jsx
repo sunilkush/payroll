@@ -35,6 +35,7 @@ export default function ScreenWrapper({
     <View style={containerStyle}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
         style={styles.inner}
       >
         <ScrollView
@@ -61,6 +62,7 @@ const styles = StyleSheet.create({
   },
   padding: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
 });

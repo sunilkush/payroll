@@ -9,6 +9,8 @@ export default function Input({
   onChangeText,
   placeholder,
   prefixIcon,
+  leftIcon,
+  icon,
   secureTextEntry = false,
   error,
   helper,
@@ -28,6 +30,7 @@ export default function Input({
   const [showPassword, setShowPassword] = useState(!secureTextEntry);
 
   const isPassword = secureTextEntry;
+  const leadingIcon = prefixIcon || leftIcon || icon;
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -42,9 +45,9 @@ export default function Input({
           style,
         ]}
       >
-        {prefixIcon && (
+        {leadingIcon && (
           <MaterialCommunityIcons
-            name={prefixIcon}
+            name={leadingIcon}
             size={20}
             color={error ? colors.danger : isFocused ? colors.primary : colors.textMuted}
             style={styles.prefixIcon}

@@ -228,17 +228,29 @@ export default function AdminClientsScreen({ navigation }) {
           containerStyle={styles.searchInput}
         />
         <View style={styles.statusChipsRow}>
-          {['ALL', 'ACTIVE', 'INACTIVE'].map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={[styles.chip, filterActive === opt && styles.chipActive]}
-              onPress={() => setFilterActive(opt)}
-            >
-              <Text style={[styles.chipText, filterActive === opt && styles.chipTextActive]}>
-                {opt}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {['ALL', 'ACTIVE', 'INACTIVE'].map((opt) => {
+            const isSelected = filterActive === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
+                style={[styles.chip, isSelected && styles.chipActive]}
+                onPress={() => setFilterActive(opt)}
+                activeOpacity={0.75}
+              >
+                {isSelected && (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={14}
+                    color={colors.onPrimaryContainer}
+                    style={{ marginRight: 4 }}
+                  />
+                )}
+                <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                  {opt}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -469,24 +481,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.bgCard,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.outlineVariant,
   },
   chipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
     borderColor: colors.primary,
   },
   chipText: {
     fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    color: colors.onSurfaceVariant,
     fontWeight: typography.weights.medium,
   },
   chipTextActive: {
-    color: colors.white,
+    color: colors.onPrimaryContainer,
     fontWeight: typography.weights.bold,
   },
   scrollContent: {

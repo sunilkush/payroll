@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.outlineVariant,
     padding: 16,
   },
 });

@@ -6,26 +6,51 @@ export default function Header({
   title,
   subtitle,
   onBack,
+  onBackPress,
+  canGoBack,
   rightIcon,
   onRightPress,
+  rightAction,
   style,
 }) {
+  const handleBack = onBack || onBackPress;
+  const showBack = Boolean(handleBack || canGoBack);
+  const actionIcon = rightIcon || rightAction?.icon;
+  const actionPress = onRightPress || rightAction?.onPress;
+
   return (
     <View style={[styles.header, style]}>
       <View style={styles.left}>
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        {showBack && (
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </TouchableOpacity>
         )}
         <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>}
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
       </View>
-      {rightIcon && (
-        <TouchableOpacity onPress={onRightPress} style={styles.rightBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <MaterialCommunityIcons name={rightIcon} size={22} color={colors.textSecondary} />
+      {actionIcon && (
+        <TouchableOpacity
+          onPress={actionPress}
+          style={styles.rightBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+        >
+          <MaterialCommunityIcons name={actionIcon} size={24} color={colors.primary} />
         </TouchableOpacity>
       )}
     </View>

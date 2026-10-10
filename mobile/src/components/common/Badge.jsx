@@ -79,7 +79,7 @@ export default function Badge({
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

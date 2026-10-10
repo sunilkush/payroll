@@ -190,22 +190,34 @@ export default function StaffMeetingsScreen({ navigation }) {
 
       {/* Filter Tabs */}
       <View style={styles.filterRow}>
-        {['ALL', 'SCHEDULED', 'CHECKED_IN', 'COMPLETED'].map((opt) => (
-          <TouchableOpacity
-            key={opt}
-            style={[styles.filterChip, statusFilter === opt && styles.filterChipActive]}
-            onPress={() => setStatusFilter(opt)}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                statusFilter === opt && styles.filterChipTextActive,
-              ]}
+        {['ALL', 'SCHEDULED', 'CHECKED_IN', 'COMPLETED'].map((opt) => {
+          const isSelected = statusFilter === opt;
+          return (
+            <TouchableOpacity
+              key={opt}
+              style={[styles.filterChip, isSelected && styles.filterChipActive]}
+              onPress={() => setStatusFilter(opt)}
+              activeOpacity={0.75}
             >
-              {opt === 'CHECKED_IN' ? 'In Progress' : opt}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              {isSelected && (
+                <MaterialCommunityIcons
+                  name="check"
+                  size={14}
+                  color={colors.onPrimaryContainer}
+                  style={{ marginRight: 4 }}
+                />
+              )}
+              <Text
+                style={[
+                  styles.filterChipText,
+                  isSelected && styles.filterChipTextActive,
+                ]}
+              >
+                {opt === 'CHECKED_IN' ? 'In Progress' : opt}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <ScrollView
@@ -496,24 +508,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterChip: {
-    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
     paddingHorizontal: 12,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.bgCard,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.outlineVariant,
   },
   filterChipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
     borderColor: colors.primary,
   },
   filterChipText: {
     fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    color: colors.onSurfaceVariant,
     fontWeight: typography.weights.medium,
   },
   filterChipTextActive: {
-    color: colors.white,
+    color: colors.onPrimaryContainer,
     fontWeight: typography.weights.bold,
   },
   scrollContent: {

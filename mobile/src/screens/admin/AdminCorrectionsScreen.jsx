@@ -138,29 +138,41 @@ export default function AdminCorrectionsScreen({ navigation }) {
 
       {actionMsg.text ? <Alert type={actionMsg.type}>{actionMsg.text}</Alert> : null}
 
-      {/* Filter Tabs */}
+      {/* MD3 Filter Chips */}
       <View style={styles.filterRow}>
         {[
           { key: 'PENDING', label: 'Pending' },
           { key: 'APPROVED', label: 'Approved' },
           { key: 'REJECTED', label: 'Rejected' },
           { key: 'all', label: 'All' },
-        ].map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.filterBtn, statusFilter === tab.key && styles.filterBtnActive]}
-            onPress={() => setStatusFilter(tab.key)}
-          >
-            <Text
-              style={[
-                styles.filterBtnText,
-                statusFilter === tab.key && styles.filterBtnTextActive,
-              ]}
+        ].map((tab) => {
+          const isSelected = statusFilter === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.filterChip, isSelected && styles.filterChipActive]}
+              onPress={() => setStatusFilter(tab.key)}
+              activeOpacity={0.75}
             >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              {isSelected && (
+                <MaterialCommunityIcons
+                  name="check"
+                  size={14}
+                  color={colors.onPrimaryContainer}
+                  style={{ marginRight: 4 }}
+                />
+              )}
+              <Text
+                style={[
+                  styles.filterChipText,
+                  isSelected && styles.filterChipTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Corrections List */}
@@ -292,28 +304,31 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    backgroundColor: colors.borderLight,
-    borderRadius: borderRadius.md,
-    padding: 3,
+    gap: 8,
     marginBottom: 16,
+    flexWrap: 'wrap',
   },
-  filterBtn: {
-    flex: 1,
-    paddingVertical: 8,
+  filterChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: borderRadius.sm,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surfaceVariant,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
   },
-  filterBtnActive: {
-    backgroundColor: colors.bgCard,
-    ...shadows.sm,
+  filterChipActive: {
+    backgroundColor: colors.primaryContainer,
+    borderColor: colors.primary,
   },
-  filterBtnText: {
+  filterChipText: {
     fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    color: colors.onSurfaceVariant,
     fontWeight: typography.weights.medium,
   },
-  filterBtnTextActive: {
-    color: colors.primary,
+  filterChipTextActive: {
+    color: colors.onPrimaryContainer,
     fontWeight: typography.weights.bold,
   },
   list: {

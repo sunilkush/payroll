@@ -478,9 +478,9 @@ const styles = StyleSheet.create({
   },
   viewToggleContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.borderLight,
-    borderRadius: borderRadius.md,
-    padding: 3,
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: borderRadius.pill,
+    padding: 4,
     marginBottom: 16,
   },
   viewToggleBtn: {
@@ -489,15 +489,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.pill,
   },
   viewToggleBtnActive: {
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.surface,
     ...shadows.sm,
   },
   viewToggleText: {
     fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+    color: colors.onSurfaceVariant,
     fontWeight: typography.weights.medium,
     marginLeft: 6,
   },

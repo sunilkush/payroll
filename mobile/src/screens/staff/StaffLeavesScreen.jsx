@@ -294,68 +294,75 @@ export default function StaffLeavesScreen({ navigation }) {
 
             {formError ? <Alert type="error">{formError}</Alert> : null}
 
-            {/* Leave Type Toggle */}
-            <Text style={styles.fieldLabel}>Leave Type *</Text>
-            <View style={styles.toggleRow}>
-              <TouchableOpacity
-                style={[styles.toggleBtn, leaveType === 'CL' && styles.toggleBtnActive]}
-                onPress={() => setLeaveType('CL')}
-              >
-                <Text
-                  style={[styles.toggleBtnText, leaveType === 'CL' && styles.toggleBtnTextActive]}
-                >
-                  Casual Leave (CL)
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleBtn, leaveType === 'EL' && styles.toggleBtnActive]}
-                onPress={() => setLeaveType('EL')}
-              >
-                <Text
-                  style={[styles.toggleBtnText, leaveType === 'EL' && styles.toggleBtnTextActive]}
-                >
-                  Earned Leave (EL)
-                </Text>
-              </TouchableOpacity>
+            {/* Current Balance Indicator */}
+            <View style={styles.modalBalancePill}>
+              <MaterialCommunityIcons name="wallet-outline" size={16} color={colors.onPrimaryContainer} />
+              <Text style={styles.modalBalanceText}>
+                Balance: {balance?.CL?.available ?? 0} CL Available • {balance?.EL?.available ?? 0} EL Available
+              </Text>
             </View>
 
-            {/* Duration Toggle */}
+            {/* Leave Type MD3 Chips */}
+            <Text style={styles.fieldLabel}>Leave Type *</Text>
+            <View style={styles.toggleRow}>
+              {[
+                { key: 'CL', label: `Casual Leave (${balance?.CL?.available ?? 0})` },
+                { key: 'EL', label: `Earned Leave (${balance?.EL?.available ?? 0})` },
+              ].map((t) => {
+                const isSelected = leaveType === t.key;
+                return (
+                  <TouchableOpacity
+                    key={t.key}
+                    style={[styles.chipBtn, isSelected && styles.chipBtnActive]}
+                    onPress={() => setLeaveType(t.key)}
+                    activeOpacity={0.75}
+                  >
+                    {isSelected && (
+                      <MaterialCommunityIcons
+                        name="check"
+                        size={14}
+                        color={colors.onPrimaryContainer}
+                        style={{ marginRight: 4 }}
+                      />
+                    )}
+                    <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Duration MD3 Chips */}
             <Text style={styles.fieldLabel}>Duration</Text>
             <View style={styles.toggleRow}>
-              <TouchableOpacity
-                style={[styles.toggleBtn, halfDay === '' && styles.toggleBtnActive]}
-                onPress={() => setHalfDay('')}
-              >
-                <Text style={[styles.toggleBtnText, halfDay === '' && styles.toggleBtnTextActive]}>
-                  Full Day
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleBtn, halfDay === 'FIRST_HALF' && styles.toggleBtnActive]}
-                onPress={() => setHalfDay('FIRST_HALF')}
-              >
-                <Text
-                  style={[
-                    styles.toggleBtnText,
-                    halfDay === 'FIRST_HALF' && styles.toggleBtnTextActive,
-                  ]}
-                >
-                  1st Half
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleBtn, halfDay === 'SECOND_HALF' && styles.toggleBtnActive]}
-                onPress={() => setHalfDay('SECOND_HALF')}
-              >
-                <Text
-                  style={[
-                    styles.toggleBtnText,
-                    halfDay === 'SECOND_HALF' && styles.toggleBtnTextActive,
-                  ]}
-                >
-                  2nd Half
-                </Text>
-              </TouchableOpacity>
+              {[
+                { key: '', label: 'Full Day' },
+                { key: 'FIRST_HALF', label: '1st Half' },
+                { key: 'SECOND_HALF', label: '2nd Half' },
+              ].map((d) => {
+                const isSelected = halfDay === d.key;
+                return (
+                  <TouchableOpacity
+                    key={d.key || 'full'}
+                    style={[styles.chipBtn, isSelected && styles.chipBtnActive]}
+                    onPress={() => setHalfDay(d.key)}
+                    activeOpacity={0.75}
+                  >
+                    {isSelected && (
+                      <MaterialCommunityIcons
+                        name="check"
+                        size={14}
+                        color={colors.onPrimaryContainer}
+                        style={{ marginRight: 4 }}
+                      />
+                    )}
+                    <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
+                      {d.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Date Inputs */}
@@ -536,32 +543,49 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 6,
   },
+  modalBalancePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primaryContainer,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: borderRadius.md,
+    marginBottom: 16,
+  },
+  modalBalanceText: {
+    fontSize: typography.sizes.xs,
+    color: colors.onPrimaryContainer,
+    fontWeight: typography.weights.semibold,
+  },
   toggleRow: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
+    flexWrap: 'wrap',
   },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 10,
+  chipBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
+    borderColor: colors.outlineVariant,
   },
-  toggleBtnActive: {
+  chipBtnActive: {
+    backgroundColor: colors.primaryContainer,
     borderColor: colors.primary,
-    backgroundColor: colors.primaryBg,
   },
-  toggleBtnText: {
+  chipBtnText: {
     fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    color: colors.onSurfaceVariant,
     fontWeight: typography.weights.medium,
   },
-  toggleBtnTextActive: {
-    color: colors.primaryDark,
+  chipBtnTextActive: {
+    color: colors.onPrimaryContainer,
     fontWeight: typography.weights.bold,
   },
   modalSubmitBtn: {

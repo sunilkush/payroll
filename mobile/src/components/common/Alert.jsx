@@ -1,9 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { borderRadius, colors, typography } from '../../theme/index.js';
 
-export default function Alert({ children, type = 'error', style }) {
-  if (!children) return null;
+export default function Alert({ children, message, type = 'error', onDismiss, style }) {
+  const content = children || message;
+  if (!content) return null;
 
   const getScheme = () => {
     switch (type) {
@@ -28,6 +29,7 @@ export default function Alert({ children, type = 'error', style }) {
           border: '#bfdbfe',
           icon: 'information-outline',
         };
+      case 'danger':
       case 'error':
       default:
         return {
@@ -55,7 +57,18 @@ export default function Alert({ children, type = 'error', style }) {
         color={scheme.text}
         style={styles.icon}
       />
-      <Text style={[styles.text, { color: scheme.text }]}>{children}</Text>
+      <Text style={[styles.text, { color: scheme.text }]}>{content}</Text>
+      {onDismiss ? (
+        <TouchableOpacity
+          onPress={onDismiss}
+          style={styles.dismissBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss alert"
+        >
+          <MaterialCommunityIcons name="close" size={16} color={scheme.text} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -77,5 +90,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
+  },
+  dismissBtn: {
+    padding: 4,
+    marginLeft: 8,
   },
 });
