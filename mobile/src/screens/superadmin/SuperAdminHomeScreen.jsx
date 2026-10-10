@@ -65,15 +65,18 @@ export default function SuperAdminHomeScreen({ navigation }) {
   const orgAdmins = kpis.admins?.value ?? 0;
   const platformRevenue = kpis.revenue?.value ?? (totalTenants * 25000);
 
-  // Dynamic 6-month platform activity derived from current date
+  // Dynamic 6-month platform activity derived from current date and tenant counts
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const now = new Date();
   const currentMonthIdx = now.getMonth();
+  const tenantSeries = kpis.companies?.series || [];
   const chartMonths = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), currentMonthIdx - 5 + i, 1);
     const mLabel = monthNames[d.getMonth()];
-    const value = 0.5 + (i * 0.09);
-    return { label: mLabel, value: Math.min(1, value) };
+    const seriesItem = tenantSeries.find((s) => s.label?.includes(mLabel));
+    const count = seriesItem ? Number(seriesItem.value) : (totalTenants > 0 ? Math.max(1, Math.round(totalTenants * ((i + 1) / 6))) : 0);
+    const value = totalTenants > 0 ? Math.min(1, Math.max(0.2, count / totalTenants)) : 0.2;
+    return { label: mLabel, count, value };
   });
 
   return (
@@ -84,10 +87,13 @@ export default function SuperAdminHomeScreen({ navigation }) {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
-      {/* 1. Header with Greeting & Avatar matching Design System */}
+      {/* 1. Header with System Health Pill & Profile Avatar */}
       <View style={styles.topBar}>
         <View style={styles.greetingContainer}>
-          <Text style={styles.roleSubtext}>Super Admin</Text>
+          <View style={styles.platformBadgeRow}>
+            <View style={styles.healthDot} />
+            <Text style={styles.roleSubtext}>Platform Root • Production Active</Text>
+          </View>
           <Text style={styles.greetingText}>{greeting()}</Text>
         </View>
 
@@ -118,8 +124,12 @@ export default function SuperAdminHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('SuperAdminCompanies')}
           activeOpacity={0.8}
         >
-          <Text style={styles.statLabel}>Total Tenants</Text>
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statLabel}>Total Tenants</Text>
+            <MaterialCommunityIcons name="domain" size={16} color={colors.primary} />
+          </View>
           <Text style={styles.statNumberBlue}>{totalTenants}</Text>
+          <Text style={styles.statCardSub}>Registered Companies</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -127,35 +137,93 @@ export default function SuperAdminHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('SuperAdminCompanies')}
           activeOpacity={0.8}
         >
-          <Text style={styles.statLabel}>Active Tenants</Text>
-          <Text style={styles.statNumberBlue}>{activeTenants}</Text>
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statLabel}>Active Tenants</Text>
+            <MaterialCommunityIcons name="check-decagram" size={16} color="#16A34A" />
+          </View>
+          <Text style={styles.statNumberGreen}>{activeTenants}</Text>
+          <Text style={styles.statCardSub}>Operating Normally</Text>
         </TouchableOpacity>
       </View>
 
       {/* 3. Platform Users Grid (2 Columns) */}
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total Staff</Text>
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statLabel}>Total Staff</Text>
+            <MaterialCommunityIcons name="account-group-outline" size={16} color={colors.textSecondary} />
+          </View>
           <Text style={styles.statNumberDark}>{totalStaff.toLocaleString()}</Text>
+          <Text style={styles.statCardSub}>Enrolled Employees</Text>
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Org Admins</Text>
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statLabel}>Org Admins</Text>
+            <MaterialCommunityIcons name="shield-account-outline" size={16} color="#7C3AED" />
+          </View>
           <Text style={styles.statNumberDark}>{orgAdmins}</Text>
+          <Text style={styles.statCardSub}>Company Managers</Text>
         </View>
       </View>
 
-      {/* 4. Full Width Platform Revenue / Health Card */}
-      <Card style={styles.revenueCard} elevation="xs">
-        <Text style={styles.statLabel}>Platform Subscription Value</Text>
-        <Text style={styles.revenueAmount}>{formatCurrency(platformRevenue)}</Text>
-      </Card>
+      {/* 4. Full Width Platform Revenue / Subscription Card */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('SuperAdminCompanies')}
+      >
+        <Card style={styles.revenueCard} elevation="xs">
+          <View style={styles.revenueTopRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <MaterialCommunityIcons name="chart-line" size={18} color="#166534" />
+              <Text style={styles.revenueTitle}>Platform Subscription Run Rate</Text>
+            </View>
+            <Badge label="Active Portfolios" variant="success" size="sm" />
+          </View>
+          <Text style={styles.revenueAmount}>{formatCurrency(platformRevenue)}</Text>
+          <View style={styles.revenueFooterRow}>
+            <Text style={styles.revenueSub}>Estimated value across {totalTenants} enterprise accounts</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Text style={styles.revenueLink}>View Accounts</Text>
+              <MaterialCommunityIcons name="chevron-right" size={14} color="#166534" />
+            </View>
+          </View>
+        </Card>
+      </TouchableOpacity>
+
+      {/* Platform Operations Hub */}
+      <View style={styles.hubSection}>
+        <Text style={styles.sectionTitle}>Platform Governance</Text>
+        <View style={styles.hubGrid}>
+          {[
+            { label: 'Organizations', icon: 'domain', route: 'SuperAdminCompanies', color: '#2563EB', bg: '#EFF6FF' },
+            { label: 'Security & Rules', icon: 'shield-check-outline', route: 'SuperAdminSettings', color: '#7C3AED', bg: '#F3E8FF' },
+            { label: 'Live Refresh', icon: 'sync', action: onRefresh, color: '#059669', bg: '#ECFDF5' },
+            { label: 'Sign Out', icon: 'logout', action: handleLogout, color: '#DC2626', bg: '#FEE2E2' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.hubTile}
+              onPress={item.action || (() => navigation.navigate(item.route))}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.hubIconWrap, { backgroundColor: item.bg }]}>
+                <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
+              </View>
+              <Text style={styles.hubLabel} numberOfLines={1}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* 5. Platform Activity 6-Month Bar Chart */}
       <Card style={styles.chartCard} elevation="xs">
         <View style={styles.chartHeaderRow}>
-          <Text style={styles.chartTitle}>Platform Activity</Text>
-          <Text style={styles.chartSubtitle}>Last 6 Months</Text>
+          <View>
+            <Text style={styles.chartTitle}>Platform Tenant Growth</Text>
+            <Text style={styles.chartSubtitle}>Last 6 Months Trajectory</Text>
+          </View>
+          <Badge label="Healthy Trajectory" variant="primary" size="sm" />
         </View>
 
         <View style={styles.barsContainer}>
@@ -317,6 +385,18 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
     fontSize: 15,
   },
+  platformBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  healthDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#16A34A',
+  },
 
   // 2-column metrics cards
   statsGrid: {
@@ -330,47 +410,128 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 16,
+    padding: 14,
     justifyContent: 'center',
+    ...shadows.xs,
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginBottom: 6,
+    fontWeight: typography.weights.medium,
   },
   statNumberBlue: {
     fontSize: 22,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
+  statNumberGreen: {
+    fontSize: 22,
+    fontWeight: typography.weights.bold,
+    color: '#16A34A',
+  },
   statNumberDark: {
     fontSize: 18,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
+  statCardSub: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
 
   // Full-width Revenue Card
   revenueCard: {
-    padding: 18,
+    padding: 16,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DCFCE7',
+    backgroundColor: '#F0FDF4',
     marginBottom: 16,
+    ...shadows.xs,
+  },
+  revenueTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  revenueTitle: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: '#166534',
   },
   revenueAmount: {
     fontSize: 26,
     fontWeight: typography.weights.bold,
-    color: colors.primary,
-    marginTop: 4,
+    color: '#15803D',
+    marginBottom: 6,
+  },
+  revenueFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#DCFCE7',
+    paddingTop: 8,
+  },
+  revenueSub: {
+    fontSize: 11,
+    color: '#166534',
+    flex: 1,
+  },
+  revenueLink: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#166534',
+  },
+
+  // Platform Hub
+  hubSection: {
+    marginBottom: 18,
+  },
+  hubGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 8,
+  },
+  hubTile: {
+    width: '23%',
+    alignItems: 'center',
+  },
+  hubIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  hubLabel: {
+    fontSize: 11,
+    fontWeight: typography.weights.medium,
+    color: '#334155',
+    textAlign: 'center',
   },
 
   // Bar Chart Card
   chartCard: {
-    padding: 18,
+    padding: 16,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 18,
+    backgroundColor: '#FFFFFF',
+    ...shadows.xs,
   },
   chartHeaderRow: {
     flexDirection: 'row',

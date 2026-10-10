@@ -22,6 +22,8 @@ export const createStaffSchema = Joi.object({
   phone,
   password: password.required(),
   employeeCode: Joi.string().trim().uppercase().max(20).required().label('Employee code'),
+  department: Joi.string().trim().max(100).allow('').default('').label('Department'),
+  designation: Joi.string().trim().max(100).allow('').default('').label('Designation'),
   joiningDate: Joi.date().iso().allow(null).label('Joining date'),
   // ESI aur PF ka base alag hota hai, isliye components alag rakhe hain.
   salaryStructure: Joi.object({

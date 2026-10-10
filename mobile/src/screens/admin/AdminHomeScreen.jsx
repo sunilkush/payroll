@@ -10,6 +10,7 @@ import {
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTodaySummaryApi } from '../../api/attendanceApi.js';
 import { getDashboardApi } from '../../api/dashboardApi.js';
+import { listPayrollApi } from '../../api/payrollApi.js';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
@@ -19,8 +20,10 @@ import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import {
+  currentMonth,
   formatCurrency,
   formatDate,
+  formatMonth,
   greeting,
 } from '../../utils/format.js';
 import { initials } from '../../utils/roles.js';
@@ -30,15 +33,18 @@ export default function AdminHomeScreen({ navigation }) {
 
   const [dashboardData, setDashboardData] = useState(null);
   const [todaySummary, setTodaySummary] = useState(null);
+  const [currentPayroll, setCurrentPayroll] = useState(null);
+  const [selectedMonthIdx, setSelectedMonthIdx] = useState(5);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [notifVisible, setNotifVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
-      const [dashRes, sumRes] = await Promise.allSettled([
+      const [dashRes, sumRes, payrollRes] = await Promise.allSettled([
         getDashboardApi({ days: 30 }),
         getTodaySummaryApi(),
+        listPayrollApi(currentMonth()),
       ]);
 
       if (dashRes.status === 'fulfilled') {
@@ -46,6 +52,9 @@ export default function AdminHomeScreen({ navigation }) {
       }
       if (sumRes.status === 'fulfilled') {
         setTodaySummary(sumRes.value?.data || null);
+      }
+      if (payrollRes.status === 'fulfilled') {
+        setCurrentPayroll(payrollRes.value?.data || null);
       }
     } catch (err) {
       console.warn('Failed to load admin dashboard:', err.message);
@@ -72,35 +81,92 @@ export default function AdminHomeScreen({ navigation }) {
   };
 
   // Dynamic Metrics extraction
+  const curMonthStr = currentMonth();
   const totalEmployeesCount = dashboardData?.kpis?.employees?.value ?? todaySummary?.totalStaff ?? 0;
   const activeStaffCount = todaySummary?.presentCount !== undefined ? todaySummary.presentCount : (dashboardData?.kpis?.employees?.active ?? 0);
 
-  const payrollKpi = dashboardData?.kpis?.payroll;
-  const latestPayrollRow = (dashboardData?.payrollTrend || [])
-    .filter((r) => r.generated)
-    .at(-1);
+  // Dynamic 6-Month Payroll Trend from backend MongoDB
+  const now = new Date();
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const rawTrend = dashboardData?.payrollTrend || [];
 
-  const netPayroll = latestPayrollRow?.net ?? payrollKpi?.value ?? 0;
-  const totalDeductions = latestPayrollRow?.deductions ?? 0;
-  const grossPayroll = (netPayroll + totalDeductions) || (latestPayrollRow?.gross ?? 0);
+  const sixMonths = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = monthNames[d.getMonth()];
+
+    // Live priority for current month if active in currentPayroll
+    if (period === curMonthStr && currentPayroll?.totals && currentPayroll.rows?.length > 0) {
+      const net = Number(currentPayroll.totals.netSalary) || 0;
+      const deductions = Number(currentPayroll.totals.deductions) || 0;
+      const employer = Number(currentPayroll.totals.employerContribution) || 0;
+      const gross = Number(currentPayroll.totals.earnedGross) || (net + deductions);
+      return {
+        period,
+        label,
+        net,
+        deductions,
+        employer,
+        gross,
+        generated: true,
+        hasDraft: Boolean(currentPayroll.hasDraft),
+        staffCount: currentPayroll.rows.length,
+      };
+    }
+
+    const found = rawTrend.find((t) => t.period === period);
+    if (found && found.generated) {
+      const net = Number(found.net) || 0;
+      const deductions = Number(found.deductions) || 0;
+      const employer = Number(found.employer) || 0;
+      const gross = net + deductions;
+      return {
+        period,
+        label: found.label || label,
+        net,
+        deductions,
+        employer,
+        gross,
+        generated: true,
+        hasDraft: false,
+        staffCount: 0,
+      };
+    }
+
+    return {
+      period,
+      label,
+      net: 0,
+      deductions: 0,
+      employer: 0,
+      gross: 0,
+      generated: false,
+      hasDraft: false,
+      staffCount: 0,
+    };
+  });
+
+  // Scale computation for strictly proportional bars
+  const maxMonthVal = Math.max(...sixMonths.map((m) => m.gross || 0), 1);
+
+  // Active / Latest payroll metrics for the top cards
+  const latestGenerated = [...sixMonths].reverse().find((m) => m.generated && m.gross > 0) || null;
+  const activePayrollItem = (sixMonths[5]?.generated && sixMonths[5]?.gross > 0) ? sixMonths[5] : latestGenerated;
+
+  const activeNet = activePayrollItem?.net || 0;
+  const activeGross = activePayrollItem?.gross || 0;
+  const activeDeductions = activePayrollItem?.deductions || 0;
+  const activePeriodLabel = activePayrollItem ? formatMonth(activePayrollItem.period) : formatMonth(curMonthStr);
+  const activeStatus = activePayrollItem ? (activePayrollItem.hasDraft ? 'Draft' : activePayrollItem.generated ? 'Finalized' : 'Not Run') : 'Not Run';
+  const activeStatusVariant = activeStatus === 'Finalized' ? 'success' : activeStatus === 'Draft' ? 'warning' : 'default';
+
+  const payrollKpi = dashboardData?.kpis?.payroll;
+  const changePercent = payrollKpi?.changePercent;
+  const selectedMonth = sixMonths[selectedMonthIdx] || sixMonths[5];
 
   const pendingLeavesList = dashboardData?.pendingLeaves || [];
   const pendingLeavesCount = dashboardData?.kpis?.pendingLeaves?.value ?? 0;
   const activityList = dashboardData?.activity || [];
-
-  // Dynamic 6-month chart derived from current date and actual trend
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const now = new Date();
-  const currentMonthIdx = now.getMonth();
-  const chartMonths = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), currentMonthIdx - 5 + i, 1);
-    const mLabel = monthNames[d.getMonth()];
-    const trendItem = (dashboardData?.payrollTrend || []).find((t) =>
-      t.month?.toLowerCase().includes(mLabel.toLowerCase()) || t.label?.startsWith(mLabel)
-    );
-    const value = trendItem?.net ? Math.min(1, Math.max(0.25, trendItem.net / (grossPayroll || 1))) : 0.4 + (i * 0.1);
-    return { label: mLabel, value };
-  });
 
   return (
     <ScreenWrapper
@@ -168,26 +234,130 @@ export default function AdminHomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* 3. Financial Stats Grid */}
+      {/* Today's Attendance Pulse Card */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('AdminAttendance')}
+      >
+        <Card style={styles.attendancePulseCard} elevation="xs">
+          <View style={styles.pulseHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={styles.livePulseDot} />
+              <Text style={styles.pulseTitle}>Today's Workforce Attendance</Text>
+            </View>
+            <Text style={styles.pulseDateText}>{formatDate(new Date())}</Text>
+          </View>
+
+          <View style={styles.pulseMetricsRow}>
+            <View style={styles.pulseMetricItem}>
+              <View style={[styles.pulseIconCircle, { backgroundColor: '#DCFCE7' }]}>
+                <MaterialCommunityIcons name="account-check" size={16} color="#16A34A" />
+              </View>
+              <Text style={styles.pulseNumberGreen}>
+                {todaySummary?.presentCount ?? activeStaffCount}
+              </Text>
+              <Text style={styles.pulseLabel}>Present</Text>
+            </View>
+
+            <View style={styles.pulseDivider} />
+
+            <View style={styles.pulseMetricItem}>
+              <View style={[styles.pulseIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                <MaterialCommunityIcons name="account-clock" size={16} color="#D97706" />
+              </View>
+              <Text style={styles.pulseNumberAmber}>
+                {todaySummary?.leaveCount ?? 0}
+              </Text>
+              <Text style={styles.pulseLabel}>On Leave</Text>
+            </View>
+
+            <View style={styles.pulseDivider} />
+
+            <View style={styles.pulseMetricItem}>
+              <View style={[styles.pulseIconCircle, { backgroundColor: '#FEE2E2' }]}>
+                <MaterialCommunityIcons name="account-alert" size={16} color="#DC2626" />
+              </View>
+              <Text style={styles.pulseNumberRed}>
+                {todaySummary?.notMarked ?? Math.max(0, totalEmployeesCount - activeStaffCount)}
+              </Text>
+              <Text style={styles.pulseLabel}>Not Marked</Text>
+            </View>
+          </View>
+        </Card>
+      </TouchableOpacity>
+
+      {/* 3. Financial Stats Grid (Dynamic) */}
       <View style={styles.statsGrid}>
         {/* Total Gross */}
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total Gross</Text>
-          <Text style={styles.statNumberDark}>{formatCurrency(grossPayroll)}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate('AdminPayroll')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statLabel}>Total Gross</Text>
+            <MaterialCommunityIcons name="wallet-plus-outline" size={16} color={colors.textSecondary} />
+          </View>
+          <Text style={styles.statNumberDark}>{formatCurrency(activeGross)}</Text>
+          <Text style={styles.statPeriodSub}>{activePeriodLabel}</Text>
+        </TouchableOpacity>
 
         {/* Total Deductions */}
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total Deductions</Text>
-          <Text style={styles.statNumberDark}>{formatCurrency(totalDeductions)}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate('AdminPayroll')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.statCardHeader}>
+            <Text style={styles.statLabel}>Total Deductions</Text>
+            <MaterialCommunityIcons name="calculator-variant-outline" size={16} color={colors.danger} />
+          </View>
+          <Text style={styles.statNumberDark}>{formatCurrency(activeDeductions)}</Text>
+          <Text style={styles.statPeriodSub}>PF, ESI & others</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* 4. Net Payroll Card (Full Width) */}
-      <Card style={styles.netPayrollCard} elevation="xs">
-        <Text style={styles.statLabel}>Net Payroll</Text>
-        <Text style={styles.netPayrollAmount}>{formatCurrency(netPayroll)}</Text>
-      </Card>
+      {/* 4. Net Payroll Card (Dynamic Full Width with Period & Delta) */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('AdminPayroll')}
+      >
+        <Card style={styles.netPayrollCard} elevation="xs">
+          <View style={styles.netPayrollTopRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <MaterialCommunityIcons name="wallet" size={18} color={colors.primary} />
+              <Text style={styles.netPayrollTitle}>Net Payroll • {activePeriodLabel}</Text>
+            </View>
+            <Badge label={activeStatus} variant={activeStatusVariant} size="sm" />
+          </View>
+
+          <View style={styles.netPayrollAmountRow}>
+            <Text style={styles.netPayrollAmount}>{formatCurrency(activeNet)}</Text>
+            {changePercent !== null && changePercent !== undefined && (
+              <View style={[styles.changeBadge, changePercent >= 0 ? styles.changeUp : styles.changeDown]}>
+                <MaterialCommunityIcons
+                  name={changePercent >= 0 ? 'arrow-top-right' : 'arrow-bottom-right'}
+                  size={14}
+                  color={changePercent >= 0 ? '#166534' : '#991B1B'}
+                />
+                <Text style={[styles.changeText, { color: changePercent >= 0 ? '#166534' : '#991B1B' }]}>
+                  {Math.abs(changePercent)}% vs prev mo
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.netPayrollFooter}>
+            <Text style={styles.netPayrollHint}>
+              {activePayrollItem?.staffCount ? `${activePayrollItem.staffCount} staff processed` : 'Tap to manage & process payroll'}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Text style={styles.viewPayrollLink}>Payroll Hub</Text>
+              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.primary} />
+            </View>
+          </View>
+        </Card>
+      </TouchableOpacity>
 
       {/* Operations Hub (All Action Icons Prominently Visible) */}
       <View style={styles.hubSection}>
@@ -221,22 +391,154 @@ export default function AdminHomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* 5. Payroll Overview 6 Months Bar Chart matching Screen 1 */}
+      {/* 5. Dynamic Payroll Overview 6 Months Bar Chart */}
       <Card style={styles.chartCard} elevation="xs">
         <View style={styles.chartHeaderRow}>
-          <Text style={styles.chartTitle}>Payroll Overview</Text>
-          <Text style={styles.chartSubtitle}>Last 6 Months</Text>
+          <View>
+            <Text style={styles.chartTitle}>Payroll Overview</Text>
+            <Text style={styles.chartSubtitle}>Last 6 Months (Tap bar to inspect)</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.runPayrollBtn}
+            onPress={() => navigation.navigate('AdminPayroll')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.runPayrollText}>Open Payroll</Text>
+            <MaterialCommunityIcons name="arrow-right" size={14} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
+        {/* Legend */}
+        <View style={styles.chartLegendRow}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+            <Text style={styles.legendText}>Net Salary</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
+            <Text style={styles.legendText}>Deductions (PF/ESI)</Text>
+          </View>
+        </View>
+
+        {/* 6 Months Bar Visualization */}
         <View style={styles.barsContainer}>
-          {chartMonths.map((item) => (
-            <View key={item.label} style={styles.barCol}>
-              <View style={styles.barTrack}>
-                <View style={[styles.barFill, { height: `${item.value * 100}%` }]} />
-              </View>
-              <Text style={styles.barLabel}>{item.label}</Text>
+          {sixMonths.map((item, idx) => {
+            const isSelected = selectedMonthIdx === idx;
+            const gross = item.gross || 0;
+            const hasData = item.generated && gross > 0;
+            const heightPct = hasData ? Math.min(100, Math.max(16, Math.round((gross / maxMonthVal) * 100))) : 8;
+            const netRatio = gross > 0 ? (item.net / gross) : 1;
+            const deductRatio = 1 - netRatio;
+
+            return (
+              <TouchableOpacity
+                key={item.period}
+                style={[styles.barCol, isSelected && styles.barColSelected]}
+                onPress={() => setSelectedMonthIdx(idx)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.barTrackWrap}>
+                  <View
+                    style={[
+                      styles.barTrack,
+                      { height: `${heightPct}%` },
+                      !hasData && styles.barTrackEmpty,
+                      isSelected && styles.barTrackSelected,
+                    ]}
+                  >
+                    {hasData ? (
+                      <>
+                        {item.deductions > 0 && (
+                          <View
+                            style={[
+                              styles.barSegmentDeductions,
+                              { flex: deductRatio },
+                            ]}
+                          />
+                        )}
+                        <View
+                          style={[
+                            styles.barSegmentNet,
+                            { flex: netRatio },
+                          ]}
+                        />
+                      </>
+                    ) : (
+                      <View style={styles.barPlaceholderDash} />
+                    )}
+                  </View>
+                </View>
+                <Text style={[styles.barLabel, isSelected && styles.barLabelSelected]}>
+                  {item.label}
+                </Text>
+                {isSelected && <View style={styles.selectedDot} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Interactive Selected Month Breakdown Card */}
+        <View style={styles.selectedMonthCard}>
+          <View style={styles.selectedMonthHeader}>
+            <View>
+              <Text style={styles.selectedMonthTitle}>
+                {formatMonth(selectedMonth.period)}
+              </Text>
+              <Text style={styles.selectedMonthPeriod}>{selectedMonth.period}</Text>
             </View>
-          ))}
+            <Badge
+              label={
+                selectedMonth.generated
+                  ? selectedMonth.hasDraft
+                    ? 'Draft'
+                    : 'Finalized'
+                  : 'Not Generated'
+              }
+              variant={
+                selectedMonth.generated
+                  ? selectedMonth.hasDraft
+                    ? 'warning'
+                    : 'success'
+                  : 'default'
+              }
+              size="sm"
+            />
+          </View>
+
+          {selectedMonth.generated && selectedMonth.gross > 0 ? (
+            <View style={styles.monthMetricsGrid}>
+              <View style={styles.monthMetricCol}>
+                <Text style={styles.monthMetricLabel}>Net Disbursed</Text>
+                <Text style={styles.monthMetricValuePrimary}>{formatCurrency(selectedMonth.net)}</Text>
+              </View>
+              <View style={styles.monthMetricCol}>
+                <Text style={styles.monthMetricLabel}>Total Gross</Text>
+                <Text style={styles.monthMetricValue}>{formatCurrency(selectedMonth.gross)}</Text>
+              </View>
+              <View style={styles.monthMetricCol}>
+                <Text style={styles.monthMetricLabel}>Deductions</Text>
+                <Text style={styles.monthMetricValueAmber}>{formatCurrency(selectedMonth.deductions)}</Text>
+              </View>
+              <View style={styles.monthMetricCol}>
+                <Text style={styles.monthMetricLabel}>Employer Share</Text>
+                <Text style={styles.monthMetricValue}>{formatCurrency(selectedMonth.employer || 0)}</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.noDataRow}>
+              <MaterialCommunityIcons name="information-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.noDataText}>
+                No payroll generated for this period.
+              </Text>
+              <TouchableOpacity
+                style={styles.quickGenBtn}
+                onPress={() => navigation.navigate('AdminPayroll')}
+              >
+                <Text style={styles.quickGenBtnText}>Generate Now</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </Card>
 
@@ -415,13 +717,20 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 16,
+    padding: 14,
     justifyContent: 'center',
+    ...shadows.xs,
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginBottom: 6,
+    fontWeight: typography.weights.medium,
   },
   statNumberBlue: {
     fontSize: 22,
@@ -429,24 +738,159 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   statNumberDark: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
+  },
+  statPeriodSub: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 3,
+  },
+
+  // Today Attendance Pulse
+  attendancePulseCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    ...shadows.xs,
+  },
+  pulseHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#16A34A',
+  },
+  pulseTitle: {
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  pulseDateText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  pulseMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  pulseMetricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  pulseIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  pulseNumberGreen: {
+    fontSize: 18,
+    fontWeight: typography.weights.bold,
+    color: '#16A34A',
+  },
+  pulseNumberAmber: {
+    fontSize: 18,
+    fontWeight: typography.weights.bold,
+    color: '#D97706',
+  },
+  pulseNumberRed: {
+    fontSize: 18,
+    fontWeight: typography.weights.bold,
+    color: '#DC2626',
+  },
+  pulseLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  pulseDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#F1F5F9',
   },
 
   // Full-width Net Payroll Card
   netPayrollCard: {
-    padding: 18,
+    padding: 16,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    ...shadows.xs,
+  },
+  netPayrollTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  netPayrollTitle: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+  },
+  netPayrollAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   netPayrollAmount: {
     fontSize: 26,
     fontWeight: typography.weights.bold,
     color: colors.primary,
-    marginTop: 4,
+  },
+  changeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
+  },
+  changeUp: {
+    backgroundColor: '#DCFCE7',
+  },
+  changeDown: {
+    backgroundColor: '#FEE2E2',
+  },
+  changeText: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+  },
+  netPayrollFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 10,
+  },
+  netPayrollHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  viewPayrollLink: {
+    fontSize: 12,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
   },
 
   // Operations Hub
@@ -485,17 +929,19 @@ const styles = StyleSheet.create({
 
   // Bar Chart Card
   chartCard: {
-    padding: 18,
+    padding: 16,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    ...shadows.xs,
   },
   chartHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 10,
   },
   chartTitle: {
     fontSize: 16,
@@ -503,38 +949,199 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   chartSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
+    marginTop: 2,
+  },
+  runPayrollBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: borderRadius.pill,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  runPayrollText: {
+    fontSize: 12,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
+  chartLegendRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
   },
   barsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    height: 120,
-    paddingTop: 10,
-    paddingHorizontal: 8,
+    height: 135,
+    paddingTop: 8,
+    paddingHorizontal: 6,
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginBottom: 12,
   },
   barCol: {
     alignItems: 'center',
     flex: 1,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+  },
+  barColSelected: {
+    backgroundColor: '#EFF6FF',
+  },
+  barTrackWrap: {
+    width: '100%',
+    height: 90,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   barTrack: {
     width: 22,
-    height: 85,
-    backgroundColor: '#F1F5F9',
     borderRadius: 6,
-    justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  barFill: {
+  barTrackEmpty: {
+    backgroundColor: '#E2E8F0',
+    height: 6,
+    borderRadius: 3,
+  },
+  barTrackSelected: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  barSegmentDeductions: {
+    width: '100%',
+    backgroundColor: '#F59E0B',
+  },
+  barSegmentNet: {
     width: '100%',
     backgroundColor: colors.primary,
-    borderRadius: 6,
+  },
+  barPlaceholderDash: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#CBD5E1',
   },
   barLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 6,
+    fontWeight: typography.weights.medium,
+  },
+  barLabelSelected: {
+    color: colors.primary,
+    fontWeight: typography.weights.bold,
+  },
+  selectedDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    marginTop: 2,
+  },
+  selectedMonthCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+  },
+  selectedMonthHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  selectedMonthTitle: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  selectedMonthPeriod: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  monthMetricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  monthMetricCol: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.sm,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  monthMetricLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  monthMetricValue: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  monthMetricValuePrimary: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
+  monthMetricValueAmber: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#D97706',
+  },
+  noDataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  noDataText: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 8,
+    flex: 1,
+    marginLeft: 6,
+  },
+  quickGenBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.primary,
+  },
+  quickGenBtnText: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#FFFFFF',
   },
 
   // Pending Leaves Card

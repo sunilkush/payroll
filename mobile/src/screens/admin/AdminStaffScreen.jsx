@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert as NativeAlert,
   Modal,
@@ -35,8 +35,8 @@ const EMPTY_FORM = {
   phone: '',
   password: '',
   employeeCode: '',
-  designation: 'Software Developer',
-  department: 'IT',
+  designation: '',
+  department: '',
   basic: '',
   hra: '',
   special: '',
@@ -44,6 +44,28 @@ const EMPTY_FORM = {
   pfApplicable: false,
   esiApplicable: false,
 };
+
+const DEFAULT_DEPARTMENTS = [
+  'Sales',
+  'Marketing',
+  'Operations',
+  'Human Resources',
+  'Accounts & Finance',
+  'Information Technology',
+  'Customer Support',
+  'Administration',
+];
+
+const DEFAULT_DESIGNATIONS = [
+  'Sales Executive',
+  'Operations Manager',
+  'HR Specialist',
+  'Accountant',
+  'Software Engineer',
+  'Support Executive',
+  'Team Lead',
+  'Business Development Associate',
+];
 
 export default function AdminStaffScreen({ navigation }) {
   const [staffList, setStaffList] = useState([]);
@@ -64,6 +86,21 @@ export default function AdminStaffScreen({ navigation }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Dynamic suggestions: existing company departments & designations first, followed by defaults
+  const departmentOptions = useMemo(() => {
+    const fromStaff = staffList
+      .map((s) => s.department?.trim())
+      .filter(Boolean);
+    return Array.from(new Set([...fromStaff, ...DEFAULT_DEPARTMENTS]));
+  }, [staffList]);
+
+  const designationOptions = useMemo(() => {
+    const fromStaff = staffList
+      .map((s) => s.designation?.trim())
+      .filter(Boolean);
+    return Array.from(new Set([...fromStaff, ...DEFAULT_DESIGNATIONS]));
+  }, [staffList]);
 
   const fetchStaff = useCallback(async () => {
     try {
@@ -105,8 +142,8 @@ export default function AdminStaffScreen({ navigation }) {
       phone: staff.phone || '',
       password: '',
       employeeCode: staff.employeeCode || '',
-      designation: staff.designation || 'Software Developer',
-      department: staff.department || 'IT',
+      designation: staff.designation || '',
+      department: staff.department || '',
       basic: String(staff.salaryStructure?.basic ?? ''),
       hra: String(staff.salaryStructure?.hra ?? ''),
       special: String(staff.salaryStructure?.special ?? ''),
@@ -273,7 +310,8 @@ export default function AdminStaffScreen({ navigation }) {
                     <View style={styles.staffInfo}>
                       <Text style={styles.staffName}>{staff.name}</Text>
                       <Text style={styles.staffSub}>
-                        {staff.employeeCode || 'EMP001'} • {staff.department || 'IT Department'}
+                        {staff.employeeCode ? `${staff.employeeCode} • ` : ''}
+                        {staff.department || staff.designation || 'Staff'}
                       </Text>
                     </View>
                     <View
@@ -329,7 +367,8 @@ export default function AdminStaffScreen({ navigation }) {
                 </View>
                 <Text style={styles.detailName}>{selectedStaff.name}</Text>
                 <Text style={styles.detailSub}>
-                  {selectedStaff.employeeCode || 'EMP001'} • {selectedStaff.department || 'IT Department'}
+                  {selectedStaff.employeeCode ? `${selectedStaff.employeeCode} • ` : ''}
+                  {selectedStaff.department || selectedStaff.designation || 'Staff'}
                 </Text>
                 <View
                   style={[
@@ -415,7 +454,7 @@ export default function AdminStaffScreen({ navigation }) {
                     <MaterialCommunityIcons name="briefcase-outline" size={20} color={colors.textSecondary} />
                     <View style={styles.infoCol}>
                       <Text style={styles.infoLabel}>Designation</Text>
-                      <Text style={styles.infoValue}>{selectedStaff.designation || 'Staff Member'}</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.designation || 'Not specified'}</Text>
                     </View>
                   </View>
 
@@ -425,7 +464,7 @@ export default function AdminStaffScreen({ navigation }) {
                     <MaterialCommunityIcons name="domain" size={20} color={colors.textSecondary} />
                     <View style={styles.infoCol}>
                       <Text style={styles.infoLabel}>Department</Text>
-                      <Text style={styles.infoValue}>{selectedStaff.department || 'General'}</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.department || 'Not specified'}</Text>
                     </View>
                   </View>
                 </Card>
@@ -543,19 +582,103 @@ export default function AdminStaffScreen({ navigation }) {
                 placeholder="e.g. EMP001"
               />
 
-              <Input
-                label="Department"
-                value={form.department}
-                onChangeText={(t) => setForm((p) => ({ ...p, department: t }))}
-                placeholder="e.g. IT, HR, Sales"
-              />
+              <View style={styles.fieldSection}>
+                <Input
+                  label="Department"
+                  value={form.department}
+                  onChangeText={(t) => setForm((p) => ({ ...p, department: t }))}
+                  placeholder="Type custom or select below"
+                  error={fieldErrors.department}
+                  containerStyle={{ marginBottom: 6 }}
+                />
+                <Text style={styles.suggestionTitle}>Quick Select Department:</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.suggestionChipsContainer}
+                >
+                  {departmentOptions.map((dept) => {
+                    const isSelected =
+                      form.department?.trim().toLowerCase() === dept.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={dept}
+                        style={[styles.suggestionChip, isSelected && styles.suggestionChipActive]}
+                        onPress={() =>
+                          setForm((p) => ({
+                            ...p,
+                            department: isSelected ? '' : dept,
+                          }))
+                        }
+                        activeOpacity={0.7}
+                      >
+                        <MaterialCommunityIcons
+                          name={isSelected ? 'check-circle' : 'domain'}
+                          size={13}
+                          color={isSelected ? '#FFFFFF' : colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.suggestionChipText,
+                            isSelected && styles.suggestionChipTextActive,
+                          ]}
+                        >
+                          {dept}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
-              <Input
-                label="Designation"
-                value={form.designation}
-                onChangeText={(t) => setForm((p) => ({ ...p, designation: t }))}
-                placeholder="e.g. Software Developer"
-              />
+              <View style={styles.fieldSection}>
+                <Input
+                  label="Designation"
+                  value={form.designation}
+                  onChangeText={(t) => setForm((p) => ({ ...p, designation: t }))}
+                  placeholder="Type custom or select below"
+                  error={fieldErrors.designation}
+                  containerStyle={{ marginBottom: 6 }}
+                />
+                <Text style={styles.suggestionTitle}>Quick Select Designation:</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.suggestionChipsContainer}
+                >
+                  {designationOptions.map((desig) => {
+                    const isSelected =
+                      form.designation?.trim().toLowerCase() === desig.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={desig}
+                        style={[styles.suggestionChip, isSelected && styles.suggestionChipActive]}
+                        onPress={() =>
+                          setForm((p) => ({
+                            ...p,
+                            designation: isSelected ? '' : desig,
+                          }))
+                        }
+                        activeOpacity={0.7}
+                      >
+                        <MaterialCommunityIcons
+                          name={isSelected ? 'check-circle' : 'briefcase-outline'}
+                          size={13}
+                          color={isSelected ? '#FFFFFF' : colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.suggestionChipText,
+                            isSelected && styles.suggestionChipTextActive,
+                          ]}
+                        >
+                          {desig}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
               <Input
                 label={editingStaffId ? 'New Password (leave blank to keep current)' : 'Password *'}
@@ -874,5 +997,46 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 20,
     marginBottom: 10,
+  },
+  fieldSection: {
+    marginBottom: 14,
+  },
+  suggestionTitle: {
+    fontSize: 11,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  suggestionChipsContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 2,
+    paddingBottom: 6,
+  },
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: borderRadius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  suggestionChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  suggestionChipText: {
+    fontSize: 12,
+    fontWeight: typography.weights.medium,
+    color: colors.text,
+  },
+  suggestionChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: typography.weights.semibold,
   },
 });

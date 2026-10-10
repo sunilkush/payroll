@@ -17,6 +17,7 @@ import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
+import PunchGeofenceMap from '../../components/common/PunchGeofenceMap.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { formatDate, formatTime, WEEKDAYS } from '../../utils/format.js';
@@ -244,74 +245,17 @@ export default function StaffPunchScreen({ navigation }) {
           </Alert>
         ) : null}
 
-        {/* Geofence Radar / Location Card */}
-        <View style={styles.radarCard}>
-          <View style={styles.radarHeader}>
-            <View style={styles.radarTitleRow}>
-              <Animated.View
-                style={[
-                  styles.radarPulseCircle,
-                  {
-                    backgroundColor: nearest?.inside
-                      ? colors.successBg
-                      : locationError
-                      ? colors.dangerBg
-                      : colors.primaryBg,
-                    transform: [{ scale: pulseAnim }],
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={nearest?.inside ? 'map-marker-check' : 'map-marker-radius'}
-                  size={26}
-                  color={nearest?.inside ? colors.success : locationError ? colors.danger : colors.primary}
-                />
-              </Animated.View>
-              <View style={styles.radarTextInfo}>
-                <Text style={styles.radarStatusTitle}>
-                  {locationError
-                    ? 'GPS Error'
-                    : nearest?.inside
-                    ? 'Within Office Geofence'
-                    : nearest
-                    ? 'Outside Office Range'
-                    : 'Locating Device...'}
-                </Text>
-                <Text style={styles.radarStatusSub}>
-                  {nearest
-                    ? `${nearest.distance}m from ${nearest.location.name} (Allowed: ${nearest.location.radius}m)`
-                    : locationError || 'Calculating distance to nearest office branch...'}
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={acquireLocation}
-              disabled={refreshingLocation}
-              style={styles.refreshLocBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              {refreshingLocation ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <MaterialCommunityIcons name="crosshairs-gps" size={20} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {location && !locationError && (
-            <View style={styles.gpsMetaRow}>
-              <Text style={styles.gpsMetaText}>
-                GPS Accuracy: ±{Math.round(location.accuracy || 10)}m
-              </Text>
-              <Badge
-                label={nearest?.inside ? 'ELIGIBLE TO PUNCH' : 'OUT OF RANGE'}
-                variant={nearest?.inside ? 'success' : 'danger'}
-                size="sm"
-              />
-            </View>
-          )}
-        </View>
+        {/* Interactive Geofence Map */}
+        <PunchGeofenceMap
+          userLocation={location}
+          officeLocation={nearest?.location || mappableLocations[0]}
+          allLocations={mappableLocations}
+          isInside={nearest?.inside}
+          distance={nearest?.distance}
+          locationError={locationError}
+          onRefreshLocation={acquireLocation}
+          refreshing={refreshingLocation}
+        />
 
         {/* Big Action Punch Button */}
         {!isPunchedOut ? (

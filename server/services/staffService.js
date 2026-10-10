@@ -20,7 +20,13 @@ export async function listStaff({ search, status, salesManager, page, limit }) {
   if (salesManager) filter.isSalesManager = true;
   if (search) {
     const pattern = new RegExp(escapeRegex(search), 'i');
-    filter.$or = [{ name: pattern }, { email: pattern }, { employeeCode: pattern }];
+    filter.$or = [
+      { name: pattern },
+      { email: pattern },
+      { employeeCode: pattern },
+      { department: pattern },
+      { designation: pattern },
+    ];
   }
   if (status === 'active') filter.isActive = true;
   if (status === 'inactive') filter.isActive = false;

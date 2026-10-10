@@ -20,6 +20,8 @@ const EMPTY_FORM = {
   phone: '',
   password: '',
   employeeCode: '',
+  department: '',
+  designation: '',
   joiningDate: '',
   basic: '',
   hra: '',
@@ -48,6 +50,8 @@ const toForm = (staff) => ({
   email: staff.email,
   phone: staff.phone ?? '',
   employeeCode: staff.employeeCode ?? '',
+  department: staff.department ?? '',
+  designation: staff.designation ?? '',
   joiningDate: staff.joiningDate ? staff.joiningDate.slice(0, 10) : '',
   basic: String(staff.salaryStructure?.basic ?? ''),
   hra: String(staff.salaryStructure?.hra ?? ''),
@@ -72,6 +76,8 @@ const toPayload = (form) => ({
   // Edit mein password khali chhodne par purana hi rehta hai.
   ...(form.password && { password: form.password }),
   employeeCode: form.employeeCode,
+  department: form.department?.trim() || '',
+  designation: form.designation?.trim() || '',
   joiningDate: form.joiningDate || null,
   salaryStructure: {
     basic: toAmount(form.basic),
@@ -184,6 +190,12 @@ export default function StaffForm() {
                 hint: 'The staff member will log in with this email',
               })}
               {field('phone', 'Phone', 'phone', { type: 'tel' })}
+              {field('department', 'Department', 'department', {
+                placeholder: 'e.g. Sales, Operations, HR, IT',
+              })}
+              {field('designation', 'Designation', 'designation', {
+                placeholder: 'e.g. Sales Executive, Team Lead, Manager',
+              })}
               {field('joiningDate', 'Joining date', 'joiningDate', { type: 'date' })}
               {field('password', isEdit ? 'New password' : 'Password', 'password', {
                 type: 'password',

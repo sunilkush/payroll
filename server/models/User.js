@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 8, select: false },
     role: { type: String, enum: ROLE_VALUES, default: ROLES.STAFF },
     employeeCode: { type: String, trim: true },
+    department: { type: String, trim: true, default: '' },
+    designation: { type: String, trim: true, default: '' },
     joiningDate: { type: Date },
     salaryStructure: {
       basic: { type: Number, default: 0, min: 0 },

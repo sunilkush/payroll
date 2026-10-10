@@ -119,7 +119,11 @@ export default function Staff() {
         {result.items.map((staff) => (
           <tr key={staff._id}>
             <td>
-              <UserCell name={staff.name} sub={staff.email} to={`/admin/staff/${staff._id}`} />
+              <UserCell
+                name={staff.name}
+                sub={[staff.designation, staff.department, staff.email].filter(Boolean).join(' • ')}
+                to={`/admin/staff/${staff._id}`}
+              />
             </td>
             <td>{staff.employeeCode}</td>
             <td>{formatDate(staff.joiningDate)}</td>
