@@ -12,7 +12,7 @@ export default function Card({ children, style, elevation = 'sm' }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bgCard,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,

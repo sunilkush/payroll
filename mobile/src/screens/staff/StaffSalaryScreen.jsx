@@ -197,6 +197,13 @@ export default function StaffSalaryScreen({ navigation }) {
                   value={`-${formatCurrency(selectedSlip?.deductions?.esi || 0)}`}
                   isDeduction
                 />
+                {selectedSlip?.deductions?.other > 0 && (
+                  <BreakdownRow
+                    label="Other Deductions"
+                    value={`-${formatCurrency(selectedSlip?.deductions?.other || 0)}`}
+                    isDeduction
+                  />
+                )}
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Total Deductions</Text>
                   <Text style={[styles.totalVal, { color: colors.danger }]}>
@@ -205,9 +212,32 @@ export default function StaffSalaryScreen({ navigation }) {
                 </View>
               </View>
 
+              {/* Employer Contributions */}
+              {selectedSlip?.employerContribution?.total > 0 && (
+                <>
+                  <Text style={styles.modalSectionTitle}>Employer Statutory Contributions</Text>
+                  <View style={styles.breakdownBox}>
+                    <BreakdownRow
+                      label="Employer EPF + EPS (12%)"
+                      value={formatCurrency(selectedSlip?.employerContribution?.pf || 0)}
+                    />
+                    <BreakdownRow
+                      label="Employer ESI (3.25%)"
+                      value={formatCurrency(selectedSlip?.employerContribution?.esi || 0)}
+                    />
+                    <View style={styles.totalRow}>
+                      <Text style={styles.totalLabel}>Total Employer Benefits</Text>
+                      <Text style={[styles.totalVal, { color: colors.success }]}>
+                        {formatCurrency(selectedSlip?.employerContribution?.total || 0)}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
+
               {/* Net Payable */}
               <View style={styles.netCard}>
-                <Text style={styles.netTitle}>Net Disbursed Amount</Text>
+                <Text style={styles.netTitle}>Net Take-Home Pay</Text>
                 <Text style={styles.netBig}>
                   {formatCurrency(selectedSlip?.netSalary || 0)}
                 </Text>

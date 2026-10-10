@@ -23,9 +23,9 @@ export default function StaffNavigator() {
         tabBarStyle: {
           backgroundColor: colors.bgCard,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -37,19 +37,9 @@ export default function StaffNavigator() {
         name="StaffHome"
         component={StaffHomeScreen}
         options={{
-          tabBarLabel: 'Dashboard',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="StaffPunch"
-        component={StaffPunchScreen}
-        options={{
-          tabBarLabel: 'Punch',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="map-marker-radius-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="home-variant-outline" size={size} color={color} />
           ),
         }}
       />
@@ -59,17 +49,17 @@ export default function StaffNavigator() {
         options={{
           tabBarLabel: 'Attendance',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="clock-time-four-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="StaffLeaves"
-        component={StaffLeavesScreen}
+        name="StaffSalary"
+        component={StaffSalaryScreen}
         options={{
-          tabBarLabel: 'Leaves',
+          tabBarLabel: 'Payroll',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />
           ),
         }}
       />
@@ -84,8 +74,16 @@ export default function StaffNavigator() {
         }}
       />
       <Tab.Screen
-        name="StaffSalary"
-        component={StaffSalaryScreen}
+        name="StaffPunch"
+        component={StaffPunchScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="StaffLeaves"
+        component={StaffLeavesScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

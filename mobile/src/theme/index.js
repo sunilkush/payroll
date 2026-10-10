@@ -4,11 +4,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const colors = {
-  // Primary
-  primary: '#4f46e5',
-  primaryLight: '#6366f1',
-  primaryDark: '#4338ca',
-  primaryBg: '#eef2ff',
+  // Primary (Royal Blue FinTech)
+  primary: '#2563eb',
+  primaryLight: '#3b82f6',
+  primaryDark: '#1d4ed8',
+  primaryBg: '#eff6ff',
 
   // Status
   success: '#16a34a',
@@ -17,30 +17,35 @@ export const colors = {
   warningBg: '#fffbeb',
   danger: '#dc2626',
   dangerBg: '#fef2f2',
-  info: '#2563eb',
-  infoBg: '#eff6ff',
+  info: '#0284c7',
+  infoBg: '#f0f9ff',
 
-  // Neutrals
-  text: '#1e293b',
-  textSecondary: '#64748b',
+  // Neutrals (Slate / FinTech Clean)
+  text: '#0f172a',
+  textSecondary: '#475569',
   textMuted: '#94a3b8',
-  bg: '#f6f7f9',
+  bg: '#f8fafc',
   bgCard: '#ffffff',
   border: '#e2e8f0',
   borderLight: '#f1f5f9',
   divider: '#e2e8f0',
 
+  // Accent / FinTech Elements
+  accent: '#0ea5e9',
+  accentBg: '#f0fdfa',
+  cardHighlight: '#1e293b',
+
   // Charts
-  chart1: '#8b5cf6',
-  chart2: '#f43f5e',
-  chart3: '#06b6d4',
-  chart4: '#f59e0b',
-  chartGrid: '#e2e8f0',
+  chart1: '#2563eb',
+  chart2: '#10b981',
+  chart3: '#f59e0b',
+  chart4: '#8b5cf6',
+  chartGrid: '#f1f5f9',
 
   // Misc
   white: '#ffffff',
   black: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  overlay: 'rgba(15, 23, 42, 0.6)',
 };
 
 export const spacing = {

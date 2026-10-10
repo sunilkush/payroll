@@ -25,9 +25,9 @@ export default function AdminNavigator() {
         tabBarStyle: {
           backgroundColor: colors.bgCard,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -61,17 +61,17 @@ export default function AdminNavigator() {
         options={{
           tabBarLabel: 'Attendance',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="clock-time-four-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="AdminLeaves"
-        component={AdminLeavesScreen}
+        name="AdminPayroll"
+        component={AdminPayrollScreen}
         options={{
-          tabBarLabel: 'Leaves',
+          tabBarLabel: 'Payroll',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />
           ),
         }}
       />
@@ -86,8 +86,8 @@ export default function AdminNavigator() {
         }}
       />
       <Tab.Screen
-        name="AdminPayroll"
-        component={AdminPayrollScreen}
+        name="AdminLeaves"
+        component={AdminLeavesScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
