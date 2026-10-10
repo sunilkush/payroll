@@ -97,17 +97,25 @@ export default function AdminNavigator() {
         }}
       />
       <Tab.Screen
-        name="AdminReports"
-        component={AdminReportsScreen}
+        name="AdminProfile"
+        component={AdminProfileScreen}
         options={{
-          tabBarLabel: 'Reports',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color, focused, size }) => (
             <MaterialCommunityIcons
-              name={focused ? 'file-chart' : 'file-chart-outline'}
+              name={focused ? 'account' : 'account-outline'}
               size={size || 24}
               color={color}
             />
           ),
+        }}
+      />
+      <Tab.Screen
+        name="AdminReports"
+        component={AdminReportsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tab.Screen
@@ -153,14 +161,6 @@ export default function AdminNavigator() {
       <Tab.Screen
         name="AdminMeetings"
         component={AdminMeetingsScreen}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-      <Tab.Screen
-        name="AdminProfile"
-        component={AdminProfileScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
