@@ -1,17 +1,24 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "PayRoster",
+    "slug": "payroster",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.payroster.app"
     },
     "android": {
+      "package": "com.payroster.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#4f46e5",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -22,8 +29,22 @@
     },
     "plugins": [
       "expo-font",
-      "expo-splash-screen",
-      "expo-status-bar"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#4f46e5"
+        }
+      ],
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow PayRoster to access your GPS coordinates to verify office geofence attendance punches."
+        }
+      ]
     ]
   }
 }
