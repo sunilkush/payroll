@@ -134,73 +134,78 @@ export default function AdminAttendanceScreen({ navigation }) {
         </Card>
       ) : (
         <View style={styles.rowsList}>
-          {rows.map(({ staff, summary }) => (
-            <Card key={staff._id} style={styles.staffAttendanceCard} elevation="sm">
-              <View style={styles.staffHeader}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials(staff.name)}</Text>
-                </View>
-                <View style={styles.staffInfo}>
-                  <Text style={styles.staffName}>{staff.name}</Text>
-                  <Text style={styles.staffCode}>
-                    {staff.employeeCode ? `ID: ${staff.employeeCode}` : staff.email}
-                  </Text>
-                </View>
-                {!staff.isActive && (
-                  <Badge label="Inactive" variant="danger" size="sm" />
-                )}
-              </View>
-
-              {/* Counts Grid */}
-              <View style={styles.countsGrid}>
-                <View style={styles.countCol}>
-                  <Text style={[styles.countNum, { color: colors.success }]}>
-                    {summary.present}
-                  </Text>
-                  <Text style={styles.countText}>Present</Text>
+          {rows.map((row, idx) => {
+            const staff = row?.staff;
+            const summary = row?.summary || {};
+            if (!staff) return null;
+            return (
+              <Card key={staff._id || idx} style={styles.staffAttendanceCard} elevation="sm">
+                <View style={styles.staffHeader}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initials(staff.name || 'EM')}</Text>
+                  </View>
+                  <View style={styles.staffInfo}>
+                    <Text style={styles.staffName}>{staff.name || 'Employee'}</Text>
+                    <Text style={styles.staffCode}>
+                      {staff.employeeCode ? `ID: ${staff.employeeCode}` : staff.email || '—'}
+                    </Text>
+                  </View>
+                  {!staff.isActive && (
+                    <Badge label="Inactive" variant="danger" size="sm" />
+                  )}
                 </View>
 
-                <View style={styles.divider} />
+                {/* Counts Grid */}
+                <View style={styles.countsGrid}>
+                  <View style={styles.countCol}>
+                    <Text style={[styles.countNum, { color: colors.success }]}>
+                      {summary.present || 0}
+                    </Text>
+                    <Text style={styles.countText}>Present</Text>
+                  </View>
 
-                <View style={styles.countCol}>
-                  <Text style={[styles.countNum, { color: colors.danger }]}>
-                    {summary.absent}
-                  </Text>
-                  <Text style={styles.countText}>Absent</Text>
+                  <View style={styles.divider} />
+
+                  <View style={styles.countCol}>
+                    <Text style={[styles.countNum, { color: colors.danger }]}>
+                      {summary.absent || 0}
+                    </Text>
+                    <Text style={styles.countText}>Absent</Text>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.countCol}>
+                    <Text style={[styles.countNum, { color: colors.warning }]}>
+                      {summary.leave || 0}
+                    </Text>
+                    <Text style={styles.countText}>Leave</Text>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.countCol}>
+                    <Text style={styles.countNum}>
+                      {(summary.weekOff || 0) + (summary.holiday || 0)}
+                    </Text>
+                    <Text style={styles.countText}>Off/Hld</Text>
+                  </View>
+
+                  {(summary.missedPunchOut || 0) > 0 ? (
+                    <>
+                      <View style={styles.divider} />
+                      <View style={styles.countCol}>
+                        <Text style={[styles.countNum, { color: '#ea580c' }]}>
+                          {summary.missedPunchOut}
+                        </Text>
+                        <Text style={styles.countText}>Missed</Text>
+                      </View>
+                    </>
+                  ) : null}
                 </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.countCol}>
-                  <Text style={[styles.countNum, { color: colors.warning }]}>
-                    {summary.leave}
-                  </Text>
-                  <Text style={styles.countText}>Leave</Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.countCol}>
-                  <Text style={styles.countNum}>
-                    {summary.weekOff + summary.holiday}
-                  </Text>
-                  <Text style={styles.countText}>Off/Hld</Text>
-                </View>
-
-                {summary.missedPunchOut > 0 ? (
-                  <>
-                    <View style={styles.divider} />
-                    <View style={styles.countCol}>
-                      <Text style={[styles.countNum, { color: '#ea580c' }]}>
-                        {summary.missedPunchOut}
-                      </Text>
-                      <Text style={styles.countText}>Missed</Text>
-                    </View>
-                  </>
-                ) : null}
-              </View>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </View>
       )}
     </ScreenWrapper>

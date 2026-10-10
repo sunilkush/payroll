@@ -125,14 +125,20 @@ export default function AdminClientsScreen({ navigation }) {
 
     setSubmitting(true);
     try {
+      const hasCoords = Boolean(
+        form.lat &&
+          form.lng &&
+          !isNaN(Number(form.lat)) &&
+          !isNaN(Number(form.lng))
+      );
       const payload = {
         name: form.name.trim(),
         contactPerson: form.contactPerson.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
         address: form.address.trim(),
-        lat: form.lat ? Number(form.lat) : undefined,
-        lng: form.lng ? Number(form.lng) : undefined,
+        lat: hasCoords ? Number(form.lat) : undefined,
+        lng: hasCoords ? Number(form.lng) : undefined,
         notes: form.notes.trim(),
       };
 

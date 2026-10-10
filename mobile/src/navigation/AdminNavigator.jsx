@@ -9,6 +9,7 @@ import AdminHomeScreen from '../screens/admin/AdminHomeScreen.jsx';
 import AdminLeavesScreen from '../screens/admin/AdminLeavesScreen.jsx';
 import AdminMeetingsScreen from '../screens/admin/AdminMeetingsScreen.jsx';
 import AdminPayrollScreen from '../screens/admin/AdminPayrollScreen.jsx';
+import AdminProfileScreen from '../screens/admin/AdminProfileScreen.jsx';
 import AdminReportsScreen from '../screens/admin/AdminReportsScreen.jsx';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
 import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
@@ -152,6 +153,14 @@ export default function AdminNavigator() {
       <Tab.Screen
         name="AdminMeetings"
         component={AdminMeetingsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="AdminProfile"
+        component={AdminProfileScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

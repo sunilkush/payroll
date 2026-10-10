@@ -57,14 +57,25 @@ export default function AdminMeetingsScreen({ navigation }) {
   const fetchData = useCallback(async () => {
     try {
       setFeedback({ type: 'success', text: '' });
-      const [meetingsRes, clientsRes, staffRes] = await Promise.all([
+      const [meetingsRes, clientsRes, staffRes] = await Promise.allSettled([
         listMeetingsApi(),
         listClientsApi(),
         listStaffApi(),
       ]);
-      setMeetings(meetingsRes?.data?.items || meetingsRes?.data || []);
-      setClients(clientsRes?.data?.items || clientsRes?.data || []);
-      setStaffList(staffRes?.data?.users || staffRes?.data || []);
+      if (meetingsRes.status === 'fulfilled') {
+        setMeetings(meetingsRes.value?.data?.items || meetingsRes.value?.data || []);
+      }
+      if (clientsRes.status === 'fulfilled') {
+        setClients(clientsRes.value?.data?.items || clientsRes.value?.data || []);
+      }
+      if (staffRes.status === 'fulfilled') {
+        setStaffList(
+          staffRes.value?.data?.items ||
+            staffRes.value?.data?.users ||
+            staffRes.value?.data ||
+            []
+        );
+      }
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || 'Failed to load visits data.' });
     } finally {

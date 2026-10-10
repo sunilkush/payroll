@@ -20,13 +20,21 @@ import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 
 export default function AdminSettingsScreen({ navigation }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [statusMsg, setStatusMsg] = useState({ type: 'success', text: '' });
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    NativeAlert.alert('Sign Out', 'Are you sure you want to sign out from your Admin account?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: logout },
+    ]);
+  };
 
   // Location Modal State
   const [locModalVisible, setLocModalVisible] = useState(false);
@@ -337,6 +345,27 @@ export default function AdminSettingsScreen({ navigation }) {
         style={styles.saveBtn}
       />
 
+      {/* Profile & Logout Action Buttons */}
+      <View style={styles.authActionsRow}>
+        <TouchableOpacity
+          style={styles.profileActionBtn}
+          onPress={() => navigation.navigate('AdminProfile')}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="account-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.profileActionText}>View Admin Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.logoutActionBtn}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="logout" size={20} color={colors.danger} />
+          <Text style={styles.logoutActionText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Add / Edit Location Modal */}
       <Modal
         visible={locModalVisible}
@@ -581,5 +610,45 @@ const styles = StyleSheet.create({
   },
   saveBranchBtn: {
     marginTop: 10,
+  },
+  authActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 14,
+    marginBottom: 20,
+  },
+  profileActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    backgroundColor: '#EFF6FF',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  profileActionText: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.primary,
+  },
+  logoutActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    backgroundColor: '#FEE2E2',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  logoutActionText: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.danger,
   },
 });

@@ -129,10 +129,18 @@ export default function AdminHomeScreen({ navigation }) {
 
           <TouchableOpacity
             style={styles.avatarBtn}
-            onPress={() => navigation.navigate('AdminSettings')}
+            onPress={() => navigation.navigate('AdminProfile')}
             activeOpacity={0.8}
           >
             <Text style={styles.avatarText}>{initials(user?.name || 'HA')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.logoutTopBtn}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="logout" size={20} color={colors.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -196,6 +204,7 @@ export default function AdminHomeScreen({ navigation }) {
             { label: 'Billing', icon: 'receipt', route: 'AdminBilling', color: '#EA580C', bg: '#FFEDD5' },
             { label: 'Meetings', icon: 'video-account', route: 'AdminMeetings', color: '#2563EB', bg: '#DBEAFE' },
             { label: 'Settings', icon: 'cog-outline', route: 'AdminSettings', color: '#475569', bg: '#F1F5F9' },
+            { label: 'Profile', icon: 'account-cog-outline', route: 'AdminProfile', color: '#0284C7', bg: '#E0F2FE' },
           ].map((item) => (
             <TouchableOpacity
               key={item.label}
@@ -382,6 +391,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: typography.weights.bold,
     fontSize: 15,
+  },
+  logoutTopBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: borderRadius.pill,
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // 2-column metrics cards
