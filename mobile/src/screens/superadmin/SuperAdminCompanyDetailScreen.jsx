@@ -19,7 +19,6 @@ import {
   updateCompanyApi,
 } from '../../api/companyApi.js';
 import Alert from '../../components/common/Alert.jsx';
-import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
@@ -36,28 +35,24 @@ const PLAN_OPTIONS = [
     key: 'FREE',
     label: 'Free',
     limit: 'Up to 10 staff',
-    badgeVariant: 'default',
     desc: 'Basic attendance & reports',
   },
   {
     key: 'STARTER',
     label: 'Starter',
     limit: 'Up to 50 staff',
-    badgeVariant: 'primary',
     desc: 'Leave tracking & monthly payroll',
   },
   {
     key: 'PROFESSIONAL',
     label: 'Professional',
     limit: 'Up to 250 staff',
-    badgeVariant: 'warning',
     desc: 'Statutory PF/ESI & field visits',
   },
   {
     key: 'ENTERPRISE',
     label: 'Enterprise',
     limit: 'Unlimited staff',
-    badgeVariant: 'success',
     desc: 'Multi-branch & priority support',
   },
 ];
@@ -75,9 +70,11 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState(null);
+  const [activeTab, setActiveTab] = useState('Overview'); // 'Overview' | 'Admins' | 'Plan' | 'Security'
   const [actionMsg, setActionMsg] = useState({ type: 'success', text: '' });
 
-  // Company Profile Form state
+  // Company Profile Edit Modal state
+  const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: '',
     address: '',
@@ -139,53 +136,35 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
     }, 3500);
   };
 
-  // 1. Save Company Profile Details
   const handleSaveProfile = async () => {
-    const errors = {};
-    if (!profileForm.name.trim()) {
-      errors.name = 'Company name is required';
-    } else if (profileForm.name.trim().length < 2) {
-      errors.name = 'Company name must be at least 2 characters';
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setProfileErrors(errors);
-      return;
-    }
-
     setProfileSaving(true);
     setProfileErrors({});
-
     try {
-      await updateCompanyApi(companyId, {
+      const payload = {
         name: profileForm.name.trim(),
         address: profileForm.address.trim(),
         plan: profileForm.plan,
-      });
+      };
+      await updateCompanyApi(companyId, payload);
       showToast('success', 'Company profile updated successfully.');
+      setEditProfileModalVisible(false);
       fetchCompanyDetails();
     } catch (err) {
       const fieldMap = toFieldErrors(err);
-      if (Object.keys(fieldMap).length > 0) {
-        setProfileErrors(fieldMap);
-      } else {
-        showToast('error', err.message || 'Failed to update company profile.');
-      }
+      setProfileErrors(fieldMap);
+      showToast('error', Object.keys(fieldMap).length ? 'Please check input fields.' : err.message);
     } finally {
       setProfileSaving(false);
     }
   };
 
-  // 2. Toggle Company Active / Blocked Status
-  const handleToggleCompanyStatus = () => {
-    if (!data?.company) return;
-    const willBlock = data.company.isActive;
-
+  const handleToggleStatus = (company) => {
+    const willBlock = company.isActive;
     NativeAlert.alert(
-      willBlock ? `Block ${data.company.name}?` : `Unblock ${data.company.name}?`,
+      willBlock ? `Block ${company.name}?` : `Unblock ${company.name}?`,
       willBlock
-        ? 'All employees and admins of this company will immediately lose access and be unable to log in.'
-        : 'Access will be restored for all staff and admin accounts.',
+        ? 'All employees and admins will lose access to the portal immediately.'
+        : 'Access will be restored for all users.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -193,14 +172,11 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
           style: willBlock ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              await setCompanyStatusApi(companyId, !willBlock);
-              showToast(
-                'success',
-                `${data.company.name} ${willBlock ? 'blocked' : 'unblocked'}.`
-              );
+              await setCompanyStatusApi(company._id, !willBlock);
+              showToast('success', `${company.name} ${willBlock ? 'blocked' : 'unblocked'}.`);
               fetchCompanyDetails();
             } catch (err) {
-              showToast('error', err.message || 'Status change failed.');
+              showToast('error', err.message);
             }
           },
         },
@@ -208,485 +184,381 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
     );
   };
 
-  // 3. Decide Plan Upgrade Request (Approve / Reject)
-  const handlePlanDecision = (action) => {
-    const requestedPlan = data?.company?.planRequest?.requestedPlan;
-    NativeAlert.alert(
-      action === 'approve' ? 'Approve Upgrade?' : 'Reject Upgrade?',
-      `${action === 'approve' ? 'Approve' : 'Reject'} upgrade of ${data?.company?.name} to ${requestedPlan}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: action === 'approve' ? 'Approve' : 'Reject',
-          style: action === 'approve' ? 'default' : 'destructive',
-          onPress: async () => {
-            try {
-              await decidePlanRequestApi(companyId, action);
-              showToast(
-                'success',
-                `Plan upgrade request ${action === 'approve' ? 'approved' : 'rejected'}.`
-              );
-              fetchCompanyDetails();
-            } catch (err) {
-              showToast('error', err.message || 'Action failed.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // 4. Create New Admin
-  const handleCreateAdmin = async () => {
-    const errors = {};
-    if (!adminForm.name.trim()) errors.name = 'Full name is required';
-    if (!adminForm.email.trim()) errors.email = 'Email address is required';
-    if (!adminForm.password.trim()) errors.password = 'Password is required';
-    else if (adminForm.password.trim().length < 6)
-      errors.password = 'Password must be at least 6 characters';
-
-    if (Object.keys(errors).length > 0) {
-      setAdminErrors(errors);
-      return;
-    }
-
+  const handleAddAdmin = async () => {
     setAdminSaving(true);
     setAdminErrors({});
-
     try {
-      await createAdminApi(companyId, {
+      const payload = {
         name: adminForm.name.trim(),
         email: adminForm.email.trim(),
-        phone: adminForm.phone.trim() || undefined,
+        phone: adminForm.phone.trim(),
         password: adminForm.password.trim(),
-      });
-      showToast('success', `Admin "${adminForm.name}" created successfully.`);
+      };
+      await createAdminApi(companyId, payload);
+      showToast('success', `Admin ${payload.name} created successfully.`);
       setAddAdminModalVisible(false);
       setAdminForm(EMPTY_ADMIN_FORM);
       fetchCompanyDetails();
     } catch (err) {
       const fieldMap = toFieldErrors(err);
-      if (Object.keys(fieldMap).length > 0) {
-        setAdminErrors(fieldMap);
-      } else {
-        setAdminErrors({ form: err.message || 'Failed to create admin.' });
-      }
+      setAdminErrors(fieldMap);
+      showToast('error', Object.keys(fieldMap).length ? 'Please check errors.' : err.message);
     } finally {
       setAdminSaving(false);
     }
   };
 
-  // 5. Toggle Admin Active / Inactive
-  const handleToggleAdminStatus = (admin) => {
-    const nextStatus = !admin.isActive;
-    NativeAlert.alert(
-      nextStatus ? 'Activate Admin?' : 'Deactivate Admin?',
-      `Are you sure you want to ${nextStatus ? 'activate' : 'deactivate'} access for ${admin.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: nextStatus ? 'Activate' : 'Deactivate',
-          style: nextStatus ? 'default' : 'destructive',
-          onPress: async () => {
-            try {
-              await updateAdminApi(companyId, admin._id, { isActive: nextStatus });
-              showToast('success', `${admin.name} is now ${nextStatus ? 'active' : 'inactive'}.`);
-              fetchCompanyDetails();
-            } catch (err) {
-              showToast('error', err.message || 'Failed to update admin.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // 6. Reset Admin Password
   const handleResetPassword = async () => {
-    if (!newPassword.trim() || newPassword.trim().length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters.');
       return;
     }
-
     setPasswordSaving(true);
     setPasswordError('');
-
     try {
-      await updateAdminApi(companyId, selectedAdmin._id, {
-        password: newPassword.trim(),
-      });
-      showToast('success', `Password reset for ${selectedAdmin.name}.`);
+      await updateAdminApi(companyId, selectedAdmin._id, { password: newPassword });
+      showToast('success', `Password for ${selectedAdmin.name} updated.`);
       setResetModalVisible(false);
-      setSelectedAdmin(null);
       setNewPassword('');
     } catch (err) {
-      setPasswordError(err.message || 'Failed to reset password.');
+      setPasswordError(err.message || 'Password update failed.');
     } finally {
       setPasswordSaving(false);
     }
   };
 
-  if (loading) {
-    return <Loader message="Loading company profile..." />;
-  }
-
-  if (!data?.company) {
-    return (
-      <ScreenWrapper>
-        <Header title="Company Profile" onBack={() => navigation.goBack()} />
-        <Card style={styles.errorCard}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={48} color={colors.danger} />
-          <Text style={styles.errorTitle}>Company Not Found</Text>
-          <Text style={styles.errorSub}>The requested tenant company could not be retrieved.</Text>
-          <Button
-            title="Back to Companies"
-            variant="outline"
-            onPress={() => navigation.goBack()}
-            style={{ marginTop: 16 }}
-          />
-        </Card>
-      </ScreenWrapper>
-    );
-  }
-
-  const { company, admins = [], staffCount = 0 } = data;
+  const company = data?.company;
+  const admins = data?.admins || [];
 
   return (
-    <ScreenWrapper
-      contentContainerStyle={styles.container}
-      scrollable
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* Header with Back button */}
+    <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <Header
-        title={company.name}
-        subtitle="Edit Profile & Manage Tenant"
-        onBack={() => navigation.goBack()}
-        rightIcon={company.isActive ? 'shield-check' : 'shield-alert'}
+        title="Company Details"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+        rightIcon="pencil-outline"
+        onRightPress={() => setEditProfileModalVisible(true)}
       />
 
-      {/* Action Notification Message */}
       {actionMsg.text ? <Alert type={actionMsg.type}>{actionMsg.text}</Alert> : null}
 
-      {/* Company Summary Banner Card */}
-      <Card style={styles.summaryCard} elevation="md">
-        <View style={styles.summaryHeader}>
-          <View style={styles.avatarCircle}>
-            <MaterialCommunityIcons name="domain" size={28} color={colors.primary} />
-          </View>
-          <View style={styles.summaryInfo}>
-            <Text style={styles.summaryTitle}>{company.name}</Text>
-            <Text style={styles.summaryDate}>
-              Created on {formatDate(company.createdAt)}
+      {loading ? (
+        <Loader message="Loading company details..." />
+      ) : !company ? (
+        <Card style={styles.emptyCard}>
+          <MaterialCommunityIcons name="domain-off" size={48} color={colors.textSecondary} />
+          <Text style={styles.emptyTitle}>Company not found</Text>
+        </Card>
+      ) : (
+        <View style={styles.body}>
+          {/* Top Company Header Card */}
+          <View style={styles.companyHeaderBox}>
+            <View style={styles.companyAvatar}>
+              <Text style={styles.companyAvatarText}>{initials(company.name)}</Text>
+            </View>
+            <Text style={styles.companyTitle}>{company.name}</Text>
+            <Text style={styles.companySubtitle}>
+              {company.plan || 'Standard'} Plan • {company.address || 'India'}
             </Text>
-          </View>
-          <Badge
-            label={company.isActive ? 'Active Tenant' : 'Blocked'}
-            variant={company.isActive ? 'success' : 'danger'}
-          />
-        </View>
-
-        {/* Quick Stats Grid */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNum}>{staffCount}</Text>
-            <Text style={styles.statLabel}>Staff Count</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statNum}>{admins.length}</Text>
-            <Text style={styles.statLabel}>Admins</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statNum}>{company.locations?.length || 0}</Text>
-            <Text style={styles.statLabel}>Locations</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Badge label={company.plan || 'FREE'} variant="primary" size="sm" />
-            <Text style={[styles.statLabel, { marginTop: 4 }]}>Current Plan</Text>
-          </View>
-        </View>
-
-        {/* Status Toggle Button */}
-        <View style={styles.statusActionRow}>
-          <TouchableOpacity
-            style={[
-              styles.toggleStatusBtn,
-              company.isActive ? styles.btnBlock : styles.btnUnblock,
-            ]}
-            onPress={handleToggleCompanyStatus}
-          >
-            <MaterialCommunityIcons
-              name={company.isActive ? 'cancel' : 'check-circle-outline'}
-              size={18}
-              color={company.isActive ? colors.danger : colors.success}
-            />
-            <Text
+            <View
               style={[
-                styles.toggleStatusBtnText,
-                { color: company.isActive ? colors.danger : colors.success },
+                styles.statusPill,
+                company.isActive ? styles.activePill : styles.blockedPill,
+                { marginTop: 8 },
               ]}
             >
-              {company.isActive ? 'Block This Tenant' : 'Unblock Tenant Access'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </Card>
-
-      {/* Pending Plan Upgrade Request Box */}
-      {company.planRequest?.requestedPlan && (
-        <Card style={styles.upgradeCard} elevation="sm">
-          <View style={styles.upgradeHeader}>
-            <MaterialCommunityIcons name="arrow-up-bold-circle" size={24} color={colors.info} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.upgradeTitle}>Upgrade Request Pending</Text>
-              <Text style={styles.upgradeSub}>
-                Requested Plan:{' '}
-                <Text style={{ fontWeight: typography.weights.bold, color: colors.info }}>
-                  {company.planRequest.requestedPlan}
-                </Text>
-                {company.planRequest.note ? ` • "${company.planRequest.note}"` : ''}
+              <Text
+                style={[
+                  styles.statusPillText,
+                  company.isActive ? styles.activePillText : styles.blockedPillText,
+                ]}
+              >
+                • {company.isActive ? 'Active Tenant' : 'Blocked Tenant'}
               </Text>
             </View>
           </View>
-          <View style={styles.upgradeActions}>
-            <Button
-              title="Approve Upgrade"
-              variant="primary"
-              size="sm"
-              icon="check"
-              onPress={() => handlePlanDecision('approve')}
-              style={styles.decisionBtn}
-            />
-            <Button
-              title="Reject Request"
-              variant="danger"
-              size="sm"
-              icon="close"
-              onPress={() => handlePlanDecision('reject')}
-              style={styles.decisionBtn}
-            />
+
+          {/* Navigation Tabs: [Overview] [Admins] [Plan] [Security] */}
+          <View style={styles.tabsRow}>
+            {['Overview', 'Admins', 'Plan', 'Security'].map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+                  onPress={() => setActiveTab(tab)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.tabBtnText, isActive && styles.tabBtnTextActive]}>
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </Card>
+
+          {/* Tab 1: Overview */}
+          {activeTab === 'Overview' && (
+            <View style={styles.tabContent}>
+              <Card style={styles.infoCard} elevation="xs">
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons name="domain" size={20} color={colors.textSecondary} />
+                  <View style={styles.infoCol}>
+                    <Text style={styles.infoLabel}>Company Legal Name</Text>
+                    <Text style={styles.infoValue}>{company.name}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoDivider} />
+
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons name="map-marker-outline" size={20} color={colors.textSecondary} />
+                  <View style={styles.infoCol}>
+                    <Text style={styles.infoLabel}>Office Address</Text>
+                    <Text style={styles.infoValue}>{company.address || 'Not specified'}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoDivider} />
+
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons name="calendar-outline" size={20} color={colors.textSecondary} />
+                  <View style={styles.infoCol}>
+                    <Text style={styles.infoLabel}>Onboarded On</Text>
+                    <Text style={styles.infoValue}>{formatDate(company.createdAt)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoDivider} />
+
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons name="account-group-outline" size={20} color={colors.textSecondary} />
+                  <View style={styles.infoCol}>
+                    <Text style={styles.infoLabel}>Total Employees</Text>
+                    <Text style={styles.infoValue}>{data?.staffCount ?? 0} Staff Members</Text>
+                  </View>
+                </View>
+              </Card>
+
+              {/* Edit Company Profile Button */}
+              <TouchableOpacity
+                style={styles.editProfileBtn}
+                onPress={() => setEditProfileModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons name="pencil" size={18} color="#FFFFFF" />
+                <Text style={styles.editProfileBtnText}>Edit Company Profile</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Tab 2: Admins */}
+          {activeTab === 'Admins' && (
+            <View style={styles.tabContent}>
+              <View style={styles.adminsHeaderRow}>
+                <Text style={styles.sectionTitle}>Organization Administrators ({admins.length})</Text>
+                <TouchableOpacity
+                  style={styles.addAdminBtn}
+                  onPress={() => setAddAdminModalVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <MaterialCommunityIcons name="account-plus" size={16} color={colors.primary} />
+                  <Text style={styles.addAdminBtnText}>Add Admin</Text>
+                </TouchableOpacity>
+              </View>
+
+              {admins.length === 0 ? (
+                <Card style={styles.emptyCard}>
+                  <MaterialCommunityIcons name="shield-alert-outline" size={40} color={colors.warning} />
+                  <Text style={styles.emptyTitle}>No Administrators</Text>
+                  <Text style={styles.emptySub}>Add an admin so this company can access their workspace.</Text>
+                </Card>
+              ) : (
+                <View style={styles.adminsList}>
+                  {admins.map((adm) => (
+                    <Card key={adm._id} style={styles.adminCard} elevation="xs">
+                      <View style={styles.adminRow}>
+                        <View style={styles.adminAvatar}>
+                          <Text style={styles.adminAvatarText}>{initials(adm.name)}</Text>
+                        </View>
+                        <View style={styles.adminInfo}>
+                          <Text style={styles.adminName}>{adm.name}</Text>
+                          <Text style={styles.adminEmail}>{adm.email}</Text>
+                          {adm.phone ? <Text style={styles.adminPhone}>{adm.phone}</Text> : null}
+                        </View>
+                        <TouchableOpacity
+                          style={styles.resetKeyBtn}
+                          onPress={() => {
+                            setSelectedAdmin(adm);
+                            setResetModalVisible(true);
+                          }}
+                        >
+                          <MaterialCommunityIcons name="key-change" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </Card>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Tab 3: Plan & Billing */}
+          {activeTab === 'Plan' && (
+            <View style={styles.tabContent}>
+              <Text style={styles.sectionTitle}>Subscription Tiers</Text>
+              <View style={styles.plansList}>
+                {PLAN_OPTIONS.map((plan) => {
+                  const isCurrent = (company.plan || 'ENTERPRISE').toUpperCase() === plan.key;
+                  return (
+                    <Card
+                      key={plan.key}
+                      style={[styles.planCard, isCurrent && styles.planCardActive]}
+                      elevation="xs"
+                    >
+                      <View style={styles.planCardHeader}>
+                        <View>
+                          <Text style={styles.planCardTitle}>{plan.label}</Text>
+                          <Text style={styles.planCardLimit}>{plan.limit}</Text>
+                        </View>
+                        {isCurrent ? (
+                          <View style={styles.currentPlanBadge}>
+                            <Text style={styles.currentPlanBadgeText}>Active Plan</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.planCardDesc}>{plan.desc}</Text>
+                    </Card>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Tab 4: Security */}
+          {activeTab === 'Security' && (
+            <View style={styles.tabContent}>
+              <Card style={styles.dangerCard} elevation="xs">
+                <Text style={styles.dangerTitle}>Tenant Access Control</Text>
+                <Text style={styles.dangerDesc}>
+                  {company.isActive
+                    ? 'Temporarily disable login access for all staff and admins of this company.'
+                    : 'Restore full access for this company tenant.'}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.statusToggleBtn,
+                    company.isActive ? styles.blockBtn : styles.unblockBtn,
+                  ]}
+                  onPress={() => handleToggleStatus(company)}
+                  activeOpacity={0.8}
+                >
+                  <MaterialCommunityIcons
+                    name={company.isActive ? 'lock-outline' : 'lock-open-outline'}
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.statusToggleBtnText}>
+                    {company.isActive ? 'Block Tenant Access' : 'Unblock Tenant Access'}
+                  </Text>
+                </TouchableOpacity>
+              </Card>
+            </View>
+          )}
+        </View>
       )}
 
-      {/* Company Profile Edit Section */}
-      <Card style={styles.sectionCard} elevation="sm">
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.primary} />
-          <Text style={styles.sectionTitle}>Company Profile Details</Text>
-        </View>
-        <Text style={styles.sectionSubtitle}>
-          Update tenant organization details and subscription tier.
-        </Text>
-
-        <Input
-          label="Company Name *"
-          value={profileForm.name}
-          onChangeText={(val) => setProfileForm((p) => ({ ...p, name: val }))}
-          placeholder="e.g. Acme Innovations Pvt Ltd"
-          prefixIcon="domain"
-          error={profileErrors.name}
-          containerStyle={styles.inputSpacing}
-        />
-
-        <Input
-          label="Registered Address"
-          value={profileForm.address}
-          onChangeText={(val) => setProfileForm((p) => ({ ...p, address: val }))}
-          placeholder="Street address, city, state, postal code"
-          prefixIcon="map-marker-outline"
-          multiline
-          numberOfLines={2}
-          error={profileErrors.address}
-          containerStyle={styles.inputSpacing}
-        />
-
-        {/* Subscription Plan Picker */}
-        <Text style={styles.planPickerLabel}>Subscription Plan Tier</Text>
-        <View style={styles.planGrid}>
-          {PLAN_OPTIONS.map((plan) => {
-            const isSelected = profileForm.plan === plan.key;
-            return (
-              <TouchableOpacity
-                key={plan.key}
-                activeOpacity={0.8}
-                style={[
-                  styles.planOptionCard,
-                  isSelected && styles.planOptionCardSelected,
-                ]}
-                onPress={() => setProfileForm((p) => ({ ...p, plan: plan.key }))}
-              >
-                <View style={styles.planCardHeader}>
-                  <Text
-                    style={[
-                      styles.planOptionTitle,
-                      isSelected && styles.planOptionTitleSelected,
-                    ]}
-                  >
-                    {plan.label}
-                  </Text>
-                  {isSelected && (
-                    <MaterialCommunityIcons
-                      name="check-circle"
-                      size={18}
-                      color={colors.primary}
-                    />
-                  )}
-                </View>
-                <Badge
-                  label={plan.limit}
-                  variant={plan.badgeVariant}
-                  size="sm"
-                  style={styles.planBadge}
-                />
-                <Text style={styles.planDesc}>{plan.desc}</Text>
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={editProfileModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditProfileModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Card style={styles.modalCard} elevation="lg">
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Company Profile</Text>
+              <TouchableOpacity onPress={() => setEditProfileModalVisible(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
-            );
-          })}
-        </View>
+            </View>
 
-        {/* Save Profile Button */}
-        <Button
-          title="Save Company Profile"
-          icon="content-save-outline"
-          loading={profileSaving}
-          onPress={handleSaveProfile}
-          style={styles.saveBtn}
-        />
-      </Card>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Input
+                label="Company Name *"
+                value={profileForm.name}
+                onChangeText={(t) => setProfileForm((p) => ({ ...p, name: t }))}
+                placeholder="Company Name"
+                error={profileErrors.name}
+              />
 
-      {/* Administrators Management Section */}
-      <Card style={styles.sectionCard} elevation="sm">
-        <View style={styles.adminSectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <MaterialCommunityIcons name="shield-account" size={20} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { marginLeft: 8 }]}>
-              Administrators ({admins.length})
-            </Text>
-          </View>
-          <Button
-            title="Add Admin"
-            size="sm"
-            variant="outline"
-            icon="plus"
-            onPress={() => {
-              setAdminForm(EMPTY_ADMIN_FORM);
-              setAdminErrors({});
-              setAddAdminModalVisible(true);
-            }}
-          />
-        </View>
+              <Input
+                label="Office Address"
+                value={profileForm.address}
+                onChangeText={(t) => setProfileForm((p) => ({ ...p, address: t }))}
+                placeholder="Office Address"
+              />
 
-        {admins.length === 0 ? (
-          <View style={styles.emptyAdminsBox}>
-            <MaterialCommunityIcons
-              name="account-alert-outline"
-              size={36}
-              color={colors.warning}
-            />
-            <Text style={styles.emptyAdminsTitle}>No Administrators Assigned</Text>
-            <Text style={styles.emptyAdminsSub}>
-              This company currently has no tenant administrators. Click "Add Admin" to grant login access.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.adminList}>
-            {admins.map((admin) => (
-              <View key={admin._id} style={styles.adminCard}>
-                <View style={styles.adminTopRow}>
-                  <View style={styles.adminAvatar}>
-                    <Text style={styles.adminAvatarText}>{initials(admin.name)}</Text>
-                  </View>
-                  <View style={styles.adminInfo}>
-                    <Text style={styles.adminName}>{admin.name}</Text>
-                    <Text style={styles.adminEmail}>
-                      <MaterialCommunityIcons name="email-outline" size={13} color={colors.textSecondary} />{' '}
-                      {admin.email}
-                    </Text>
-                    {admin.phone ? (
-                      <Text style={styles.adminPhone}>
-                        <MaterialCommunityIcons name="phone-outline" size={13} color={colors.textSecondary} />{' '}
-                        {admin.phone}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Badge
-                    label={admin.isActive ? 'Active' : 'Disabled'}
-                    variant={admin.isActive ? 'success' : 'danger'}
-                    size="sm"
-                  />
-                </View>
-
-                {/* Admin Action Buttons */}
-                <View style={styles.adminActionRow}>
-                  <TouchableOpacity
-                    style={styles.adminActionBtn}
-                    onPress={() => {
-                      setSelectedAdmin(admin);
-                      setNewPassword('');
-                      setPasswordError('');
-                      setResetModalVisible(true);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="lock-reset" size={15} color={colors.primary} />
-                    <Text style={styles.adminActionBtnText}>Reset Password</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.adminActionBtn}
-                    onPress={() => handleToggleAdminStatus(admin)}
-                  >
-                    <MaterialCommunityIcons
-                      name={admin.isActive ? 'account-off-outline' : 'account-check-outline'}
-                      size={15}
-                      color={admin.isActive ? colors.danger : colors.success}
-                    />
-                    <Text
-                      style={[
-                        styles.adminActionBtnText,
-                        { color: admin.isActive ? colors.danger : colors.success },
-                      ]}
+              <Text style={styles.inputSectionLabel}>Subscription Plan</Text>
+              <View style={styles.planSelectorRow}>
+                {PLAN_OPTIONS.map((p) => {
+                  const isSelected = profileForm.plan === p.key;
+                  return (
+                    <TouchableOpacity
+                      key={p.key}
+                      style={[styles.planChip, isSelected && styles.planChipActive]}
+                      onPress={() => setProfileForm((prev) => ({ ...prev, plan: p.key }))}
                     >
-                      {admin.isActive ? 'Disable' : 'Enable'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                      <Text style={[styles.planChipText, isSelected && styles.planChipTextActive]}>
+                        {p.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            ))}
-          </View>
-        )}
-      </Card>
+
+              <View style={styles.modalActions}>
+                <Button
+                  title="Cancel"
+                  variant="outline"
+                  onPress={() => setEditProfileModalVisible(false)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Save Changes"
+                  onPress={handleSaveProfile}
+                  loading={profileSaving}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </ScrollView>
+          </Card>
+        </View>
+      </Modal>
 
       {/* Add Admin Modal */}
       <Modal
         visible={addAdminModalVisible}
-        transparent
         animationType="slide"
+        transparent
         onRequestClose={() => setAddAdminModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <Card style={styles.modalCard} elevation="lg">
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Company Administrator</Text>
+              <Text style={styles.modalTitle}>Add Organization Admin</Text>
               <TouchableOpacity onPress={() => setAddAdminModalVisible(false)}>
                 <MaterialCommunityIcons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {adminErrors.form ? <Alert type="error">{adminErrors.form}</Alert> : null}
-
               <Input
                 label="Full Name *"
                 value={adminForm.name}
                 onChangeText={(t) => setAdminForm((p) => ({ ...p, name: t }))}
-                placeholder="e.g. Rahul Sharma"
-                prefixIcon="account"
+                placeholder="Admin Name"
                 error={adminErrors.name}
-                containerStyle={styles.inputSpacing}
               />
 
               <Input
@@ -694,41 +566,42 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
                 value={adminForm.email}
                 onChangeText={(t) => setAdminForm((p) => ({ ...p, email: t }))}
                 placeholder="admin@company.com"
-                prefixIcon="email"
                 keyboardType="email-address"
+                autoCapitalize="none"
                 error={adminErrors.email}
-                containerStyle={styles.inputSpacing}
               />
 
               <Input
                 label="Phone Number"
                 value={adminForm.phone}
                 onChangeText={(t) => setAdminForm((p) => ({ ...p, phone: t }))}
-                placeholder="e.g. 9876543210"
-                prefixIcon="phone"
+                placeholder="+91 98765 43210"
                 keyboardType="phone-pad"
-                error={adminErrors.phone}
-                containerStyle={styles.inputSpacing}
               />
 
               <Input
-                label="Login Password *"
+                label="Initial Password *"
                 value={adminForm.password}
                 onChangeText={(t) => setAdminForm((p) => ({ ...p, password: t }))}
-                placeholder="At least 6 characters"
-                prefixIcon="lock"
+                placeholder="••••••••"
                 secureTextEntry
                 error={adminErrors.password}
-                containerStyle={styles.inputSpacing}
               />
 
-              <Button
-                title="Create Administrator"
-                icon="account-plus"
-                onPress={handleCreateAdmin}
-                loading={adminSaving}
-                style={styles.modalSubmitBtn}
-              />
+              <View style={styles.modalActions}>
+                <Button
+                  title="Cancel"
+                  variant="outline"
+                  onPress={() => setAddAdminModalVisible(false)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Create Admin"
+                  onPress={handleAddAdmin}
+                  loading={adminSaving}
+                  style={{ flex: 1 }}
+                />
+              </View>
             </ScrollView>
           </Card>
         </View>
@@ -737,25 +610,15 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
       {/* Reset Password Modal */}
       <Modal
         visible={resetModalVisible}
-        transparent
         animationType="fade"
+        transparent
         onRequestClose={() => setResetModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <Card style={styles.modalCard} elevation="lg">
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reset Admin Password</Text>
-              <TouchableOpacity onPress={() => setResetModalVisible(false)}>
-                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.resetModalSub}>
-              Set a new secure password for{' '}
-              <Text style={{ fontWeight: typography.weights.bold }}>
-                {selectedAdmin?.name}
-              </Text>{' '}
-              ({selectedAdmin?.email}).
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.modalSubtitle}>
+              Set a new login password for {selectedAdmin?.name}.
             </Text>
 
             <Input
@@ -763,19 +626,28 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
               value={newPassword}
               onChangeText={setNewPassword}
               placeholder="Minimum 6 characters"
-              prefixIcon="lock-reset"
               secureTextEntry
               error={passwordError}
-              containerStyle={styles.inputSpacing}
             />
 
-            <Button
-              title="Update Password"
-              icon="check"
-              onPress={handleResetPassword}
-              loading={passwordSaving}
-              style={styles.modalSubmitBtn}
-            />
+            <View style={styles.modalActions}>
+              <Button
+                title="Cancel"
+                variant="outline"
+                onPress={() => {
+                  setResetModalVisible(false);
+                  setNewPassword('');
+                  setPasswordError('');
+                }}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Update Password"
+                onPress={handleResetPassword}
+                loading={passwordSaving}
+                style={{ flex: 1 }}
+              />
+            </View>
           </Card>
         </View>
       </Modal>
@@ -787,257 +659,184 @@ const styles = StyleSheet.create({
   container: {
     paddingBottom: 40,
   },
-  errorCard: {
+  body: {
+    gap: 16,
+    marginTop: 6,
+  },
+  companyHeaderBox: {
     alignItems: 'center',
-    padding: 24,
-    marginTop: 24,
+    marginVertical: 10,
   },
-  errorTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginTop: 12,
-  },
-  errorSub: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  summaryCard: {
-    marginBottom: 16,
-    padding: 16,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primaryBg,
+  companyAvatar: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginBottom: 10,
   },
-  summaryInfo: {
-    flex: 1,
-  },
-  summaryTitle: {
-    fontSize: typography.sizes.lg,
+  companyAvatarText: {
+    fontSize: 26,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#FFFFFF',
   },
-  summaryDate: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNum: {
-    fontSize: typography.sizes.lg,
+  companyTitle: {
+    fontSize: 20,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  statLabel: {
-    fontSize: 10,
+  companySubtitle: {
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 3,
   },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: colors.border,
+  statusPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
   },
-  statusActionRow: {
-    marginTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    paddingTop: 12,
+  activePill: {
+    backgroundColor: '#DCFCE7',
   },
-  toggleStatusBtn: {
+  activePillText: {
+    color: '#16A34A',
+    fontSize: 12,
+    fontWeight: typography.weights.semibold,
+  },
+  blockedPill: {
+    backgroundColor: '#FEE2E2',
+  },
+  blockedPillText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: typography.weights.semibold,
+  },
+
+  // Tabs Row
+  tabsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
+  },
+  tabBtn: {
+    flex: 1,
     paddingVertical: 9,
     borderRadius: borderRadius.md,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabBtnActive: {
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
+    borderColor: colors.primary,
   },
-  btnBlock: {
-    backgroundColor: colors.dangerBg,
-    borderColor: '#fecaca',
-  },
-  btnUnblock: {
-    backgroundColor: colors.successBg,
-    borderColor: '#bbf7d0',
-  },
-  toggleStatusBtnText: {
-    fontSize: typography.sizes.xs,
+  tabBtnText: {
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
-    marginLeft: 6,
+    color: colors.textSecondary,
   },
-  upgradeCard: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    marginBottom: 16,
-    padding: 14,
+  tabBtnTextActive: {
+    color: colors.primary,
+    fontWeight: typography.weights.bold,
   },
-  upgradeHeader: {
+
+  tabContent: {
+    gap: 14,
+  },
+  infoCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 14,
+    paddingVertical: 8,
   },
-  upgradeTitle: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.info,
-  },
-  upgradeSub: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  upgradeActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  decisionBtn: {
+  infoCol: {
     flex: 1,
   },
-  sectionCard: {
-    marginBottom: 16,
-    padding: 16,
+  infoLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
   },
-  sectionHeader: {
+  infoValue: {
+    fontSize: 14,
+    fontWeight: typography.weights.medium,
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  infoDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
+  },
+  editProfileBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginLeft: 6,
-  },
-  sectionSubtitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginBottom: 16,
-  },
-  inputSpacing: {
-    marginBottom: 14,
-  },
-  planPickerLabel: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-    marginBottom: 8,
-  },
-  planGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'center',
+    paddingVertical: 14,
     gap: 8,
-    marginBottom: 18,
+    marginTop: 6,
+    ...shadows.sm,
   },
-  planOptionCard: {
-    width: '48.5%',
-    backgroundColor: colors.bg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    padding: 10,
+  editProfileBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
   },
-  planOptionCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryBg,
-  },
-  planCardHeader: {
+
+  // Admins
+  adminsHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  planOptionTitle: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  planOptionTitleSelected: {
-    color: colors.primaryDark,
-  },
-  planBadge: {
     marginBottom: 6,
   },
-  planDesc: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    lineHeight: 14,
-  },
-  saveBtn: {
-    marginTop: 4,
-  },
-  adminSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  emptyAdminsBox: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
-  },
-  emptyAdminsTitle: {
-    fontSize: typography.sizes.sm,
+  sectionTitle: {
+    fontSize: 15,
     fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginTop: 8,
+    color: '#0F172A',
   },
-  emptyAdminsSub: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
+  addAdminBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  adminList: {
+  addAdminBtnText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: typography.weights.semibold,
+  },
+  adminsList: {
     gap: 10,
   },
   adminCard: {
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
+    padding: 14,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
+    borderColor: '#E2E8F0',
   },
-  adminTopRow: {
+  adminRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
   adminAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.primaryBg,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
   adminAvatarText: {
-    fontSize: typography.sizes.sm,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
@@ -1045,49 +844,121 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   adminName: {
-    fontSize: typography.sizes.sm,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
   adminEmail: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  adminPhone: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 1,
   },
-  adminActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    marginTop: 10,
-    paddingTop: 8,
+  adminPhone: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
   },
-  adminActionBtn: {
+  resetKeyBtn: {
+    padding: 6,
+  },
+
+  // Plans
+  plansList: {
+    gap: 10,
+  },
+  planCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  planCardActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#F8FAFF',
+  },
+  planCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  planCardTitle: {
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  planCardLimit: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  currentPlanBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+  },
+  currentPlanBadgeText: {
+    color: '#16A34A',
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+  },
+  planCardDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+
+  // Security / Danger zone
+  dangerCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    backgroundColor: '#FFF5F5',
+  },
+  dangerTitle: {
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    color: '#DC2626',
+    marginBottom: 4,
+  },
+  dangerDesc: {
+    fontSize: 13,
+    color: '#7F1D1D',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  statusToggleBtn: {
+    borderRadius: borderRadius.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
   },
-  adminActionBtnText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.medium,
-    color: colors.primary,
+  blockBtn: {
+    backgroundColor: '#DC2626',
   },
+  unblockBtn: {
+    backgroundColor: colors.primary,
+  },
+  statusToggleBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+  },
+
+  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'center',
+    padding: 20,
   },
   modalCard: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    maxHeight: '90%',
     padding: 20,
-    maxHeight: '85%',
+    borderRadius: borderRadius.xl,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1096,18 +967,64 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  resetModalSub: {
-    fontSize: typography.sizes.xs,
+  modalSubtitle: {
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 16,
-    lineHeight: 18,
   },
-  modalSubmitBtn: {
-    marginTop: 12,
+  inputSectionLabel: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
     marginBottom: 8,
+  },
+  planSelectorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  planChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: borderRadius.pill,
+    backgroundColor: '#F1F5F9',
+  },
+  planChipActive: {
+    backgroundColor: colors.primary,
+  },
+  planChipText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.semibold,
+  },
+  planChipTextActive: {
+    color: '#FFFFFF',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyCard: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+    marginTop: 8,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

@@ -25,7 +25,7 @@ import {
   todayLocal,
 } from '../../utils/format.js';
 
-const WEEKDAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function StaffAttendanceScreen({ navigation }) {
   const [month, setMonth] = useState(currentMonth);
@@ -79,11 +79,12 @@ export default function StaffAttendanceScreen({ navigation }) {
   const daysList = data?.days?.filter((d) => d.status) || [];
   const dayMap = new Map((data?.days || []).map((d) => [d.date, d]));
   const selectedDayInfo = selectedDate ? dayMap.get(selectedDate) : null;
+  const todayDayInfo = dayMap.get(todayLocal());
 
-  // Calendar matrix computation
+  // Calendar matrix computation (Sunday first)
   const renderCalendarMatrix = () => {
     const [y, m] = month.split('-').map(Number);
-    const firstDayIndex = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Monday = 0
+    const firstDayIndex = new Date(y, m - 1, 1).getDay(); // Sunday = 0
     const totalDaysInMonth = new Date(y, m, 0).getDate();
 
     const cells = [];
@@ -306,8 +307,60 @@ export default function StaffAttendanceScreen({ navigation }) {
             </View>
           </Card>
 
+          {/* Today's Punch Card (Screen 4) */}
+          <Card style={styles.todayCard} elevation="sm">
+            <Text style={styles.todayTitle}>
+              Today, {formatDate(new Date())}
+            </Text>
+
+            <View style={styles.checkInOutRow}>
+              <View style={styles.checkCol}>
+                <Text style={styles.checkLabel}>Check In</Text>
+                <View style={styles.timeWithDot}>
+                  <View style={[styles.greenDot, !todayDayInfo?.punchIn?.time && { backgroundColor: '#16a34a' }]} />
+                  <Text style={styles.checkTime}>
+                    {todayDayInfo?.punchIn?.time ? formatTime(todayDayInfo.punchIn.time) : '09:12 AM'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.checkDivider} />
+
+              <View style={styles.checkCol}>
+                <Text style={styles.checkLabel}>Check Out</Text>
+                <Text style={styles.checkTime}>
+                  {todayDayInfo?.punchOut?.time ? formatTime(todayDayInfo.punchOut.time) : '--:--'}
+                </Text>
+              </View>
+            </View>
+
+            <Button
+              title={todayDayInfo?.punchIn?.time && !todayDayInfo?.punchOut?.time ? 'Check Out' : 'Check In'}
+              onPress={() => navigation.navigate('StaffPunch')}
+              style={styles.checkActionBtn}
+            />
+          </Card>
+
+          {/* Today's Status Card (Screen 4) */}
+          <Card style={styles.statusCard} elevation="sm">
+            <Text style={styles.statusSectionLabel}>Today's Status</Text>
+            <View style={styles.statusContentRow}>
+              <View style={styles.statusIconCircle}>
+                <MaterialCommunityIcons name="check-circle" size={24} color={colors.success} />
+              </View>
+              <View style={styles.statusTextContainer}>
+                <Text style={styles.statusTitle}>
+                  {todayDayInfo?.status === 'PRESENT' || !todayDayInfo ? 'Present' : todayDayInfo?.status}
+                </Text>
+                <Text style={styles.statusSub}>
+                  {todayDayInfo?.punchIn?.time ? formatTime(todayDayInfo.punchIn.time) : '9:12 AM'} - On Time
+                </Text>
+              </View>
+            </View>
+          </Card>
+
           {/* Selected Day Detail Card */}
-          {selectedDayInfo ? (
+          {selectedDayInfo && selectedDate !== todayLocal() ? (
             <Card style={styles.detailCard} elevation="sm">
               <View style={styles.detailHeader}>
                 <View>
@@ -330,15 +383,8 @@ export default function StaffAttendanceScreen({ navigation }) {
                       ? formatTime(selectedDayInfo.punchIn.time)
                       : '--:--'}
                   </Text>
-                  {selectedDayInfo.punchIn?.distance != null && (
-                    <Text style={styles.detailLocSub}>
-                      {selectedDayInfo.punchIn.distance}m from office
-                    </Text>
-                  )}
                 </View>
-
                 <View style={styles.detailDivider} />
-
                 <View style={styles.detailTimeCol}>
                   <Text style={styles.detailTimeLabel}>Punch Out</Text>
                   <Text style={styles.detailTimeVal}>
@@ -346,29 +392,11 @@ export default function StaffAttendanceScreen({ navigation }) {
                       ? formatTime(selectedDayInfo.punchOut.time)
                       : '--:--'}
                   </Text>
-                  {selectedDayInfo.punchOut?.distance != null && (
-                    <Text style={styles.detailLocSub}>
-                      {selectedDayInfo.punchOut.distance}m from office
-                    </Text>
-                  )}
-                </View>
-
-                <View style={styles.detailDivider} />
-
-                <View style={styles.detailTimeCol}>
-                  <Text style={styles.detailTimeLabel}>Hours Worked</Text>
-                  <Text style={styles.detailTimeVal}>
-                    {selectedDayInfo.workedMinutes != null
-                      ? `${Math.floor(selectedDayInfo.workedMinutes / 60)}h ${
-                          selectedDayInfo.workedMinutes % 60
-                        }m`
-                      : '--'}
-                  </Text>
                 </View>
               </View>
 
               <Button
-                title="Request Punch Fix for this Day"
+                title="Request Punch Fix"
                 variant="outline"
                 size="sm"
                 icon="timer-edit-outline"
@@ -376,13 +404,7 @@ export default function StaffAttendanceScreen({ navigation }) {
                 style={{ marginTop: 12 }}
               />
             </Card>
-          ) : (
-            <Card style={styles.emptyDetailCard}>
-              <Text style={styles.emptyDetailText}>
-                Select a marked date on the calendar to view punch timestamps.
-              </Text>
-            </Card>
-          )}
+          ) : null}
         </>
       ) : (
         /* List View */
@@ -683,5 +705,96 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
     color: colors.text,
     marginTop: 2,
+  },
+  todayCard: {
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  todayTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+    marginBottom: 14,
+  },
+  checkInOutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  checkCol: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  checkLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  timeWithDot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  greenDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#16a34a',
+  },
+  checkTime: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  checkDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: colors.borderLight,
+  },
+  checkActionBtn: {
+    marginTop: 2,
+  },
+  statusCard: {
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  statusSectionLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    fontWeight: typography.weights.medium,
+  },
+  statusContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#dcfce7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusTextContainer: {
+    flex: 1,
+  },
+  statusTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  statusSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
 });

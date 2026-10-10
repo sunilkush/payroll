@@ -11,7 +11,6 @@ import {
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Alert from '../../components/common/Alert.jsx';
 import Button from '../../components/common/Button.jsx';
-import Card from '../../components/common/Card.jsx';
 import Input from '../../components/common/Input.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { getApiUrl, setApiUrl } from '../../config/env.js';
@@ -22,6 +21,7 @@ export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
 
   const [form, setForm] = useState({ email: '', password: '' });
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,7 +38,7 @@ export default function LoginScreen({ navigation }) {
   const handleSubmit = async () => {
     Keyboard.dismiss();
     if (!form.email.trim() || !form.password) {
-      setError('Please enter your email and password');
+      setError('Please enter your email or ID and password');
       return;
     }
 
@@ -46,9 +46,12 @@ export default function LoginScreen({ navigation }) {
     setSubmitting(true);
     try {
       await login(form);
-      // Navigation is automatically handled by RootNavigator observing auth state
     } catch (err) {
-      setError(err.errors?.[0]?.message || err.message || 'Login failed. Please check your credentials.');
+      setError(
+        err.errors?.[0]?.message ||
+          err.message ||
+          'Login failed. Please check your credentials.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -74,34 +77,35 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <ScreenWrapper contentContainerStyle={styles.container}>
+    <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          {/* Top Brand Banner */}
-          <View style={styles.brandContainer}>
-            <View style={styles.logoBadge}>
-              <MaterialCommunityIcons name="wallet-membership" size={36} color={colors.primary} />
+          {/* Top Brand Logo matching Screen 2 */}
+          <View style={styles.brandRow}>
+            <View style={styles.appIconBadge}>
+              <MaterialCommunityIcons name="wallet-outline" size={20} color="#FFFFFF" />
             </View>
-            <Text style={styles.brandTitle}>PayRoster</Text>
-            <Text style={styles.brandSubtitle}>Modern Payroll & Attendance Management</Text>
+            <Text style={styles.brandName}>
+              Feature <Text style={styles.brandNameHighlight}>Payroll</Text>
+            </Text>
           </View>
 
-          {/* Login Card */}
-          <Card style={styles.card} elevation="md">
-            <View style={styles.cardHeader}>
-              <Text style={styles.welcomeText}>Welcome back</Text>
-              <Text style={styles.welcomeSubtext}>Sign in to your account</Text>
-            </View>
+          {/* Welcome Titles */}
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeTitle}>Welcome Back</Text>
+            <Text style={styles.welcomeSubtitle}>Sign in to your account</Text>
+          </View>
 
-            {error ? <Alert type="error">{error}</Alert> : null}
+          {error ? <Alert type="error">{error}</Alert> : null}
 
+          {/* Inputs matching Screen 2 */}
+          <View style={styles.form}>
             <Input
-              label="Email or Phone"
+              label="Email or Employee ID"
               value={form.email}
               onChangeText={(text) => handleChange('email', text)}
-              placeholder="you@company.com"
-              prefixIcon="email-outline"
-              keyboardType="email-address"
+              placeholder="Enter your email or ID"
+              prefixIcon="account-outline"
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -110,98 +114,126 @@ export default function LoginScreen({ navigation }) {
               label="Password"
               value={form.password}
               onChangeText={(text) => handleChange('password', text)}
-              placeholder="••••••••"
+              placeholder="Enter password"
               prefixIcon="lock-outline"
               secureTextEntry
             />
 
-            <View style={styles.forgotRow}>
+            {/* Remember Me & Forgot Password Row */}
+            <View style={styles.rememberForgotRow}>
+              <TouchableOpacity
+                style={styles.rememberRow}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                  size={20}
+                  color={rememberMe ? colors.primary : colors.textSecondary}
+                />
+                <Text style={styles.rememberText}>Remember me</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => navigation.navigate('ForgotPassword')}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.forgotText}>Forgot password?</Text>
+                <Text style={styles.forgotText}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Login Button */}
             <Button
-              title="Sign In"
+              title="Login"
               onPress={handleSubmit}
               loading={submitting}
-              icon="arrow-right"
-              iconPlacement="end"
-              style={styles.submitBtn}
+              style={styles.loginBtn}
             />
 
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
+            {/* OR Divider */}
+            <View style={styles.orDividerRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            {/* Login with OTP Button */}
+            <TouchableOpacity
+              style={styles.otpBtn}
+              onPress={() => {
+                // If OTP login is tapped, show hint or future modal
+                setError('OTP login is coming soon. Please sign in with your password.');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.otpBtnText}>Login with OTP</Text>
+            </TouchableOpacity>
+
+            {/* Contact HR Footer */}
+            <View style={styles.contactHrRow}>
+              <Text style={styles.contactHrText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerLink}>Register</Text>
+                <Text style={styles.contactHrLink}>Contact HR</Text>
               </TouchableOpacity>
             </View>
-          </Card>
+          </View>
 
           {/* Server Config link for Developer / Test mode */}
           <TouchableOpacity
             style={styles.serverConfigBtn}
             onPress={() => setServerModalVisible(true)}
           >
-            <MaterialCommunityIcons name="server-network" size={14} color={colors.textMuted} />
-            <Text style={styles.serverConfigText}>
-              Server: {getApiUrl().replace('/api/v1', '')}
-            </Text>
+            <MaterialCommunityIcons name="server-network" size={14} color={colors.textSecondary} />
+            <Text style={styles.serverConfigText}>Server Settings</Text>
           </TouchableOpacity>
-
-          {/* Server URL Modal */}
-          <Modal
-            visible={serverModalVisible}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setServerModalVisible(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <Card style={styles.modalCard} elevation="lg">
-                <Text style={styles.modalTitle}>Backend Server API</Text>
-                <Text style={styles.modalSubtitle}>
-                  Change API URL to connect to local IP or cloud server:
-                </Text>
-
-                {serverSavedMsg ? <Alert type="success">{serverSavedMsg}</Alert> : null}
-
-                <Input
-                  label="API Base URL"
-                  value={customServerUrl}
-                  onChangeText={setCustomServerUrl}
-                  placeholder="http://192.168.1.5:5000/api/v1"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-
-                <View style={styles.modalBtnRow}>
-                  <Button
-                    title="Reset Default"
-                    variant="secondary"
-                    onPress={handleResetServerUrl}
-                    style={styles.modalBtn}
-                  />
-                  <Button
-                    title="Save"
-                    onPress={handleSaveServerUrl}
-                    style={styles.modalBtn}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  onPress={() => setServerModalVisible(false)}
-                  style={styles.modalCloseBtn}
-                >
-                  <Text style={styles.modalCloseText}>Cancel</Text>
-                </TouchableOpacity>
-              </Card>
-            </View>
-          </Modal>
         </View>
       </TouchableWithoutFeedback>
+
+      {/* Server Config Modal */}
+      <Modal
+        visible={serverModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setServerModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Backend API Settings</Text>
+            <Text style={styles.modalDesc}>
+              Configure local IP or production API endpoint.
+            </Text>
+
+            <Input
+              label="Server URL"
+              value={customServerUrl}
+              onChangeText={setCustomServerUrl}
+              placeholder="http://192.168.1.X:5000"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            {serverSavedMsg ? (
+              <Text style={styles.serverSuccessMsg}>{serverSavedMsg}</Text>
+            ) : null}
+
+            <View style={styles.modalActions}>
+              <Button
+                title="Reset Default"
+                variant="outline"
+                size="sm"
+                onPress={handleResetServerUrl}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Save & Connect"
+                size="sm"
+                onPress={handleSaveServerUrl}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }
@@ -210,134 +242,170 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
+    backgroundColor: '#F8FAFC',
   },
   inner: {
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
   },
-  brandContainer: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  logoBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.primaryBg,
+  brandRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#c7d2fe',
+    gap: 8,
+    marginBottom: 36,
   },
-  brandTitle: {
-    fontSize: typography.sizes.heading,
+  appIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandName: {
+    fontSize: 22,
     fontWeight: typography.weights.bold,
-    color: colors.text,
-    letterSpacing: -0.5,
+    color: '#0F172A',
   },
-  brandSubtitle: {
-    fontSize: typography.sizes.sm,
+  brandNameHighlight: {
+    color: colors.primary,
+  },
+  welcomeSection: {
+    marginBottom: 24,
+  },
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
-    textAlign: 'center',
   },
-  card: {
-    padding: 24,
+  form: {
+    marginTop: 4,
   },
-  cardHeader: {
-    marginBottom: 20,
+  rememberForgotRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 24,
   },
-  welcomeText: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  welcomeSubtext: {
-    fontSize: typography.sizes.sm,
+  rememberText: {
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 2,
-  },
-  forgotRow: {
-    alignItems: 'flex-end',
-    marginBottom: 20,
-    marginTop: -4,
   },
   forgotText: {
-    fontSize: typography.sizes.xs,
+    fontSize: 13,
     color: colors.primary,
+    fontWeight: typography.weights.semibold,
+  },
+  loginBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    paddingVertical: 14,
+  },
+  orDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    gap: 12,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  orText: {
+    fontSize: 12,
+    color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
-  submitBtn: {
-    marginBottom: 16,
+  otpBtn: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  footerRow: {
+  otpBtnText: {
+    fontSize: 15,
+    fontWeight: typography.weights.semibold,
+    color: '#0F172A',
+  },
+  contactHrRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 24,
   },
-  footerText: {
-    fontSize: typography.sizes.sm,
+  contactHrText: {
+    fontSize: 13,
     color: colors.textSecondary,
   },
-  registerLink: {
-    fontSize: typography.sizes.sm,
+  contactHrLink: {
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
     color: colors.primary,
-    fontWeight: typography.weights.semibold,
   },
   serverConfigBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    padding: 8,
+    gap: 6,
+    marginTop: 32,
+    paddingVertical: 8,
   },
   serverConfigText: {
-    fontSize: typography.sizes.xs,
-    color: colors.textMuted,
-    marginLeft: 6,
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
-    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     padding: 20,
   },
   modalCard: {
-    width: '100%',
-    maxWidth: 380,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.xl,
+    padding: 24,
+    ...shadows.lg,
   },
   modalTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
     marginBottom: 4,
   },
-  modalSubtitle: {
-    fontSize: typography.sizes.xs,
+  modalDesc: {
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 16,
   },
-  modalBtnRow: {
+  serverSuccessMsg: {
+    fontSize: 13,
+    color: colors.success,
+    fontWeight: typography.weights.semibold,
+    marginVertical: 8,
+    textAlign: 'center',
+  },
+  modalActions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
-  },
-  modalBtn: {
-    flex: 1,
-  },
-  modalCloseBtn: {
-    alignItems: 'center',
-    marginTop: 12,
-    padding: 8,
-  },
-  modalCloseText: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+    marginTop: 16,
   },
 });

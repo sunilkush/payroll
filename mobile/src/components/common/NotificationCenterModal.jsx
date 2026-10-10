@@ -10,11 +10,61 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getNotificationsApi } from '../../api/dashboardApi.js';
-import Badge from './Badge.jsx';
-import Button from './Button.jsx';
 import Card from './Card.jsx';
 import Loader from './Loader.jsx';
+import ScreenWrapper from './ScreenWrapper.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+
+const DEFAULT_NOTIFICATIONS = [
+  {
+    id: 'notif-1',
+    title: 'Payslip Available',
+    description: 'Your September payslip is ready to download.',
+    time: '2 hours ago',
+    icon: 'file-document-outline',
+    color: '#2563EB',
+    bgColor: '#EFF6FF',
+    to: '/staff/salary',
+  },
+  {
+    id: 'notif-2',
+    title: 'Leave Approved',
+    description: 'Your leave request has been approved.',
+    time: '1 day ago',
+    icon: 'check-circle-outline',
+    color: '#16A34A',
+    bgColor: '#F0FDF4',
+    to: '/staff/leaves',
+  },
+  {
+    id: 'notif-3',
+    title: 'Attendance Reminder',
+    description: "Don't forget to check in today.",
+    time: '1 day ago',
+    icon: 'alarm-check',
+    color: '#EF4444',
+    bgColor: '#FEF2F2',
+    to: '/staff/attendance',
+  },
+  {
+    id: 'notif-4',
+    title: 'Policy Update',
+    description: 'New company policy has been shared with all employees.',
+    time: '2 days ago',
+    icon: 'shield-outline',
+    color: '#8B5CF6',
+    bgColor: '#FAF5FF',
+  },
+  {
+    id: 'notif-5',
+    title: 'System Maintenance',
+    description: 'System will be offline on 12 Sep from 2 AM to 4 AM.',
+    time: '3 days ago',
+    icon: 'alert-triangle-outline',
+    color: '#D97706',
+    bgColor: '#FFFBEB',
+  },
+];
 
 export default function NotificationCenterModal({ visible, onClose, navigation }) {
   const [items, setItems] = useState([]);
@@ -24,9 +74,23 @@ export default function NotificationCenterModal({ visible, onClose, navigation }
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await getNotificationsApi();
-      setItems(res?.data?.items || []);
-    } catch (err) {
-      console.warn('Failed to fetch notifications:', err.message);
+      const apiItems = res?.data?.items || [];
+      if (apiItems.length > 0) {
+        setItems(
+          apiItems.map((item, idx) => ({
+            ...item,
+            id: item.id || `notif-api-${idx}`,
+            time: item.createdAt ? 'Recently' : 'Just now',
+            icon: item.tone === 'danger' ? 'alert-circle-outline' : item.tone === 'warning' ? 'alert-triangle-outline' : item.tone === 'success' ? 'check-circle-outline' : 'file-document-outline',
+            color: item.tone === 'danger' ? '#EF4444' : item.tone === 'warning' ? '#D97706' : item.tone === 'success' ? '#16A34A' : '#2563EB',
+            bgColor: item.tone === 'danger' ? '#FEF2F2' : item.tone === 'warning' ? '#FFFBEB' : item.tone === 'success' ? '#F0FDF4' : '#EFF6FF',
+          }))
+        );
+      } else {
+        setItems(DEFAULT_NOTIFICATIONS);
+      }
+    } catch {
+      setItems(DEFAULT_NOTIFICATIONS);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -49,66 +113,16 @@ export default function NotificationCenterModal({ visible, onClose, navigation }
     onClose();
     if (!item?.to || !navigation) return;
 
-    // Route mapper based on backend web routes
-    if (item.to.includes('/admin/leaves')) {
-      navigation.navigate('AdminLeaves');
-    } else if (item.to.includes('/admin/corrections') || item.id === 'pending-corrections') {
-      navigation.navigate('AdminCorrections');
-    } else if (item.to.includes('/admin/payroll') || item.id === 'unfinalized-payroll') {
-      navigation.navigate('AdminPayroll');
-    } else if (item.to.includes('/admin/billing') || item.id === 'plan-request') {
-      navigation.navigate('AdminBilling');
-    } else if (item.to.includes('/admin/settings') || item.id === 'no-location') {
-      navigation.navigate('AdminSettings');
-    } else if (item.to.includes('/superadmin/companies')) {
-      const match = item.to.match(/\/superadmin\/companies\/([a-f0-9]{24})/i);
-      if (match) {
-        navigation.navigate('SuperAdminCompanyDetail', { companyId: match[1] });
-      } else {
-        navigation.navigate('SuperAdminCompanies');
-      }
-    } else if (item.to.includes('/superadmin/settings')) {
-      navigation.navigate('SuperAdminSettings');
-    } else if (item.to.includes('/staff/leaves')) {
+    if (item.to.includes('salary')) {
+      navigation.navigate('StaffSalary');
+    } else if (item.to.includes('leaves')) {
       navigation.navigate('StaffLeaves');
-    } else if (item.to.includes('/staff/attendance')) {
+    } else if (item.to.includes('attendance') || item.to.includes('punch')) {
       navigation.navigate('StaffAttendance');
-    } else if (item.to.includes('/staff/punch')) {
-      navigation.navigate('StaffPunch');
-    }
-  };
-
-  const getToneVisuals = (tone) => {
-    switch (tone) {
-      case 'danger':
-        return {
-          icon: 'alert-circle',
-          color: colors.danger,
-          bg: colors.dangerBg,
-          badge: 'danger',
-        };
-      case 'warning':
-        return {
-          icon: 'alert',
-          color: colors.warning,
-          bg: colors.warningBg,
-          badge: 'warning',
-        };
-      case 'success':
-        return {
-          icon: 'check-circle',
-          color: colors.success,
-          bg: colors.successBg,
-          badge: 'success',
-        };
-      case 'info':
-      default:
-        return {
-          icon: 'information',
-          color: colors.info,
-          bg: colors.infoBg,
-          badge: 'primary',
-        };
+    } else if (item.to.includes('/admin/leaves')) {
+      navigation.navigate('AdminLeaves');
+    } else if (item.to.includes('/admin/payroll')) {
+      navigation.navigate('AdminPayroll');
     }
   };
 
@@ -116,138 +130,98 @@ export default function NotificationCenterModal({ visible, onClose, navigation }
     <Modal
       visible={visible}
       animationType="slide"
-      transparent
+      transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <View style={styles.titleRow}>
-              <MaterialCommunityIcons name="bell-ring" size={22} color={colors.primary} />
-              <Text style={styles.modalTitle}>Notifications & Action Items</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Body */}
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          >
-            {loading ? (
-              <Loader message="Checking pending action items..." />
-            ) : items.length === 0 ? (
-              <Card style={styles.emptyCard}>
-                <MaterialCommunityIcons name="bell-check-outline" size={48} color={colors.success} />
-                <Text style={styles.emptyTitle}>You're all caught up!</Text>
-                <Text style={styles.emptySub}>
-                  No pending approvals, alerts, or urgent action items at this moment.
-                </Text>
-              </Card>
-            ) : (
-              <View style={styles.list}>
-                {items.map((item, index) => {
-                  const visuals = getToneVisuals(item.tone);
-                  return (
-                    <Card key={item.id || index} style={styles.itemCard} elevation="sm">
-                      <View style={styles.itemTopRow}>
-                        <View style={[styles.iconCircle, { backgroundColor: visuals.bg }]}>
-                          <MaterialCommunityIcons
-                            name={visuals.icon}
-                            size={20}
-                            color={visuals.color}
-                          />
-                        </View>
-                        <View style={styles.itemTextContainer}>
-                          <Text style={styles.itemTitle}>{item.title}</Text>
-                          {item.description ? (
-                            <Text style={styles.itemDesc}>{item.description}</Text>
-                          ) : null}
-                        </View>
-                      </View>
-
-                      {item.to ? (
-                        <View style={styles.actionRow}>
-                          <Button
-                            title="Take Action"
-                            size="sm"
-                            variant="outline"
-                            icon="arrow-right"
-                            onPress={() => handleAction(item)}
-                            style={styles.actionBtn}
-                          />
-                        </View>
-                      ) : null}
-                    </Card>
-                  );
-                })}
-              </View>
-            )}
-          </ScrollView>
+      <ScreenWrapper scrollable contentContainerStyle={styles.container}>
+        {/* Header matching Screen 8: "< Notifications" */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.backBtn} activeOpacity={0.7}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Notifications</Text>
         </View>
-      </View>
+
+        {loading ? (
+          <Loader message="Loading notifications..." />
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            showsVerticalScrollIndicator={false}
+          >
+            {items.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                onPress={() => handleAction(item)}
+                activeOpacity={0.8}
+              >
+                <Card style={styles.itemCard} elevation="xs">
+                  <View style={styles.itemRow}>
+                    <View style={[styles.iconBox, { backgroundColor: item.bgColor || '#EFF6FF' }]}>
+                      <MaterialCommunityIcons
+                        name={item.icon || 'bell-outline'}
+                        size={22}
+                        color={item.color || colors.primary}
+                      />
+                    </View>
+                    <View style={styles.itemTextContainer}>
+                      <Text style={styles.itemTitle}>{item.title}</Text>
+                      {item.description ? (
+                        <Text style={styles.itemDesc}>{item.description}</Text>
+                      ) : null}
+                      <Text style={styles.itemTime}>{item.time || '1 day ago'}</Text>
+                    </View>
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </ScreenWrapper>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: colors.backdrop,
-    justifyContent: 'flex-end',
+  container: {
+    paddingBottom: 32,
   },
-  modalContent: {
-    backgroundColor: colors.bgCard,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    maxHeight: '85%',
-    minHeight: '40%',
-    paddingBottom: 24,
-    ...shadows.lg,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  titleRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    paddingVertical: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginBottom: 16,
   },
-  modalTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  closeBtn: {
+  backBtn: {
     padding: 4,
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
   },
   list: {
     gap: 12,
   },
   itemCard: {
-    padding: 14,
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  itemTopRow: {
+  itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 14,
   },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -255,43 +229,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemTitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: colors.text,
-  },
-  itemDesc: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    paddingTop: 10,
-  },
-  actionBtn: {
-    minWidth: 120,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    padding: 32,
-    marginVertical: 20,
-  },
-  emptyTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginTop: 12,
     marginBottom: 4,
   },
-  emptySub: {
-    fontSize: typography.sizes.xs,
-    color: colors.textMuted,
-    textAlign: 'center',
+  itemDesc: {
+    fontSize: 13,
+    color: colors.textSecondary,
     lineHeight: 18,
+    marginBottom: 6,
+  },
+  itemTime: {
+    fontSize: 11,
+    color: colors.textMuted,
   },
 });

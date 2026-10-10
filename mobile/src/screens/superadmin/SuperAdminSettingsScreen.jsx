@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getGlobalSettingsApi, updateGlobalSettingsApi } from '../../api/globalSettingsApi.js';
 import Alert from '../../components/common/Alert.jsx';
-import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { colors, typography } from '../../theme/index.js';
+import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 
 export default function SuperAdminSettingsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -80,7 +79,7 @@ export default function SuperAdminSettingsScreen({ navigation }) {
       };
 
       await updateGlobalSettingsApi(payload);
-      setStatusMsg({ type: 'success', text: 'Global statutory parameters updated.' });
+      setStatusMsg({ type: 'success', text: 'Global statutory parameters updated successfully.' });
       setTimeout(() => setStatusMsg({ type: 'success', text: '' }), 3500);
     } catch (err) {
       setStatusMsg({ type: 'error', text: err.message || 'Failed to update rates.' });
@@ -95,26 +94,33 @@ export default function SuperAdminSettingsScreen({ navigation }) {
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
-      <Header title="Statutory Rules" />
+      <Header
+        title="Statutory Rules"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      />
 
       {statusMsg.text ? <Alert type={statusMsg.type}>{statusMsg.text}</Alert> : null}
 
-      {/* Payroll Calendar Basis */}
+      <Text style={styles.pageSubtitle}>
+        Nationwide compliance parameters for Provident Fund (EPF), ESI, and payroll calculation.
+      </Text>
+
+      {/* 1. Payroll Basis */}
       <Text style={styles.sectionTitle}>Payroll Basis</Text>
-      <Card style={styles.card} elevation="sm">
+      <Card style={styles.card} elevation="xs">
         <Input
           label="Days Basis per Month"
           value={form.payrollDaysBasis}
           onChangeText={(t) => setForm((p) => ({ ...p, payrollDaysBasis: t }))}
           placeholder="30"
           keyboardType="numeric"
-          helper="Monthly gross / this number of days (standard 30 days)"
+          helper="Monthly gross / this number of days (standard 30 days basis)"
         />
       </Card>
 
-      {/* Provident Fund EPF */}
+      {/* 2. Provident Fund (EPF) */}
       <Text style={styles.sectionTitle}>Provident Fund (EPF)</Text>
-      <Card style={styles.card} elevation="sm">
+      <Card style={styles.card} elevation="xs">
         <View style={styles.row}>
           <Input
             label="Employee Rate (%)"
@@ -163,7 +169,7 @@ export default function SuperAdminSettingsScreen({ navigation }) {
             containerStyle={styles.half}
           />
           <Input
-            label="Admin Charges (%)"
+            label="Admin Rate (%)"
             value={form.pfAdminRate}
             onChangeText={(t) => setForm((p) => ({ ...p, pfAdminRate: t }))}
             placeholder="0.5"
@@ -173,9 +179,9 @@ export default function SuperAdminSettingsScreen({ navigation }) {
         </View>
       </Card>
 
-      {/* Employees' State Insurance ESI */}
-      <Text style={styles.sectionTitle}>Employees' State Insurance (ESI)</Text>
-      <Card style={styles.card} elevation="sm">
+      {/* 3. ESI Insurance */}
+      <Text style={styles.sectionTitle}>Employee State Insurance (ESI)</Text>
+      <Card style={styles.card} elevation="xs">
         <View style={styles.row}>
           <Input
             label="Employee Rate (%)"
@@ -201,43 +207,68 @@ export default function SuperAdminSettingsScreen({ navigation }) {
           onChangeText={(t) => setForm((p) => ({ ...p, esiWageLimit: t }))}
           placeholder="21000"
           keyboardType="numeric"
-          helper="Applicable only when monthly gross salary is at or below this amount"
+          helper="Employees earning up to this monthly gross are covered by statutory ESI"
         />
       </Card>
 
-      <Button
-        title="Save Global Rates"
-        onPress={handleSave}
-        loading={saving}
-        icon="content-save-outline"
+      {/* Save Button */}
+      <TouchableOpacity
         style={styles.saveBtn}
-      />
+        onPress={handleSave}
+        disabled={saving}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.saveBtnText}>
+          {saving ? 'Saving...' : 'Save Statutory Rules'}
+        </Text>
+      </TouchableOpacity>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 32,
+    paddingBottom: 40,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: typography.sizes.md,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
     marginBottom: 8,
-    marginTop: 16,
+    marginTop: 6,
   },
   card: {
     padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   half: {
     flex: 1,
   },
   saveBtn: {
-    marginTop: 24,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    ...shadows.sm,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: typography.weights.bold,
   },
 });

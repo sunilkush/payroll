@@ -17,7 +17,6 @@ import {
   setCompanyStatusApi,
 } from '../../api/companyApi.js';
 import Alert from '../../components/common/Alert.jsx';
-import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
@@ -26,7 +25,7 @@ import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { toFieldErrors } from '../../utils/formErrors.js';
-import { formatDate } from '../../utils/format.js';
+import { initials } from '../../utils/roles.js';
 
 const EMPTY_COMPANY_FORM = {
   name: '',
@@ -42,7 +41,7 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'blocked' | 'upgrade'
+  const [statusFilter, setStatusFilter] = useState('All'); // 'All' | 'Active' | 'Blocked' | 'Upgrades'
   const [actionMsg, setActionMsg] = useState({ type: 'success', text: '' });
 
   // Modal State
@@ -54,9 +53,10 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
   const fetchCompanies = useCallback(async () => {
     try {
+      const filterKey = statusFilter === 'All' ? undefined : statusFilter === 'Upgrades' ? 'upgrade' : statusFilter.toLowerCase();
       const res = await listCompaniesApi({
         search: search.trim() || undefined,
-        status: statusFilter === 'all' ? undefined : statusFilter,
+        status: filterKey,
       });
       setCompanies(res?.data?.items || []);
     } catch (err) {
@@ -106,35 +106,6 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
     );
   };
 
-  const handlePlanDecision = (company, action) => {
-    NativeAlert.alert(
-      action === 'approve' ? 'Approve Upgrade?' : 'Reject Upgrade?',
-      `${action === 'approve' ? 'Approve' : 'Reject'} request to upgrade ${company.name} to ${
-        company.planRequest?.requestedPlan
-      }?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: action === 'approve' ? 'Approve' : 'Reject',
-          style: action === 'approve' ? 'default' : 'destructive',
-          onPress: async () => {
-            try {
-              await decidePlanRequestApi(company._id, action);
-              setActionMsg({
-                type: 'success',
-                text: `Upgrade request ${action === 'approve' ? 'approved' : 'rejected'}.`,
-              });
-              fetchCompanies();
-              setTimeout(() => setActionMsg({ type: 'success', text: '' }), 3000);
-            } catch (err) {
-              setActionMsg({ type: 'error', text: err.message });
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const handleCreateCompany = async () => {
     setSubmitting(true);
     setFormError('');
@@ -153,7 +124,7 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
     try {
       await createCompanyApi(payload);
-      setActionMsg({ type: 'success', text: `Company "${form.name}" created successfully!` });
+      setActionMsg({ type: 'success', text: `Company "${form.name}" registered successfully!` });
       setCreateModalVisible(false);
       setForm(EMPTY_COMPANY_FORM);
       fetchCompanies();
@@ -169,8 +140,9 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
+      {/* Top Header matching Screen 2 */}
       <Header
-        title="Tenant Companies"
+        title="Companies"
         rightIcon="domain-plus"
         onRightPress={() => {
           setForm(EMPTY_COMPANY_FORM);
@@ -182,75 +154,68 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
       {actionMsg.text ? <Alert type={actionMsg.type}>{actionMsg.text}</Alert> : null}
 
-      {/* Search Input */}
-      <Input
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Search companies by name..."
-        prefixIcon="magnify"
-        containerStyle={styles.searchContainer}
-      />
+      {/* Search Input Row */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrap}>
+          <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
+          <Input
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search companies..."
+            containerStyle={styles.searchInputContainer}
+            inputStyle={styles.searchInput}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.filterBtn}
+          activeOpacity={0.7}
+          onPress={() => setCreateModalVisible(true)}
+        >
+          <MaterialCommunityIcons name="plus" size={22} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
-      {/* MD3 Filter Chips */}
+      {/* Filter Chips: [All] [Active] [Blocked] [Upgrades] */}
       <View style={styles.filterRow}>
-        {[
-          { key: 'all', label: 'All' },
-          { key: 'active', label: 'Active' },
-          { key: 'blocked', label: 'Blocked' },
-          { key: 'upgrade', label: 'Upgrades' },
-        ].map((tab) => {
-          const isSelected = statusFilter === tab.key;
+        {['All', 'Active', 'Blocked', 'Upgrades'].map((tab) => {
+          const isSelected = statusFilter === tab;
           return (
             <TouchableOpacity
-              key={tab.key}
+              key={tab}
               style={[styles.filterChip, isSelected && styles.filterChipActive]}
-              onPress={() => setStatusFilter(tab.key)}
-              activeOpacity={0.75}
+              onPress={() => setStatusFilter(tab)}
+              activeOpacity={0.8}
             >
-              {isSelected && (
-                <MaterialCommunityIcons
-                  name="check"
-                  size={14}
-                  color={colors.onPrimaryContainer}
-                  style={{ marginRight: 4 }}
-                />
-              )}
               <Text
                 style={[
                   styles.filterChipText,
                   isSelected && styles.filterChipTextActive,
                 ]}
               >
-                {tab.label}
+                {tab}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* Create Company Button */}
-      <Button
-        title="Register New Company"
-        onPress={() => setCreateModalVisible(true)}
-        icon="domain-plus"
-        style={styles.createBtn}
-      />
-
       {/* Companies List */}
       {loading ? (
-        <Loader message="Loading tenant organizations..." />
+        <Loader message="Loading tenant companies..." />
       ) : companies.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="domain-off" size={44} color={colors.textMuted} />
+          <MaterialCommunityIcons name="domain-off" size={44} color={colors.textSecondary} />
           <Text style={styles.emptyTitle}>No companies found</Text>
           <Text style={styles.emptySub}>No organizations matched the selected filter.</Text>
         </Card>
       ) : (
-        <View style={styles.companiesList}>
-          {companies.map((company) => (
-            <Card key={company._id} style={styles.companyCard} elevation="sm">
+        <View style={styles.listContainer}>
+          {companies.map((company) => {
+            const hasUpgrade = company.planRequest?.status === 'PENDING';
+            return (
               <TouchableOpacity
-                activeOpacity={0.7}
+                key={company._id}
+                activeOpacity={0.85}
                 onPress={() =>
                   navigation.navigate('SuperAdminCompanyDetail', {
                     companyId: company._id,
@@ -258,111 +223,53 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
                   })
                 }
               >
-                <View style={styles.companyHeader}>
-                  <View style={styles.iconCircle}>
-                    <MaterialCommunityIcons name="domain" size={24} color={colors.primary} />
+                <Card style={styles.companyCard} elevation="xs">
+                  <View style={styles.companyRow}>
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>{initials(company.name)}</Text>
+                    </View>
+                    <View style={styles.companyInfo}>
+                      <Text style={styles.companyName}>{company.name}</Text>
+                      <Text style={styles.companySub}>
+                        {company.plan || 'Standard'} Plan • {company.address || 'India'}
+                      </Text>
+                    </View>
+                    <View style={styles.pillGroup}>
+                      {hasUpgrade ? (
+                        <View style={styles.upgradePill}>
+                          <Text style={styles.upgradePillText}>Upgrade</Text>
+                        </View>
+                      ) : (
+                        <View
+                          style={[
+                            styles.statusPill,
+                            company.isActive ? styles.activePill : styles.blockedPill,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusPillText,
+                              company.isActive ? styles.activePillText : styles.blockedPillText,
+                            ]}
+                          >
+                            {company.isActive ? 'Active' : 'Blocked'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                  <View style={styles.companyInfo}>
-                    <Text style={styles.companyName}>{company.name}</Text>
-                    <Text style={styles.companyDate}>Created: {formatDate(company.createdAt)}</Text>
-                  </View>
-                  <View style={styles.badgeChevronCol}>
-                    <Badge
-                      label={company.isActive ? 'Active' : 'Blocked'}
-                      variant={company.isActive ? 'success' : 'danger'}
-                      size="sm"
-                    />
-                    <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
-                  </View>
-                </View>
-
-                <View style={styles.metaBox}>
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Plan</Text>
-                    <Badge label={company.plan || 'Free'} variant="primary" size="sm" />
-                  </View>
-
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Staff Count</Text>
-                    <Text style={styles.metaVal}>{company.staffCount || 0}</Text>
-                  </View>
-
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Locations</Text>
-                    <Text style={styles.metaVal}>{company.locations?.length || 0}</Text>
-                  </View>
-                </View>
+                </Card>
               </TouchableOpacity>
-
-              {/* Pending Upgrade Notice & Action */}
-              {company.planRequest?.requestedPlan && (
-                <View style={styles.upgradeNoticeBox}>
-                  <Text style={styles.upgradeNoticeText}>
-                    Requested Upgrade to {company.planRequest.requestedPlan}
-                  </Text>
-                  <View style={styles.upgradeBtnRow}>
-                    <Button
-                      title="Approve"
-                      size="sm"
-                      variant="primary"
-                      onPress={() => handlePlanDecision(company, 'approve')}
-                      style={styles.decisionBtn}
-                    />
-                    <Button
-                      title="Reject"
-                      size="sm"
-                      variant="danger"
-                      onPress={() => handlePlanDecision(company, 'reject')}
-                      style={styles.decisionBtn}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {/* Action Buttons */}
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={styles.editProfileBtn}
-                  onPress={() =>
-                    navigation.navigate('SuperAdminCompanyDetail', {
-                      companyId: company._id,
-                      companyName: company.name,
-                    })
-                  }
-                >
-                  <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.primary} />
-                  <Text style={styles.editProfileText}>Edit Profile</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.toggleStatusBtn}
-                  onPress={() => handleToggleStatus(company)}
-                >
-                  <MaterialCommunityIcons
-                    name={company.isActive ? 'block-helper' : 'check-circle-outline'}
-                    size={16}
-                    color={company.isActive ? colors.danger : colors.success}
-                  />
-                  <Text
-                    style={[
-                      styles.toggleStatusText,
-                      { color: company.isActive ? colors.danger : colors.success },
-                    ]}
-                  >
-                    {company.isActive ? 'Block Tenant' : 'Unblock Tenant'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
-          ))}
+            );
+          })}
         </View>
       )}
 
-      {/* Create Company Modal */}
+      {/* Register New Company Modal */}
       <Modal
         visible={createModalVisible}
-        transparent
         animationType="slide"
+        transparent
         onRequestClose={() => setCreateModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -377,70 +284,72 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
             <ScrollView showsVerticalScrollIndicator={false}>
               {formError ? <Alert type="error">{formError}</Alert> : null}
 
-              <Text style={styles.formSectionTitle}>Company Details</Text>
               <Input
                 label="Company Name *"
                 value={form.name}
                 onChangeText={(t) => setForm((p) => ({ ...p, name: t }))}
-                placeholder="e.g. Nexus Innovations Pvt Ltd"
-                prefixIcon="domain"
+                placeholder="e.g. Acme Innovations Pvt Ltd"
                 error={fieldErrors.name}
               />
 
               <Input
-                label="Company Address"
+                label="Office Address"
                 value={form.address}
                 onChangeText={(t) => setForm((p) => ({ ...p, address: t }))}
-                placeholder="e.g. Cyber City, DLF Phase 2, Gurgaon"
-                prefixIcon="map-marker-outline"
+                placeholder="e.g. Cyber City, Gurugram"
               />
 
-              <Text style={styles.formSectionTitle}>Initial Administrator Account</Text>
+              <Text style={styles.formSubHeader}>Initial Administrator</Text>
+
               <Input
-                label="Admin Full Name *"
+                label="Admin Name *"
                 value={form.adminName}
                 onChangeText={(t) => setForm((p) => ({ ...p, adminName: t }))}
-                placeholder="e.g. Ramesh Chandra"
-                prefixIcon="account-outline"
+                placeholder="e.g. Priya Sharma"
                 error={fieldErrors['admin.name']}
               />
 
               <Input
-                label="Admin Work Email *"
+                label="Admin Email *"
                 value={form.adminEmail}
                 onChangeText={(t) => setForm((p) => ({ ...p, adminEmail: t }))}
-                placeholder="admin@nexus.com"
-                prefixIcon="email-outline"
+                placeholder="admin@company.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={fieldErrors['admin.email']}
               />
 
               <Input
-                label="Admin Mobile Phone"
+                label="Admin Phone"
                 value={form.adminPhone}
                 onChangeText={(t) => setForm((p) => ({ ...p, adminPhone: t }))}
-                placeholder="10-digit mobile number"
-                prefixIcon="phone-outline"
+                placeholder="+91 98765 43210"
                 keyboardType="phone-pad"
               />
 
               <Input
-                label="Admin Password *"
+                label="Initial Password *"
                 value={form.adminPassword}
                 onChangeText={(t) => setForm((p) => ({ ...p, adminPassword: t }))}
-                placeholder="Temporary login password"
-                prefixIcon="lock-outline"
+                placeholder="••••••••"
                 secureTextEntry
                 error={fieldErrors['admin.password']}
               />
 
-              <Button
-                title="Create Company & Tenant Admin"
-                onPress={handleCreateCompany}
-                loading={submitting}
-                style={styles.modalSubmitBtn}
-              />
+              <View style={styles.formActions}>
+                <Button
+                  title="Cancel"
+                  variant="outline"
+                  onPress={() => setCreateModalVisible(false)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Create Tenant"
+                  onPress={handleCreateCompany}
+                  loading={submitting}
+                  style={{ flex: 1 }}
+                />
+              </View>
             </ScrollView>
           </Card>
         </View>
@@ -451,162 +360,148 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 32,
+    paddingBottom: 36,
   },
-  searchContainer: {
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginBottom: 12,
+  },
+  searchInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: 12,
+  },
+  searchInputContainer: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  searchInput: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+  },
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterRow: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
-    flexWrap: 'wrap',
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 7,
-    paddingHorizontal: 14,
     borderRadius: borderRadius.pill,
-    backgroundColor: colors.surfaceVariant,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
+    backgroundColor: '#F1F5F9',
   },
   filterChipActive: {
-    backgroundColor: colors.primaryContainer,
-    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   filterChipText: {
-    fontSize: typography.sizes.xs,
-    color: colors.onSurfaceVariant,
-    fontWeight: typography.weights.medium,
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
   },
   filterChipTextActive: {
-    color: colors.onPrimaryContainer,
-    fontWeight: typography.weights.bold,
+    color: '#FFFFFF',
   },
-  createBtn: {
-    marginBottom: 20,
-  },
-  companiesList: {
-    gap: 12,
+  listContainer: {
+    gap: 10,
   },
   companyCard: {
-    padding: 16,
+    padding: 14,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  companyHeader: {
+  companyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  iconCircle: {
+  avatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.primaryBg,
+    backgroundColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
   },
   companyInfo: {
     flex: 1,
   },
   companyName: {
-    fontSize: typography.sizes.md,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  companyDate: {
-    fontSize: 10,
-    color: colors.textMuted,
+  companySub: {
+    fontSize: 12,
+    color: colors.textSecondary,
     marginTop: 2,
   },
-  metaBox: {
-    flexDirection: 'row',
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
-    padding: 10,
-    marginBottom: 12,
-  },
-  metaItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  metaLabel: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  metaVal: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  upgradeNoticeBox: {
-    backgroundColor: '#eff6ff',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    padding: 10,
-    marginBottom: 10,
-  },
-  upgradeNoticeText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.bold,
-    color: colors.info,
-    marginBottom: 8,
-  },
-  upgradeBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  decisionBtn: {
-    flex: 1,
-  },
-  badgeChevronCol: {
+  pillGroup: {
     alignItems: 'flex-end',
-    gap: 4,
   },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    paddingTop: 10,
-    marginTop: 4,
-  },
-  editProfileBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 5,
+  statusPill: {
     paddingHorizontal: 10,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.primaryBg,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
   },
-  editProfileText: {
-    fontSize: typography.sizes.xs,
+  activePill: {
+    backgroundColor: '#DCFCE7',
+  },
+  activePillText: {
+    color: '#16A34A',
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
-    color: colors.primary,
-    marginLeft: 4,
   },
-  toggleStatusBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 8,
+  blockedPill: {
+    backgroundColor: '#FEE2E2',
   },
-  toggleStatusText: {
-    fontSize: typography.sizes.xs,
+  blockedPillText: {
+    color: '#DC2626',
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
-    marginLeft: 4,
+  },
+  upgradePill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+  },
+  upgradePillText: {
+    color: '#D97706',
+    fontSize: 12,
+    fontWeight: typography.weights.semibold,
   },
   emptyCard: {
-    padding: 32,
+    padding: 36,
     alignItems: 'center',
+    borderRadius: borderRadius.lg,
   },
   emptyTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.md,
     fontWeight: typography.weights.bold,
     color: colors.text,
     marginTop: 12,
@@ -617,15 +512,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
+
+  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
-    padding: 16,
+    padding: 20,
   },
   modalCard: {
     maxHeight: '90%',
     padding: 20,
+    borderRadius: borderRadius.xl,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -634,19 +532,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  formSectionTitle: {
-    fontSize: typography.sizes.sm,
+  formSubHeader: {
+    fontSize: 14,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: colors.primary,
     marginTop: 10,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  modalSubmitBtn: {
-    marginTop: 14,
-    marginBottom: 16,
+  formActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 10,
   },
 });

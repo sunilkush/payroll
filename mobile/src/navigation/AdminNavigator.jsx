@@ -9,6 +9,7 @@ import AdminHomeScreen from '../screens/admin/AdminHomeScreen.jsx';
 import AdminLeavesScreen from '../screens/admin/AdminLeavesScreen.jsx';
 import AdminMeetingsScreen from '../screens/admin/AdminMeetingsScreen.jsx';
 import AdminPayrollScreen from '../screens/admin/AdminPayrollScreen.jsx';
+import AdminReportsScreen from '../screens/admin/AdminReportsScreen.jsx';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
 import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
 import { borderRadius, colors, typography } from '../theme/index.js';
@@ -39,9 +40,9 @@ export default function AdminNavigator() {
           backgroundColor: colors.surface,
           borderTopColor: colors.outlineVariant,
           borderTopWidth: 1,
-          height: 70,
+          height: 68,
           paddingBottom: 10,
-          paddingTop: 8,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -68,24 +69,10 @@ export default function AdminNavigator() {
         name="AdminStaff"
         component={AdminStaffScreen}
         options={{
-          tabBarLabel: 'Staff',
+          tabBarLabel: 'Employees',
           tabBarIcon: ({ color, focused }) => (
             <Md3NavIcon
               icon={focused ? 'account-group' : 'account-group-outline'}
-              focused={focused}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="AdminAttendance"
-        component={AdminAttendanceScreen}
-        options={{
-          tabBarLabel: 'Attendance',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'calendar-check' : 'calendar-check-outline'}
               focused={focused}
               color={color}
             />
@@ -107,17 +94,33 @@ export default function AdminNavigator() {
         }}
       />
       <Tab.Screen
-        name="AdminSettings"
-        component={AdminSettingsScreen}
+        name="AdminReports"
+        component={AdminReportsScreen}
         options={{
-          tabBarLabel: 'Settings',
+          tabBarLabel: 'Reports',
           tabBarIcon: ({ color, focused }) => (
             <Md3NavIcon
-              icon={focused ? 'cog' : 'cog-outline'}
+              icon={focused ? 'file-chart' : 'file-chart-outline'}
               focused={focused}
               color={color}
             />
           ),
+        }}
+      />
+      <Tab.Screen
+        name="AdminAttendance"
+        component={AdminAttendanceScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="AdminSettings"
+        component={AdminSettingsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tab.Screen

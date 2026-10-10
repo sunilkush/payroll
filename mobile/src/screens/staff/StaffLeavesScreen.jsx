@@ -147,129 +147,154 @@ export default function StaffLeavesScreen({ navigation }) {
     return <Loader message="Fetching leave balances..." />;
   }
 
+  const [activeTab, setActiveTab] = useState('request'); // 'request' | 'history'
+
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <Header
-        title="My Leaves"
-        rightIcon="plus-circle"
-        onRightPress={() => setModalVisible(true)}
+        title="Apply Leave"
+        onBack={() => navigation.navigate('Home')}
       />
 
       {actionSuccess ? <Alert type="success">{actionSuccess}</Alert> : null}
       {actionError ? <Alert type="error">{actionError}</Alert> : null}
 
-      {/* Leave Balances Grid */}
-      <Text style={styles.sectionTitle}>Leave Balances</Text>
-      <View style={styles.balanceGrid}>
-        {/* Casual Leave */}
-        <Card style={styles.balanceCard} elevation="sm">
-          <View style={styles.balanceHeader}>
-            <Text style={styles.balanceTypeTitle}>Casual Leave (CL)</Text>
-            <Badge label="Monthly" variant="primary" size="sm" />
-          </View>
-          <View style={styles.balanceCountRow}>
-            <View style={styles.countBox}>
-              <Text style={[styles.countVal, { color: colors.success }]}>
-                {balance?.CL?.available ?? 0}
-              </Text>
-              <Text style={styles.countLabel}>Available</Text>
-            </View>
-            <View style={styles.countBox}>
-              <Text style={[styles.countVal, { color: colors.warning }]}>
-                {balance?.CL?.pending ?? 0}
-              </Text>
-              <Text style={styles.countLabel}>Pending</Text>
-            </View>
-            <View style={styles.countBox}>
-              <Text style={[styles.countVal, { color: colors.textSecondary }]}>
-                {balance?.CL?.used ?? 0}
-              </Text>
-              <Text style={styles.countLabel}>Used</Text>
-            </View>
-          </View>
-        </Card>
+      {/* Pill Tabs: Leave Request vs Leave History (Screen 5) */}
+      <View style={styles.tabPillRow}>
+        <TouchableOpacity
+          style={[styles.tabPill, activeTab === 'request' && styles.tabPillActive]}
+          onPress={() => setActiveTab('request')}
+        >
+          <Text style={[styles.tabPillText, activeTab === 'request' && styles.tabPillTextActive]}>
+            Leave Request
+          </Text>
+        </TouchableOpacity>
 
-        {/* Earned Leave */}
-        <Card style={styles.balanceCard} elevation="sm">
-          <View style={styles.balanceHeader}>
-            <Text style={styles.balanceTypeTitle}>Earned Leave (EL)</Text>
-            <Badge label="Annual" variant="info" size="sm" />
-          </View>
-          <View style={styles.balanceCountRow}>
-            <View style={styles.countBox}>
-              <Text style={[styles.countVal, { color: colors.success }]}>
-                {balance?.EL?.available ?? 0}
-              </Text>
-              <Text style={styles.countLabel}>Available</Text>
-            </View>
-            <View style={styles.countBox}>
-              <Text style={[styles.countVal, { color: colors.warning }]}>
-                {balance?.EL?.pending ?? 0}
-              </Text>
-              <Text style={styles.countLabel}>Pending</Text>
-            </View>
-            <View style={styles.countBox}>
-              <Text style={[styles.countVal, { color: colors.textSecondary }]}>
-                {balance?.EL?.used ?? 0}
-              </Text>
-              <Text style={styles.countLabel}>Used</Text>
-            </View>
-          </View>
-        </Card>
+        <TouchableOpacity
+          style={[styles.tabPill, activeTab === 'history' && styles.tabPillActive]}
+          onPress={() => setActiveTab('history')}
+        >
+          <Text style={[styles.tabPillText, activeTab === 'history' && styles.tabPillTextActive]}>
+            Leave History
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Apply Button */}
-      <Button
-        title="Apply for Leave"
-        onPress={() => setModalVisible(true)}
-        icon="plus"
-        style={styles.applyBtn}
-      />
+      {activeTab === 'request' ? (
+        /* Leave Request Form Card */
+        <Card style={styles.formCard} elevation="sm">
+          {formError ? <Alert type="error">{formError}</Alert> : null}
 
-      {/* Leave History Section */}
-      <Text style={styles.sectionTitle}>Leave Requests History</Text>
-      {leaves.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="calendar-blank" size={40} color={colors.textMuted} />
-          <Text style={styles.emptyText}>No leave requests recorded yet.</Text>
+          {/* Leave Type */}
+          <Text style={styles.fieldLabel}>Leave Type</Text>
+          <View style={styles.toggleRow}>
+            {[
+              { key: 'CL', label: `Casual Leave (${balance?.CL?.available ?? 0} Left)` },
+              { key: 'EL', label: `Earned Leave (${balance?.EL?.available ?? 0} Left)` },
+            ].map((t) => {
+              const isSelected = leaveType === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.chipBtn, isSelected && styles.chipBtnActive]}
+                  onPress={() => setLeaveType(t.key)}
+                  activeOpacity={0.75}
+                >
+                  {isSelected && (
+                    <MaterialCommunityIcons
+                      name="check"
+                      size={14}
+                      color={colors.onPrimaryContainer}
+                      style={{ marginRight: 4 }}
+                    />
+                  )}
+                  <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Date Pickers */}
+          <Input
+            label="From Date"
+            value={fromDate}
+            onChangeText={setFromDate}
+            placeholder="YYYY-MM-DD"
+            prefixIcon="calendar-outline"
+          />
+
+          <Input
+            label="To Date"
+            value={toDate}
+            onChangeText={setToDate}
+            placeholder="YYYY-MM-DD"
+            prefixIcon="calendar-outline"
+          />
+
+          <Input
+            label="Reason (Optional)"
+            value={reason}
+            onChangeText={setReason}
+            placeholder="Enter reason for leave"
+            multiline
+            numberOfLines={3}
+          />
+
+          <Button
+            title="Submit Request"
+            onPress={handleApply}
+            loading={submitting}
+            style={styles.submitBtn}
+          />
         </Card>
       ) : (
-        <View style={styles.historyList}>
-          {leaves.map((item) => (
-            <Card key={item._id} style={styles.leaveItemCard} elevation="sm">
-              <View style={styles.itemHeader}>
-                <View style={styles.itemTypeRow}>
-                  <Text style={styles.itemType}>{item.type}</Text>
-                  <Text style={styles.itemDays}>
-                    • {item.days} {item.days === 1 ? 'day' : 'days'}
-                    {item.halfDay ? ` (${item.halfDay.replace('_', ' ').toLowerCase()})` : ''}
-                  </Text>
-                </View>
-                <Badge label={item.status} variant={getStatusVariant(item.status)} />
-              </View>
-
-              <Text style={styles.itemDates}>
-                {formatDate(item.fromDate)}
-                {item.fromDate !== item.toDate ? ` to ${formatDate(item.toDate)}` : ''}
-              </Text>
-
-              {item.reason ? (
-                <Text style={styles.itemReason} numberOfLines={2}>
-                  "{item.reason}"
-                </Text>
-              ) : null}
-
-              {item.status === 'PENDING' && (
-                <TouchableOpacity
-                  onPress={() => handleCancelLeave(item)}
-                  style={styles.cancelLink}
-                >
-                  <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
-                  <Text style={styles.cancelLinkText}>Cancel Request</Text>
-                </TouchableOpacity>
-              )}
+        /* Leave History */
+        <View style={styles.historySection}>
+          {leaves.length === 0 ? (
+            <Card style={styles.emptyCard}>
+              <MaterialCommunityIcons name="calendar-blank" size={40} color={colors.textMuted} />
+              <Text style={styles.emptyText}>No leave requests recorded yet.</Text>
             </Card>
-          ))}
+          ) : (
+            <View style={styles.historyList}>
+              {leaves.map((item) => (
+                <Card key={item._id} style={styles.leaveItemCard} elevation="sm">
+                  <View style={styles.itemHeader}>
+                    <View style={styles.itemTypeRow}>
+                      <Text style={styles.itemType}>{item.type}</Text>
+                      <Text style={styles.itemDays}>
+                        • {item.days} {item.days === 1 ? 'day' : 'days'}
+                      </Text>
+                    </View>
+                    <Badge label={item.status} variant={getStatusVariant(item.status)} />
+                  </View>
+
+                  <Text style={styles.itemDates}>
+                    {formatDate(item.fromDate)}
+                    {item.fromDate !== item.toDate ? ` to ${formatDate(item.toDate)}` : ''}
+                  </Text>
+
+                  {item.reason ? (
+                    <Text style={styles.itemReason} numberOfLines={2}>
+                      "{item.reason}"
+                    </Text>
+                  ) : null}
+
+                  {item.status === 'PENDING' && (
+                    <TouchableOpacity
+                      onPress={() => handleCancelLeave(item)}
+                      style={styles.cancelLink}
+                    >
+                      <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
+                      <Text style={styles.cancelLinkText}>Cancel Request</Text>
+                    </TouchableOpacity>
+                  )}
+                </Card>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
@@ -590,5 +615,42 @@ const styles = StyleSheet.create({
   },
   modalSubmitBtn: {
     marginTop: 10,
+  },
+  tabPillRow: {
+    flexDirection: 'row',
+    backgroundColor: '#e2e8f0',
+    borderRadius: borderRadius.pill,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tabPill: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.pill,
+  },
+  tabPillActive: {
+    backgroundColor: colors.primary,
+  },
+  tabPillText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
+  },
+  tabPillTextActive: {
+    color: colors.white,
+    fontWeight: typography.weights.bold,
+  },
+  formCard: {
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  submitBtn: {
+    marginTop: 8,
+  },
+  historySection: {
+    marginTop: 4,
   },
 });

@@ -1,12 +1,25 @@
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import SuperAdminCompanyDetailScreen from '../screens/superadmin/SuperAdminCompanyDetailScreen.jsx';
 import SuperAdminCompaniesScreen from '../screens/superadmin/SuperAdminCompaniesScreen.jsx';
 import SuperAdminHomeScreen from '../screens/superadmin/SuperAdminHomeScreen.jsx';
 import SuperAdminSettingsScreen from '../screens/superadmin/SuperAdminSettingsScreen.jsx';
-import { colors, typography } from '../theme/index.js';
+import { borderRadius, colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
+
+function Md3NavIcon({ icon, focused, color }) {
+  return (
+    <View style={[styles.iconContainer, focused && styles.activePill]}>
+      <MaterialCommunityIcons
+        name={icon}
+        size={22}
+        color={focused ? colors.onPrimaryContainer : color}
+      />
+    </View>
+  );
+}
 
 export default function SuperAdminNavigator() {
   return (
@@ -14,18 +27,20 @@ export default function SuperAdminNavigator() {
       initialRouteName="SuperAdminHome"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.danger,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.outlineVariant,
+          borderTopWidth: 1,
+          height: 68,
+          paddingBottom: 10,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: typography.weights.medium,
+          letterSpacing: 0.1,
         },
       }}
     >
@@ -34,8 +49,12 @@ export default function SuperAdminNavigator() {
         component={SuperAdminHomeScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'view-dashboard' : 'view-dashboard-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -44,8 +63,12 @@ export default function SuperAdminNavigator() {
         component={SuperAdminCompaniesScreen}
         options={{
           tabBarLabel: 'Companies',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="domain" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'domain' : 'domain'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -54,8 +77,12 @@ export default function SuperAdminNavigator() {
         component={SuperAdminSettingsScreen}
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'cog' : 'cog-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -70,3 +97,16 @@ export default function SuperAdminNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activePill: {
+    backgroundColor: colors.primaryContainer,
+  },
+});

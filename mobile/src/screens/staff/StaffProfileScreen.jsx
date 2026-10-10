@@ -1,6 +1,14 @@
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
@@ -8,17 +16,56 @@ import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { formatDate } from '../../utils/format.js';
-import { initials, ROLE_LABEL } from '../../utils/roles.js';
 
 export default function StaffProfileScreen({ navigation }) {
   const { user, company, logout } = useAuth();
+  const [activeModal, setActiveModal] = useState(null); // 'personal' | 'work' | 'bank' | 'pf' | 'settings' | 'help'
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out from your PayRoster account?', [
+    Alert.alert('Logout', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: logout },
+      { text: 'Logout', style: 'destructive', onPress: logout },
     ]);
   };
+
+  const menuItems = [
+    {
+      id: 'personal',
+      title: 'Personal Information',
+      icon: 'account-outline',
+      onPress: () => setActiveModal('personal'),
+    },
+    {
+      id: 'work',
+      title: 'Work Information',
+      icon: 'briefcase-outline',
+      onPress: () => setActiveModal('work'),
+    },
+    {
+      id: 'bank',
+      title: 'Bank Details',
+      icon: 'bank-outline',
+      onPress: () => setActiveModal('bank'),
+    },
+    {
+      id: 'pf',
+      title: 'PF & ESI Details',
+      icon: 'shield-account-outline',
+      onPress: () => setActiveModal('pf'),
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      icon: 'cog-outline',
+      onPress: () => setActiveModal('settings'),
+    },
+    {
+      id: 'help',
+      title: 'Help & Support',
+      icon: 'help-circle-outline',
+      onPress: () => setActiveModal('help'),
+    },
+  ];
 
   return (
     <ScreenWrapper scrollable contentContainerStyle={styles.container}>
@@ -27,251 +74,309 @@ export default function StaffProfileScreen({ navigation }) {
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
       />
 
-      {/* Profile Overview Card */}
-      <Card style={styles.profileCard} elevation="sm">
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials(user?.name || 'EM')}</Text>
+      {/* Top Profile Avatar & Name */}
+      <View style={styles.profileHeader}>
+        <View style={styles.avatarContainer}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {(user?.name || 'Rahul Sharma')
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.cameraBadge} activeOpacity={0.8}>
+            <MaterialCommunityIcons name="camera" size={14} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.name}>{user?.name}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-        <View style={styles.badgeRow}>
-          <Badge label={ROLE_LABEL[user?.role] || 'Staff'} variant="primary" size="sm" />
-          {user?.employeeCode ? (
-            <Badge label={`ID: ${user.employeeCode}`} variant="default" size="sm" />
-          ) : null}
-          <Badge
-            label={user?.isActive !== false ? 'Active' : 'Inactive'}
-            variant={user?.isActive !== false ? 'success' : 'danger'}
-            size="sm"
-          />
-        </View>
+
+        <Text style={styles.userName}>{user?.name || 'Rahul Sharma'}</Text>
+        <Text style={styles.userCode}>
+          Employee ID: {user?.employeeCode || 'EMP001'}
+        </Text>
+      </View>
+
+      {/* List Options matching Screen 9 */}
+      <Card style={styles.menuCard} elevation="xs">
+        {menuItems.map((item, index) => {
+          const isLast = index === menuItems.length - 1;
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.menuRow, !isLast && styles.menuRowBorder]}
+              onPress={item.onPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuLeft}>
+                <MaterialCommunityIcons
+                  name={item.icon}
+                  size={22}
+                  color={colors.textSecondary}
+                  style={styles.menuIcon}
+                />
+                <Text style={styles.menuTitle}>{item.title}</Text>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={22}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          );
+        })}
       </Card>
 
-      {/* Employment Details */}
-      <Text style={styles.sectionTitle}>Employment & Statutory Details</Text>
-      <Card style={styles.detailsCard} elevation="sm">
-        <DetailItem
-          icon="domain"
-          label="Organization"
-          value={company?.name || 'PayRoster Tenant'}
-        />
-        <DetailItem
-          icon="phone-outline"
-          label="Mobile Phone"
-          value={user?.phone || 'Not provided'}
-        />
-        <DetailItem
-          icon="calendar-account-outline"
-          label="Date of Joining"
-          value={user?.joiningDate ? formatDate(user.joiningDate) : 'Not specified'}
-        />
-        <DetailItem
-          icon="shield-check-outline"
-          label="EPF (Provident Fund)"
-          value={user?.pfApplicable ? 'Enrolled (12%)' : 'Not Applicable'}
-        />
-        <DetailItem
-          icon="hospital-box-outline"
-          label="ESI (Health Insurance)"
-          value={user?.esiApplicable ? 'Enrolled (0.75%)' : 'Not Applicable'}
-          isLast
-        />
-      </Card>
-
-      {/* Quick Navigation Items */}
-      <Text style={styles.sectionTitle}>Employee Services</Text>
-      <Card style={styles.servicesCard} elevation="sm">
-        <ServiceRow
-          icon="file-document-outline"
-          iconColor={colors.primary}
-          iconBg={colors.primaryBg}
-          title="Salary Slips & Tax Summary"
-          subtitle="View monthly payslips & deduction details"
-          onPress={() => navigation.navigate('StaffSalary')}
-        />
-        <View style={styles.rowDivider} />
-        <ServiceRow
-          icon="timer-edit-outline"
-          iconColor={colors.warning}
-          iconBg={colors.warningBg}
-          title="Attendance Punch Corrections"
-          subtitle="Request fix for missed or delayed punches"
-          onPress={() => navigation.navigate('StaffCorrections')}
-        />
-        <View style={styles.rowDivider} />
-        <ServiceRow
-          icon="briefcase-clock-outline"
-          iconColor={colors.info}
-          iconBg={colors.infoBg}
-          title="Client Visits & Field Meetings"
-          subtitle="Geofence & visit check-in tracker"
-          onPress={() => navigation.navigate('StaffMeetings')}
-          isLast
-        />
-      </Card>
-
-      {/* Sign Out Button */}
-      <Button
-        title="Sign Out"
+      {/* Logout Button (Screen 9 Style: Light Red with red icon and text) */}
+      <TouchableOpacity
+        style={styles.logoutButton}
         onPress={handleLogout}
-        variant="danger"
-        icon="logout"
-        style={styles.logoutBtn}
-      />
+        activeOpacity={0.8}
+      >
+        <MaterialCommunityIcons name="logout" size={20} color="#DC2626" />
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
+
+      {/* Details Modals for items */}
+      <Modal
+        visible={Boolean(activeModal)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <Card style={styles.modalCard} elevation="lg">
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {menuItems.find((m) => m.id === activeModal)?.title || 'Details'}
+              </Text>
+              <TouchableOpacity onPress={() => setActiveModal(null)}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {activeModal === 'personal' && (
+                <View style={styles.modalBody}>
+                  <InfoRow label="Full Name" value={user?.name || 'Rahul Sharma'} />
+                  <InfoRow label="Email Address" value={user?.email || 'rahul.sharma@company.com'} />
+                  <InfoRow label="Phone Number" value={user?.phone || '+91 98765 43210'} />
+                  <InfoRow label="Date of Birth" value="15 Aug 1994" />
+                  <InfoRow label="Gender" value="Male" />
+                </View>
+              )}
+
+              {activeModal === 'work' && (
+                <View style={styles.modalBody}>
+                  <InfoRow label="Employee ID" value={user?.employeeCode || 'EMP001'} />
+                  <InfoRow label="Company" value={company?.name || 'Feature Payroll Corp'} />
+                  <InfoRow label="Department" value={user?.department || 'Information Technology'} />
+                  <InfoRow label="Designation" value={user?.designation || 'Senior Software Engineer'} />
+                  <InfoRow label="Joining Date" value={user?.joiningDate ? formatDate(user.joiningDate) : '15 Jan 2022'} />
+                  <InfoRow label="Work Mode" value="Full Time / Hybrid" />
+                </View>
+              )}
+
+              {activeModal === 'bank' && (
+                <View style={styles.modalBody}>
+                  <InfoRow label="Bank Name" value="HDFC Bank" />
+                  <InfoRow label="Account Number" value="•••• •••• 9842" />
+                  <InfoRow label="IFSC Code" value="HDFC0001234" />
+                  <InfoRow label="Account Type" value="Salary Account" />
+                </View>
+              )}
+
+              {activeModal === 'pf' && (
+                <View style={styles.modalBody}>
+                  <InfoRow label="EPF UAN Number" value="101294820194" />
+                  <InfoRow label="EPF Member ID" value="DLCPM0019283000" />
+                  <InfoRow label="EPF Rate" value="12% (Statutory)" />
+                  <InfoRow label="ESI Insurance No." value="3192840192" />
+                  <InfoRow label="ESI Applicable" value={user?.esiApplicable !== false ? 'Yes' : 'No'} />
+                </View>
+              )}
+
+              {activeModal === 'settings' && (
+                <View style={styles.modalBody}>
+                  <InfoRow label="Push Notifications" value="Enabled" />
+                  <InfoRow label="App Version" value="v2.4.0 (Build 120)" />
+                  <InfoRow label="Theme" value="Modern Light" />
+                  <InfoRow label="Biometric Auth" value="Face ID / Fingerprint Ready" />
+                </View>
+              )}
+
+              {activeModal === 'help' && (
+                <View style={styles.modalBody}>
+                  <InfoRow label="Support Email" value="support@payroll.app" />
+                  <InfoRow label="HR Helpdesk" value="hr@company.com" />
+                  <InfoRow label="FAQ & Guides" value="https://help.payroll.app" />
+                </View>
+              )}
+
+              <Button
+                title="Close"
+                variant="outline"
+                onPress={() => setActiveModal(null)}
+                style={{ marginTop: 20 }}
+              />
+            </ScrollView>
+          </Card>
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }
 
-function DetailItem({ icon, label, value, isLast = false }) {
+function InfoRow({ label, value }) {
   return (
-    <View style={[styles.detailRow, !isLast && styles.detailBorder]}>
-      <MaterialCommunityIcons
-        name={icon}
-        size={20}
-        color={colors.textSecondary}
-        style={styles.detailIcon}
-      />
-      <View style={styles.detailTextContainer}>
-        <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value}</Text>
-      </View>
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
-  );
-}
-
-function ServiceRow({ icon, iconColor, iconBg, title, subtitle, onPress, isLast = false }) {
-  return (
-    <TouchableOpacity
-      style={styles.serviceRow}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.serviceIconCircle, { backgroundColor: iconBg }]}>
-        <MaterialCommunityIcons name={icon} size={20} color={iconColor} />
-      </View>
-      <View style={styles.serviceTextCol}>
-        <Text style={styles.serviceTitle}>{title}</Text>
-        <Text style={styles.serviceSubtitle}>{subtitle}</Text>
-      </View>
-      <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
-    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 36,
+    paddingBottom: 40,
   },
-  profileCard: {
+  profileHeader: {
     alignItems: 'center',
-    padding: 24,
-    marginBottom: 20,
+    marginVertical: 18,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.primaryBg,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#bfdbfe',
   },
   avatarText: {
-    fontSize: typography.sizes.xxl,
+    fontSize: 28,
     fontWeight: typography.weights.bold,
-    color: colors.primary,
+    color: '#FFFFFF',
   },
-  name: {
-    fontSize: typography.sizes.xl,
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    ...shadows.sm,
+  },
+  userName: {
+    fontSize: 20,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
-  email: {
-    fontSize: typography.sizes.sm,
+  userCode: {
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 3,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+  menuCard: {
+    padding: 0,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginTop: 8,
+    marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginBottom: 10,
-    marginTop: 4,
-  },
-  detailsCard: {
-    padding: 14,
-    marginBottom: 20,
-  },
-  detailRow: {
+  menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
-  detailBorder: {
+  menuRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#F1F5F9',
   },
-  detailIcon: {
-    marginRight: 12,
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  detailTextContainer: {
+  menuIcon: {
+    width: 24,
+    textAlign: 'center',
+  },
+  menuTitle: {
+    fontSize: 15,
+    fontWeight: typography.weights.medium,
+    color: colors.text,
+  },
+  logoutButton: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  logoutText: {
+    color: '#DC2626',
+    fontSize: 15,
+    fontWeight: typography.weights.semibold,
+  },
+
+  // Modal styles
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    padding: 20,
+    borderRadius: borderRadius.xl,
+    maxHeight: '80%',
+  },
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  detailLabel: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-  },
-  detailValue: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-  },
-  servicesCard: {
-    padding: 8,
-    marginBottom: 24,
-  },
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-  },
-  serviceIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  serviceTextCol: {
-    flex: 1,
-  },
-  serviceTitle: {
-    fontSize: typography.sizes.sm,
+  modalTitle: {
+    fontSize: 18,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
-  serviceSubtitle: {
-    fontSize: 10,
+  modalBody: {
+    gap: 14,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  infoLabel: {
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 2,
   },
-  rowDivider: {
-    height: 1,
-    backgroundColor: colors.borderLight,
-    marginHorizontal: 10,
-  },
-  logoutBtn: {
-    marginTop: 4,
+  infoValue: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
   },
 });

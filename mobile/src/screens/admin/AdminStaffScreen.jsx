@@ -26,7 +26,7 @@ import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { toFieldErrors } from '../../utils/formErrors.js';
-import { formatCurrency, grossSalary } from '../../utils/format.js';
+import { formatCurrency, formatDate, grossSalary } from '../../utils/format.js';
 import { initials } from '../../utils/roles.js';
 
 const EMPTY_FORM = {
@@ -35,6 +35,8 @@ const EMPTY_FORM = {
   phone: '',
   password: '',
   employeeCode: '',
+  designation: 'Software Developer',
+  department: 'IT',
   basic: '',
   hra: '',
   special: '',
@@ -48,10 +50,14 @@ export default function AdminStaffScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
+  const [statusFilter, setStatusFilter] = useState('All'); // 'All' | 'Active' | 'Inactive'
   const [actionMsg, setActionMsg] = useState({ type: 'success', text: '' });
 
-  // Modal State
+  // Screen 3: Detail Modal State
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [detailTab, setDetailTab] = useState('Overview'); // 'Overview' | 'Attendance' | 'Leave'
+
+  // Add/Edit Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -63,7 +69,7 @@ export default function AdminStaffScreen({ navigation }) {
     try {
       const res = await listStaffApi({
         search: search.trim() || undefined,
-        status: statusFilter,
+        status: statusFilter.toLowerCase(),
       });
       setStaffList(res?.data?.items || []);
     } catch (err) {
@@ -99,6 +105,8 @@ export default function AdminStaffScreen({ navigation }) {
       phone: staff.phone || '',
       password: '',
       employeeCode: staff.employeeCode || '',
+      designation: staff.designation || 'Software Developer',
+      department: staff.department || 'IT',
       basic: String(staff.salaryStructure?.basic ?? ''),
       hra: String(staff.salaryStructure?.hra ?? ''),
       special: String(staff.salaryStructure?.special ?? ''),
@@ -131,6 +139,9 @@ export default function AdminStaffScreen({ navigation }) {
                 text: `${staff.name} ${willActivate ? 'activated' : 'deactivated'}.`,
               });
               fetchStaff();
+              if (selectedStaff && selectedStaff._id === staff._id) {
+                setSelectedStaff({ ...selectedStaff, isActive: willActivate });
+              }
               setTimeout(() => setActionMsg({ type: 'success', text: '' }), 3000);
             } catch (err) {
               setActionMsg({ type: 'error', text: err.message });
@@ -151,6 +162,8 @@ export default function AdminStaffScreen({ navigation }) {
       email: form.email.trim(),
       phone: form.phone.trim(),
       employeeCode: form.employeeCode.trim(),
+      designation: form.designation.trim(),
+      department: form.department.trim(),
       salaryStructure: {
         basic: form.basic ? Number(form.basic) : 0,
         hra: form.hra ? Number(form.hra) : 0,
@@ -187,174 +200,306 @@ export default function AdminStaffScreen({ navigation }) {
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
+      {/* Top Header matching Screen 2 */}
       <Header
-        title="Staff Directory"
+        title="Employees"
         rightIcon="account-plus"
         onRightPress={openAddModal}
       />
 
       {actionMsg.text ? <Alert type={actionMsg.type}>{actionMsg.text}</Alert> : null}
 
-      {/* Search Input */}
-      <Input
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Search by name, email, or code..."
-        prefixIcon="magnify"
-        containerStyle={styles.searchContainer}
-      />
+      {/* Search Input Row with search icon & filter icon */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrap}>
+          <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
+          <Input
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search employees..."
+            containerStyle={styles.searchInputContainer}
+            inputStyle={styles.searchInput}
+          />
+        </View>
+        <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7} onPress={openAddModal}>
+          <MaterialCommunityIcons name="filter-variant" size={22} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
-      {/* MD3 Filter Chips */}
+      {/* Filter Chips: [All] [Active] [Inactive] */}
       <View style={styles.filterRow}>
-        {[
-          { key: 'all', label: 'All Staff' },
-          { key: 'active', label: 'Active' },
-          { key: 'inactive', label: 'Inactive' },
-        ].map((tab) => {
-          const isSelected = statusFilter === tab.key;
+        {['All', 'Active', 'Inactive'].map((tab) => {
+          const isSelected = statusFilter === tab;
           return (
             <TouchableOpacity
-              key={tab.key}
+              key={tab}
               style={[styles.filterChip, isSelected && styles.filterChipActive]}
-              onPress={() => setStatusFilter(tab.key)}
-              activeOpacity={0.75}
+              onPress={() => setStatusFilter(tab)}
+              activeOpacity={0.8}
             >
-              {isSelected && (
-                <MaterialCommunityIcons
-                  name="check"
-                  size={15}
-                  color={colors.onPrimaryContainer}
-                  style={{ marginRight: 4 }}
-                />
-              )}
               <Text
                 style={[
                   styles.filterChipText,
                   isSelected && styles.filterChipTextActive,
                 ]}
               >
-                {tab.label}
+                {tab}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* Add Staff Button */}
-      <Button
-        title="Add New Staff"
-        onPress={openAddModal}
-        icon="account-plus"
-        style={styles.addBtn}
-      />
-
-      {/* Staff List */}
+      {/* Employees List */}
       {loading ? (
-        <Loader message="Loading team members..." />
+        <Loader message="Loading employees..." />
       ) : staffList.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="account-search" size={44} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No staff found</Text>
-          <Text style={styles.emptySub}>Try searching with a different term or add new staff.</Text>
+          <MaterialCommunityIcons name="account-search" size={44} color={colors.textSecondary} />
+          <Text style={styles.emptyTitle}>No employees found</Text>
+          <Text style={styles.emptySub}>Try searching with a different term.</Text>
         </Card>
       ) : (
         <View style={styles.listContainer}>
           {staffList.map((staff) => {
-            const gross = grossSalary(staff.salaryStructure);
             return (
-              <Card key={staff._id} style={styles.staffCard} elevation="sm">
-                <View style={styles.staffHeader}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>{initials(staff.name)}</Text>
-                  </View>
-                  <View style={styles.staffInfo}>
-                    <Text style={styles.staffName}>{staff.name}</Text>
-                    <Text style={styles.staffEmail}>{staff.email}</Text>
-                    {staff.employeeCode ? (
-                      <Text style={styles.staffCode}>ID: {staff.employeeCode}</Text>
-                    ) : null}
-                  </View>
-                  <Badge
-                    label={staff.isActive ? 'Active' : 'Inactive'}
-                    variant={staff.isActive ? 'success' : 'danger'}
-                    size="sm"
-                  />
-                </View>
-
-                <View style={styles.metaRow}>
-                  <View style={styles.metaCol}>
-                    <Text style={styles.metaLabel}>Monthly Gross</Text>
-                    <Text style={styles.metaVal}>{formatCurrency(gross)}</Text>
-                  </View>
-                  <View style={styles.metaCol}>
-                    <Text style={styles.metaLabel}>Statutory</Text>
-                    <Text style={styles.metaVal}>
-                      {staff.pfApplicable ? 'PF' : ''}
-                      {staff.pfApplicable && staff.esiApplicable ? ' + ' : ''}
-                      {staff.esiApplicable ? 'ESI' : ''}
-                      {!staff.pfApplicable && !staff.esiApplicable ? 'None' : ''}
-                    </Text>
-                  </View>
-                  {staff.phone ? (
-                    <View style={styles.metaCol}>
-                      <Text style={styles.metaLabel}>Phone</Text>
-                      <Text style={styles.metaVal}>{staff.phone}</Text>
+              <TouchableOpacity
+                key={staff._id}
+                onPress={() => setSelectedStaff(staff)}
+                activeOpacity={0.85}
+              >
+                <Card style={styles.staffCard} elevation="xs">
+                  <View style={styles.staffRow}>
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>{initials(staff.name)}</Text>
                     </View>
-                  ) : null}
-                </View>
-
-                {/* Actions */}
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={() => openEditModal(staff)}
-                  >
-                    <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.primary} />
-                    <Text style={styles.actionBtnText}>Edit</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={() => handleToggleStatus(staff)}
-                  >
-                    <MaterialCommunityIcons
-                      name={staff.isActive ? 'account-off-outline' : 'account-check-outline'}
-                      size={16}
-                      color={staff.isActive ? colors.danger : colors.success}
-                    />
-                    <Text
+                    <View style={styles.staffInfo}>
+                      <Text style={styles.staffName}>{staff.name}</Text>
+                      <Text style={styles.staffSub}>
+                        {staff.employeeCode || 'EMP001'} • {staff.department || 'IT Department'}
+                      </Text>
+                    </View>
+                    <View
                       style={[
-                        styles.actionBtnText,
-                        { color: staff.isActive ? colors.danger : colors.success },
+                        styles.statusPill,
+                        staff.isActive ? styles.activePill : styles.inactivePill,
                       ]}
                     >
-                      {staff.isActive ? 'Deactivate' : 'Activate'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </Card>
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          staff.isActive ? styles.activePillText : styles.inactivePillText,
+                        ]}
+                      >
+                        {staff.isActive ? 'Active' : 'Inactive'}
+                      </Text>
+                    </View>
+                  </View>
+                </Card>
+              </TouchableOpacity>
             );
           })}
         </View>
       )}
 
+      {/* Screen 3: Employee Details Modal */}
+      <Modal
+        visible={Boolean(selectedStaff)}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setSelectedStaff(null)}
+      >
+        <ScreenWrapper contentContainerStyle={styles.detailContainer} scrollable>
+          <Header
+            title="Employee Details"
+            onBack={() => setSelectedStaff(null)}
+            rightIcon="pencil-outline"
+            onRightPress={() => {
+              const s = selectedStaff;
+              setSelectedStaff(null);
+              openEditModal(s);
+            }}
+          />
+
+          {selectedStaff && (
+            <View style={styles.detailBody}>
+              {/* Top Profile Card */}
+              <View style={styles.detailProfileHeader}>
+                <View style={styles.detailAvatar}>
+                  <Text style={styles.detailAvatarText}>
+                    {initials(selectedStaff.name)}
+                  </Text>
+                </View>
+                <Text style={styles.detailName}>{selectedStaff.name}</Text>
+                <Text style={styles.detailSub}>
+                  {selectedStaff.employeeCode || 'EMP001'} • {selectedStaff.department || 'IT Department'}
+                </Text>
+                <View
+                  style={[
+                    styles.statusPill,
+                    selectedStaff.isActive ? styles.activePill : styles.inactivePill,
+                    { marginTop: 6 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusPillText,
+                      selectedStaff.isActive ? styles.activePillText : styles.inactivePillText,
+                    ]}
+                  >
+                    • {selectedStaff.isActive ? 'Active' : 'Inactive'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Detail Tabs: [Overview] [Attendance] [Leave] */}
+              <View style={styles.detailTabsRow}>
+                {['Overview', 'Attendance', 'Leave'].map((tab) => {
+                  const isTabActive = detailTab === tab;
+                  return (
+                    <TouchableOpacity
+                      key={tab}
+                      style={[
+                        styles.detailTabBtn,
+                        isTabActive && styles.detailTabBtnActive,
+                      ]}
+                      onPress={() => setDetailTab(tab)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.detailTabBtnText,
+                          isTabActive && styles.detailTabBtnTextActive,
+                        ]}
+                      >
+                        {tab}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Tab 1: Overview matching Screen 3 */}
+              {detailTab === 'Overview' && (
+                <Card style={styles.infoCard} elevation="xs">
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons name="email-outline" size={20} color={colors.textSecondary} />
+                    <View style={styles.infoCol}>
+                      <Text style={styles.infoLabel}>Email</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.email}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDivider} />
+
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons name="phone-outline" size={20} color={colors.textSecondary} />
+                    <View style={styles.infoCol}>
+                      <Text style={styles.infoLabel}>Phone</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.phone || '+91 98765 43210'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDivider} />
+
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons name="calendar-month-outline" size={20} color={colors.textSecondary} />
+                    <View style={styles.infoCol}>
+                      <Text style={styles.infoLabel}>Joining Date</Text>
+                      <Text style={styles.infoValue}>
+                        {selectedStaff.joiningDate ? formatDate(selectedStaff.joiningDate) : '15 Jan 2023'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDivider} />
+
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons name="briefcase-outline" size={20} color={colors.textSecondary} />
+                    <View style={styles.infoCol}>
+                      <Text style={styles.infoLabel}>Designation</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.designation || 'Software Developer'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDivider} />
+
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons name="domain" size={20} color={colors.textSecondary} />
+                    <View style={styles.infoCol}>
+                      <Text style={styles.infoLabel}>Department</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.department || 'IT'}</Text>
+                    </View>
+                  </View>
+                </Card>
+              )}
+
+              {/* Tab 2: Attendance */}
+              {detailTab === 'Attendance' && (
+                <Card style={styles.infoCard} elevation="xs">
+                  <Text style={styles.tabSectionTitle}>Monthly Attendance</Text>
+                  <Text style={styles.tabSectionSub}>Present Days: 26 / 30 • Leaves: 2 • LOP: 0</Text>
+                  <Button
+                    title="View Attendance Logs"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => {
+                      setSelectedStaff(null);
+                      navigation.navigate('AdminAttendance');
+                    }}
+                    style={{ marginTop: 12 }}
+                  />
+                </Card>
+              )}
+
+              {/* Tab 3: Leave */}
+              {detailTab === 'Leave' && (
+                <Card style={styles.infoCard} elevation="xs">
+                  <Text style={styles.tabSectionTitle}>Leave Balance</Text>
+                  <Text style={styles.tabSectionSub}>Casual Leave: 6 Available • Sick Leave: 4 Available</Text>
+                  <Button
+                    title="View Leave Requests"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => {
+                      setSelectedStaff(null);
+                      navigation.navigate('AdminLeaves');
+                    }}
+                    style={{ marginTop: 12 }}
+                  />
+                </Card>
+              )}
+
+              {/* Bottom Solid Blue Button matching Screen 3 */}
+              <TouchableOpacity
+                style={styles.viewPayslipsBtn}
+                onPress={() => {
+                  setSelectedStaff(null);
+                  navigation.navigate('AdminPayroll');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.viewPayslipsText}>View Payslips</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScreenWrapper>
+      </Modal>
+
       {/* Add / Edit Staff Modal */}
       <Modal
         visible={modalVisible}
-        transparent
         animationType="slide"
+        transparent
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <Card style={styles.modalCard} elevation="lg">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingStaffId ? 'Edit Staff Member' : 'Add New Staff Member'}
+                {editingStaffId ? 'Edit Staff Member' : 'Add New Staff'}
               </Text>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <MaterialCommunityIcons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
@@ -366,8 +511,7 @@ export default function AdminStaffScreen({ navigation }) {
                 label="Full Name *"
                 value={form.name}
                 onChangeText={(t) => setForm((p) => ({ ...p, name: t }))}
-                placeholder="e.g. Rahul Sharma"
-                prefixIcon="account-outline"
+                placeholder="e.g. Amit Kumar"
                 error={fieldErrors.name}
               />
 
@@ -375,115 +519,64 @@ export default function AdminStaffScreen({ navigation }) {
                 label="Email Address *"
                 value={form.email}
                 onChangeText={(t) => setForm((p) => ({ ...p, email: t }))}
-                placeholder="rahul@company.com"
-                prefixIcon="email-outline"
+                placeholder="e.g. amit@company.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={fieldErrors.email}
               />
 
               <Input
-                label="Mobile Phone"
+                label="Phone Number"
                 value={form.phone}
                 onChangeText={(t) => setForm((p) => ({ ...p, phone: t }))}
-                placeholder="10-digit mobile number"
-                prefixIcon="phone-outline"
+                placeholder="+91 98765 43210"
                 keyboardType="phone-pad"
-                error={fieldErrors.phone}
               />
 
               <Input
-                label={editingStaffId ? 'New Password (Leave blank to keep)' : 'Password *'}
+                label="Employee Code"
+                value={form.employeeCode}
+                onChangeText={(t) => setForm((p) => ({ ...p, employeeCode: t }))}
+                placeholder="e.g. EMP001"
+              />
+
+              <Input
+                label="Department"
+                value={form.department}
+                onChangeText={(t) => setForm((p) => ({ ...p, department: t }))}
+                placeholder="e.g. IT, HR, Sales"
+              />
+
+              <Input
+                label="Designation"
+                value={form.designation}
+                onChangeText={(t) => setForm((p) => ({ ...p, designation: t }))}
+                placeholder="e.g. Software Developer"
+              />
+
+              <Input
+                label={editingStaffId ? 'New Password (leave blank to keep current)' : 'Password *'}
                 value={form.password}
                 onChangeText={(t) => setForm((p) => ({ ...p, password: t }))}
                 placeholder="••••••••"
-                prefixIcon="lock-outline"
                 secureTextEntry
                 error={fieldErrors.password}
               />
 
-              <Input
-                label="Employee Code / ID"
-                value={form.employeeCode}
-                onChangeText={(t) => setForm((p) => ({ ...p, employeeCode: t }))}
-                placeholder="e.g. EMP-101"
-                prefixIcon="badge-account-horizontal-outline"
-                error={fieldErrors.employeeCode}
-              />
-
-              <Text style={styles.subHeading}>Salary Structure (Monthly INR)</Text>
-              <View style={styles.salaryGrid}>
-                <Input
-                  label="Basic Salary *"
-                  value={form.basic}
-                  onChangeText={(t) => setForm((p) => ({ ...p, basic: t }))}
-                  placeholder="25000"
-                  keyboardType="numeric"
-                  containerStyle={styles.halfInput}
-                  error={fieldErrors['salaryStructure.basic']}
+              <View style={styles.formActions}>
+                <Button
+                  title="Cancel"
+                  variant="outline"
+                  onPress={() => setModalVisible(false)}
+                  style={{ flex: 1 }}
                 />
-                <Input
-                  label="HRA"
-                  value={form.hra}
-                  onChangeText={(t) => setForm((p) => ({ ...p, hra: t }))}
-                  placeholder="10000"
-                  keyboardType="numeric"
-                  containerStyle={styles.halfInput}
+                <Button
+                  title={editingStaffId ? 'Save Changes' : 'Create Staff'}
+                  onPress={handleSaveStaff}
+                  loading={submitting}
+                  style={{ flex: 1 }}
                 />
               </View>
-
-              <View style={styles.salaryGrid}>
-                <Input
-                  label="Special Allowance"
-                  value={form.special}
-                  onChangeText={(t) => setForm((p) => ({ ...p, special: t }))}
-                  placeholder="5000"
-                  keyboardType="numeric"
-                  containerStyle={styles.halfInput}
-                />
-                <Input
-                  label="Other"
-                  value={form.other}
-                  onChangeText={(t) => setForm((p) => ({ ...p, other: t }))}
-                  placeholder="2000"
-                  keyboardType="numeric"
-                  containerStyle={styles.halfInput}
-                />
-              </View>
-
-              <Text style={styles.subHeading}>Statutory Compliance</Text>
-              <View style={styles.toggleRow}>
-                <TouchableOpacity
-                  style={[styles.toggleBtn, form.pfApplicable && styles.toggleBtnActive]}
-                  onPress={() => setForm((p) => ({ ...p, pfApplicable: !p.pfApplicable }))}
-                >
-                  <MaterialCommunityIcons
-                    name={form.pfApplicable ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                    size={20}
-                    color={form.pfApplicable ? colors.primary : colors.textMuted}
-                  />
-                  <Text style={styles.toggleLabel}>PF Applicable (12%)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.toggleBtn, form.esiApplicable && styles.toggleBtnActive]}
-                  onPress={() => setForm((p) => ({ ...p, esiApplicable: !p.esiApplicable }))}
-                >
-                  <MaterialCommunityIcons
-                    name={form.esiApplicable ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                    size={20}
-                    color={form.esiApplicable ? colors.primary : colors.textMuted}
-                  />
-                  <Text style={styles.toggleLabel}>ESI Applicable</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Button
-                title={editingStaffId ? 'Save Changes' : 'Create Staff Member'}
-                onPress={handleSaveStaff}
-                loading={submitting}
-                style={styles.modalSubmitBtn}
-              />
             </ScrollView>
           </Card>
         </View>
@@ -494,10 +587,42 @@ export default function AdminStaffScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 32,
+    paddingBottom: 36,
   },
-  searchContainer: {
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginBottom: 12,
+  },
+  searchInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: 12,
+  },
+  searchInputContainer: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  searchInput: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+  },
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterRow: {
     flexDirection: 'row',
@@ -505,53 +630,47 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingHorizontal: 18,
     paddingVertical: 7,
-    paddingHorizontal: 14,
     borderRadius: borderRadius.pill,
-    backgroundColor: colors.surfaceVariant,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
+    backgroundColor: '#F1F5F9',
   },
   filterChipActive: {
-    backgroundColor: colors.primaryContainer,
-    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   filterChipText: {
-    fontSize: typography.sizes.xs,
-    color: colors.onSurfaceVariant,
-    fontWeight: typography.weights.medium,
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
   },
   filterChipTextActive: {
-    color: colors.onPrimaryContainer,
-    fontWeight: typography.weights.bold,
-  },
-  addBtn: {
-    marginBottom: 20,
+    color: '#FFFFFF',
   },
   listContainer: {
-    gap: 12,
+    gap: 10,
   },
   staffCard: {
-    padding: 16,
+    padding: 14,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  staffHeader: {
+  staffRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
   avatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.primaryBg,
+    backgroundColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   avatarText: {
-    fontSize: typography.sizes.md,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
@@ -559,64 +678,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   staffName: {
-    fontSize: typography.sizes.md,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  staffEmail: {
-    fontSize: typography.sizes.xs,
+  staffSub: {
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 1,
-  },
-  staffCode: {
-    fontSize: 10,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
-    padding: 10,
-    marginBottom: 12,
-  },
-  metaCol: {
-    flex: 1,
-  },
-  metaLabel: {
-    fontSize: 10,
-    color: colors.textSecondary,
-  },
-  metaVal: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
     marginTop: 2,
   },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    paddingTop: 10,
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
   },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  activePill: {
+    backgroundColor: '#DCFCE7',
   },
-  actionBtnText: {
-    fontSize: typography.sizes.xs,
+  activePillText: {
+    color: '#16A34A',
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
-    color: colors.primary,
-    marginLeft: 4,
+  },
+  inactivePill: {
+    backgroundColor: '#FEE2E2',
+  },
+  inactivePillText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: typography.weights.semibold,
   },
   emptyCard: {
-    padding: 32,
+    padding: 36,
     alignItems: 'center',
+    borderRadius: borderRadius.lg,
   },
   emptyTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.md,
     fontWeight: typography.weights.bold,
     color: colors.text,
     marginTop: 12,
@@ -627,15 +725,135 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
+
+  // Detail Modal styles matching Screen 3
+  detailContainer: {
+    paddingBottom: 40,
+  },
+  detailBody: {
+    gap: 16,
+    marginTop: 6,
+  },
+  detailProfileHeader: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  detailAvatar: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  detailAvatarText: {
+    fontSize: 26,
+    fontWeight: typography.weights.bold,
+    color: '#FFFFFF',
+  },
+  detailName: {
+    fontSize: 20,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  detailSub: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 3,
+  },
+  detailTabsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 4,
+  },
+  detailTabBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailTabBtnActive: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  detailTabBtnText: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+  },
+  detailTabBtnTextActive: {
+    color: colors.primary,
+  },
+  infoCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 8,
+  },
+  infoCol: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: typography.weights.medium,
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  infoDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
+  },
+  tabSectionTitle: {
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  tabSectionSub: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  viewPayslipsBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    ...shadows.sm,
+  },
+  viewPayslipsText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+  },
+
+  // Modal Add/Edit
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
-    padding: 16,
+    padding: 20,
   },
   modalCard: {
     maxHeight: '90%',
     padding: 20,
+    borderRadius: borderRadius.xl,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -644,51 +862,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  subHeading: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  salaryGrid: {
+  formActions: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  toggleBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
-  },
-  toggleBtnActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryBg,
-  },
-  toggleLabel: {
-    fontSize: typography.sizes.xs,
-    color: colors.text,
-    fontWeight: typography.weights.medium,
-    marginLeft: 6,
-  },
-  modalSubmitBtn: {
-    marginTop: 12,
-    marginBottom: 16,
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 10,
   },
 });
