@@ -104,14 +104,14 @@ export const typography = {
   fontFamilyExtraBold: 'Inter_700Bold',
 
   sizes: {
-    xs: 11,
-    sm: 12,
-    md: 14,
-    lg: 16,
-    xl: 18,
-    xxl: 22,
-    xxxl: 28,
-    heading: 32,
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 24,
+    xxxl: 30,
+    heading: 34,
   },
 
   weights: {

@@ -16,18 +16,6 @@ import { borderRadius, colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
 
-function Md3NavIcon({ icon, focused, color }) {
-  return (
-    <View style={[styles.iconContainer, focused && styles.activePill]}>
-      <MaterialCommunityIcons
-        name={icon}
-        size={22}
-        color={focused ? colors.onPrimaryContainer : color}
-      />
-    </View>
-  );
-}
-
 export default function AdminNavigator() {
   return (
     <Tab.Navigator
@@ -40,13 +28,13 @@ export default function AdminNavigator() {
           backgroundColor: colors.surface,
           borderTopColor: colors.outlineVariant,
           borderTopWidth: 1,
-          height: 68,
-          paddingBottom: 10,
+          height: 66,
+          paddingBottom: 8,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: typography.weights.medium,
+          fontSize: 12,
+          fontWeight: typography.weights.semibold,
           letterSpacing: 0.1,
         },
       }}
@@ -56,10 +44,10 @@ export default function AdminNavigator() {
         component={AdminHomeScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'view-dashboard' : 'view-dashboard-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'view-dashboard' : 'view-dashboard-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -70,10 +58,10 @@ export default function AdminNavigator() {
         component={AdminStaffScreen}
         options={{
           tabBarLabel: 'Employees',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'account-group' : 'account-group-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'account-group' : 'account-group-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -84,10 +72,10 @@ export default function AdminNavigator() {
         component={AdminAttendanceScreen}
         options={{
           tabBarLabel: 'Attendance',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'calendar-check' : 'calendar-check-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'calendar-check' : 'calendar-check-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -98,10 +86,10 @@ export default function AdminNavigator() {
         component={AdminPayrollScreen}
         options={{
           tabBarLabel: 'Payroll',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'wallet' : 'wallet-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'wallet' : 'wallet-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -112,10 +100,10 @@ export default function AdminNavigator() {
         component={AdminReportsScreen}
         options={{
           tabBarLabel: 'Reports',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'file-chart' : 'file-chart-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'file-chart' : 'file-chart-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -173,15 +161,3 @@ export default function AdminNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  iconContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 3,
-    borderRadius: borderRadius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activePill: {
-    backgroundColor: colors.primaryContainer,
-  },
-});

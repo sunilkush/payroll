@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   hubLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: typography.weights.medium,
     color: '#334155',
     textAlign: 'center',
@@ -479,12 +479,12 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   chartTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   chartSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   barsContainer: {
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   barLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -533,12 +533,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   pendingTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   viewAllText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.primary,
     fontWeight: typography.weights.semibold,
   },
@@ -554,12 +554,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   leaveReqName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: typography.weights.semibold,
     color: '#0F172A',
   },
   leaveReqSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   emptyFeedText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 6,
   },
@@ -609,12 +609,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: typography.weights.medium,
     color: '#0F172A',
   },
   activityDetail: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 1,
   },

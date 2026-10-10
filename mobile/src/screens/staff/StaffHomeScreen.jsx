@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   userRoleSubtitle: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -456,18 +456,18 @@ const styles = StyleSheet.create({
   },
   paidPillText: {
     color: '#16a34a',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
   },
   salaryAmount: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: typography.weights.bold,
     color: colors.white,
     letterSpacing: -0.5,
     marginBottom: 8,
   },
   salaryCreditedText: {
-    fontSize: 11,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.82)',
   },
   metricsRow: {
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   metricCardTitle: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
@@ -542,17 +542,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
     color: colors.text,
     textAlign: 'center',
   },
   quickSub: {
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 2,
-    lineHeight: 12,
+    lineHeight: 14,
   },
   activitySection: {
     marginBottom: 16,
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyActivityText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   activityItem: {
@@ -610,12 +610,12 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   activitySub: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },
   activityTime: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
 });

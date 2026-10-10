@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   staffCode: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textMuted,
     marginTop: 1,
   },
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   countText: {
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textSecondary,
     marginTop: 2,
   },

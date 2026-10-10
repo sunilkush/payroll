@@ -9,18 +9,6 @@ import { borderRadius, colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
 
-function Md3NavIcon({ icon, focused, color }) {
-  return (
-    <View style={[styles.iconContainer, focused && styles.activePill]}>
-      <MaterialCommunityIcons
-        name={icon}
-        size={22}
-        color={focused ? colors.onPrimaryContainer : color}
-      />
-    </View>
-  );
-}
-
 export default function SuperAdminNavigator() {
   return (
     <Tab.Navigator
@@ -33,13 +21,13 @@ export default function SuperAdminNavigator() {
           backgroundColor: colors.surface,
           borderTopColor: colors.outlineVariant,
           borderTopWidth: 1,
-          height: 68,
-          paddingBottom: 10,
+          height: 66,
+          paddingBottom: 8,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: typography.weights.medium,
+          fontSize: 12,
+          fontWeight: typography.weights.semibold,
           letterSpacing: 0.1,
         },
       }}
@@ -49,10 +37,10 @@ export default function SuperAdminNavigator() {
         component={SuperAdminHomeScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'view-dashboard' : 'view-dashboard-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'view-dashboard' : 'view-dashboard-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -63,10 +51,10 @@ export default function SuperAdminNavigator() {
         component={SuperAdminCompaniesScreen}
         options={{
           tabBarLabel: 'Companies',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'domain' : 'domain'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'domain' : 'domain'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -77,10 +65,10 @@ export default function SuperAdminNavigator() {
         component={SuperAdminSettingsScreen}
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'cog' : 'cog-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'cog' : 'cog-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -98,15 +86,3 @@ export default function SuperAdminNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  iconContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 3,
-    borderRadius: borderRadius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activePill: {
-    backgroundColor: colors.primaryContainer,
-  },
-});

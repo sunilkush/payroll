@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   timeLoc: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
   },

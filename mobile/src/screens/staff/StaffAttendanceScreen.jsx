@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
   },
   kpiLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listTimeLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   listTimeVal: {
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   checkLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 4,
   },
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statusSectionLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 8,
     fontWeight: typography.weights.medium,
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   statusSub: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 1,
   },

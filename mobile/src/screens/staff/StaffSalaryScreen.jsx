@@ -312,18 +312,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   slipMonth: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   slipSubLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
     marginBottom: 6,
   },
   slipAmount: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
@@ -387,12 +387,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   detailMonth: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   paymentDate: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   netSalaryBanner: {
@@ -403,12 +403,12 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   netSalaryLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: typography.weights.medium,
   },
   netSalaryValue: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: typography.weights.bold,
     color: '#FFFFFF',
     marginTop: 4,
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   breakdownCardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: colors.text,
     marginBottom: 12,
@@ -431,11 +431,11 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   breakdownLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   breakdownValue: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: typography.weights.medium,
     color: colors.text,
   },
@@ -450,12 +450,12 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   breakdownTotalLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   breakdownTotalValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
@@ -471,12 +471,12 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   bottomNetBarLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: '#FFFFFF',
   },
   bottomNetBarValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: typography.weights.bold,
     color: '#FFFFFF',
   },

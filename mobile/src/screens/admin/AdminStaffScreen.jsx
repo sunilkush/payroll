@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   infoValue: {

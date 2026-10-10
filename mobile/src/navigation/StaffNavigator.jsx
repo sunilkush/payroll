@@ -13,18 +13,6 @@ import { borderRadius, colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
 
-function Md3NavIcon({ icon, focused, color }) {
-  return (
-    <View style={[styles.iconContainer, focused && styles.activePill]}>
-      <MaterialCommunityIcons
-        name={icon}
-        size={22}
-        color={focused ? colors.onPrimaryContainer : color}
-      />
-    </View>
-  );
-}
-
 export default function StaffNavigator() {
   return (
     <Tab.Navigator
@@ -37,13 +25,13 @@ export default function StaffNavigator() {
           backgroundColor: colors.surface,
           borderTopColor: colors.outlineVariant,
           borderTopWidth: 1,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 8,
+          height: 66,
+          paddingBottom: 8,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: typography.weights.medium,
+          fontSize: 12,
+          fontWeight: typography.weights.semibold,
           letterSpacing: 0.1,
         },
       }}
@@ -53,10 +41,10 @@ export default function StaffNavigator() {
         component={StaffHomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'home-variant' : 'home-variant-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'home-variant' : 'home-variant-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -67,10 +55,10 @@ export default function StaffNavigator() {
         component={StaffPunchScreen}
         options={{
           tabBarLabel: 'Punch',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'fingerprint' : 'fingerprint'}
-              focused={focused}
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="fingerprint"
+              size={size || 24}
               color={color}
             />
           ),
@@ -81,10 +69,10 @@ export default function StaffNavigator() {
         component={StaffAttendanceScreen}
         options={{
           tabBarLabel: 'Attendance',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'calendar-check' : 'calendar-check-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'calendar-check' : 'calendar-check-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -95,10 +83,10 @@ export default function StaffNavigator() {
         component={StaffLeavesScreen}
         options={{
           tabBarLabel: 'Leaves',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'calendar-arrow-right' : 'calendar-arrow-right'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'calendar-clock' : 'calendar-clock-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -109,10 +97,10 @@ export default function StaffNavigator() {
         component={StaffSalaryScreen}
         options={{
           tabBarLabel: 'Payroll',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'wallet' : 'wallet-outline'}
-              focused={focused}
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'wallet' : 'wallet-outline'}
+              size={size || 24}
               color={color}
             />
           ),
@@ -145,16 +133,3 @@ export default function StaffNavigator() {
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  iconContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 3,
-    borderRadius: borderRadius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activePill: {
-    backgroundColor: colors.primaryContainer,
-  },
-});

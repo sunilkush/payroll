@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   barLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 8,
   },

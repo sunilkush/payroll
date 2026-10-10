@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   stepLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 6,
     textAlign: 'center',
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   },
   completedBadgeText: {
     color: '#16A34A',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
   },
 
@@ -559,12 +559,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   slipStaffName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   slipStaffCode: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 1,
   },
