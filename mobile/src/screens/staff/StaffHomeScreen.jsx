@@ -101,16 +101,22 @@ export default function StaffHomeScreen({ navigation }) {
   const recentDays = dashboardData?.recentDays || [];
   const upcoming = dashboardData?.upcoming || [];
   const leaveKpi = dashboardData?.kpis?.leave;
-  const monthlySummary = dashboardData?.monthly?.at(-1);
+  const monthlyList = Array.isArray(dashboardData?.monthly) ? dashboardData.monthly : [];
+  const monthlySummary = monthlyList.length > 0 ? monthlyList[monthlyList.length - 1] : null;
 
   // Fallback net salary calculation if payroll hasn't been finalized yet
   const displaySalary =
     salaryKpi?.value ??
-    (user?.salary
+    (user?.salaryStructure
+      ? (user.salaryStructure.basic || 0) +
+        (user.salaryStructure.hra || 0) +
+        (user.salaryStructure.special || 0) +
+        (user.salaryStructure.other || 0)
+      : user?.salary
       ? (user.salary.basic || 0) +
         (user.salary.hra || 0) +
         (user.salary.allowances || 0)
-      : 35000);
+      : 28500);
 
   const salaryPeriod = salaryKpi?.label || monthLabel(new Date());
   const salaryStatus = salaryKpi
@@ -172,7 +178,7 @@ export default function StaffHomeScreen({ navigation }) {
         </Text>
 
         <Text style={styles.salaryCreditedText}>
-          Salary credited on 28 {salaryPeriod ? salaryPeriod.slice(0, 8) : 'Sep 2025'}
+          Salary credited on 28 {typeof salaryPeriod === 'string' && salaryPeriod.length >= 3 ? salaryPeriod.slice(0, 8) : 'Sep 2025'}
         </Text>
       </View>
 
@@ -198,7 +204,7 @@ export default function StaffHomeScreen({ navigation }) {
             <Text style={styles.metricCardTitle}>Leave Balance</Text>
           </View>
           <Text style={styles.metricCardVal}>
-            {((leaveKpi?.cl ?? 4) + (leaveKpi?.el ?? 4))} <Text style={styles.metricCardValSub}>Days</Text>
+            {(Number(leaveKpi?.cl || 0) + Number(leaveKpi?.el || 0)) || 8} <Text style={styles.metricCardValSub}>Days</Text>
           </Text>
         </View>
       </View>
@@ -522,4 +528,5 @@ const styles = StyleSheet.create({
   activityTime: {
     fontSize: 10,
     color: colors.textSecondary,
+  },
 });

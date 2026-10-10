@@ -33,6 +33,25 @@ export const formatMonth = (month) => {
   }
 };
 
+export const monthLabel = (val) => {
+  if (!val) return '';
+  if (val instanceof Date) {
+    try {
+      return monthFormatter.format(val);
+    } catch {
+      return '';
+    }
+  }
+  if (typeof val === 'string' && val.length === 7) {
+    return formatMonth(val);
+  }
+  try {
+    return monthFormatter.format(new Date(val));
+  } catch {
+    return String(val);
+  }
+};
+
 export const formatTime = (value) => {
   if (!value) return '-';
   try {
