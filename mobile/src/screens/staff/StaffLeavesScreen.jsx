@@ -90,6 +90,10 @@ export default function StaffLeavesScreen({ navigation }) {
       setFormError('Please enter a reason for your leave request.');
       return;
     }
+    if (cleanReason.length < 3) {
+      setFormError('Reason must be at least 3 characters long.');
+      return;
+    }
 
     const cleanFrom = (fromDate || '').trim();
     const cleanTo = halfDay ? cleanFrom : ((toDate || '').trim() || cleanFrom);
@@ -105,6 +109,13 @@ export default function StaffLeavesScreen({ navigation }) {
     }
     if (cleanTo < cleanFrom) {
       setFormError('To Date cannot be earlier than From Date.');
+      return;
+    }
+
+    const availableBal = leaveType === 'CL' ? (balance?.CL?.available ?? 0) : (balance?.EL?.available ?? 0);
+    const requiredDays = halfDay ? 0.5 : 1;
+    if (availableBal < requiredDays) {
+      setFormError(`Insufficient ${leaveType} balance. You have ${availableBal} day(s) remaining.`);
       return;
     }
 
@@ -307,6 +318,47 @@ export default function StaffLeavesScreen({ navigation }) {
                 </TouchableOpacity>
               );
             })}
+          </View>
+
+          {/* Quick Date Shortcuts */}
+          <View style={styles.quickDateRow}>
+            <TouchableOpacity
+              style={styles.quickDateBtn}
+              onPress={() => {
+                const d = todayLocal();
+                setFromDate(d);
+                setToDate(d);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.quickDateText}>Today</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickDateBtn}
+              onPress={() => {
+                const now = new Date();
+                const tmr = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                const d = `${tmr.getFullYear()}-${String(tmr.getMonth() + 1).padStart(2, '0')}-${String(tmr.getDate()).padStart(2, '0')}`;
+                setFromDate(d);
+                setToDate(d);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.quickDateText}>Tomorrow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickDateBtn}
+              onPress={() => {
+                const now = new Date();
+                const dAfter = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+                const d = `${dAfter.getFullYear()}-${String(dAfter.getMonth() + 1).padStart(2, '0')}-${String(dAfter.getDate()).padStart(2, '0')}`;
+                setFromDate(d);
+                setToDate(d);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.quickDateText}>Day After</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Date Pickers */}
@@ -638,5 +690,23 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontWeight: typography.weights.semibold,
     marginLeft: 4,
+  },
+  quickDateRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  quickDateBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quickDateText: {
+    fontSize: 12,
+    fontWeight: typography.weights.medium,
+    color: colors.textSecondary,
   },
 });

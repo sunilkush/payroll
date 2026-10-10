@@ -1,19 +1,36 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert as NativeAlert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getGlobalSettingsApi, updateGlobalSettingsApi } from '../../api/globalSettingsApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Badge from '../../components/common/Badge.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { initials } from '../../utils/roles.js';
 
 export default function SuperAdminSettingsScreen({ navigation }) {
+  const { user, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ type: 'success', text: '' });
+
+  const handleLogout = () => {
+    NativeAlert.alert('Sign Out', 'Are you sure you want to sign out from Super Admin console?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: logout },
+    ]);
+  };
 
   const [form, setForm] = useState({
     payrollDaysBasis: '30',
@@ -100,6 +117,22 @@ export default function SuperAdminSettingsScreen({ navigation }) {
       />
 
       {statusMsg.text ? <Alert type={statusMsg.type}>{statusMsg.text}</Alert> : null}
+
+      {/* SuperAdmin Account Profile Card */}
+      <Card style={styles.profileCard} elevation="xs">
+        <View style={styles.profileRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{initials(user?.name || 'SA')}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{user?.name || 'Super Administrator'}</Text>
+            <Text style={styles.profileEmail}>{user?.email || 'admin@payroster.io'}</Text>
+            <View style={styles.roleBadgeWrap}>
+              <Badge label="Platform Root" variant="primary" size="sm" />
+            </View>
+          </View>
+        </View>
+      </Card>
 
       <Text style={styles.pageSubtitle}>
         Nationwide compliance parameters for Provident Fund (EPF), ESI, and payroll calculation.
@@ -222,6 +255,16 @@ export default function SuperAdminSettingsScreen({ navigation }) {
           {saving ? 'Saving...' : 'Save Statutory Rules'}
         </Text>
       </TouchableOpacity>
+
+      {/* Logout Button */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={handleLogout}
+        activeOpacity={0.85}
+      >
+        <MaterialCommunityIcons name="logout" size={20} color="#DC2626" />
+        <Text style={styles.logoutBtnText}>Sign Out from Super Admin</Text>
+      </TouchableOpacity>
     </ScreenWrapper>
   );
 }
@@ -229,6 +272,48 @@ export default function SuperAdminSettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     paddingBottom: 40,
+  },
+  profileCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  avatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: typography.weights.bold,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  profileEmail: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  roleBadgeWrap: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
   },
   pageSubtitle: {
     fontSize: 13,
@@ -270,5 +355,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: typography.weights.bold,
+  },
+  logoutBtn: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+    marginTop: 16,
+  },
+  logoutBtnText: {
+    color: '#DC2626',
+    fontSize: 15,
+    fontWeight: typography.weights.semibold,
   },
 });

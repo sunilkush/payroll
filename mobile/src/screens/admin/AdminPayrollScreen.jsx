@@ -144,12 +144,48 @@ export default function AdminPayrollScreen({ navigation }) {
     );
   };
 
+  const handlePrevMonth = () => {
+    const [y, m] = month.split('-').map(Number);
+    const prevDate = new Date(y, m - 2, 1);
+    setMonth(`${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const handleNextMonth = () => {
+    const [y, m] = month.split('-').map(Number);
+    const nextDate = new Date(y, m, 1);
+    setMonth(`${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`);
+  };
+
   const rows = data.rows || [];
   const totals = data.totals || {};
   const totalEmployeesCount = rows.length;
-  const grossAmount = totals.gross || 0;
-  const deductionsAmount = totals.deductions || 0;
-  const netAmount = totals.net || 0;
+  const grossAmount = totals.earnedGross ?? totals.gross ?? 0;
+  const deductionsAmount = totals.deductions ?? 0;
+  const netAmount = totals.netSalary ?? totals.net ?? 0;
+
+  const openSlipDetails = (slip) => {
+    setSelectedSlip(slip);
+    setEditOtherDeductions(String(slip.deductions?.other || 0));
+    setEditRemarks(slip.remarks || '');
+  };
+
+  const handleUpdateSlip = async () => {
+    if (!selectedSlip) return;
+    setUpdatingSlip(true);
+    try {
+      await updatePayrollApi(selectedSlip._id, {
+        otherDeductions: Number(editOtherDeductions) || 0,
+        remarks: editRemarks,
+      });
+      NativeAlert.alert('Success', 'Salary slip updated successfully.');
+      setSelectedSlip(null);
+      fetchPayroll(month);
+    } catch (err) {
+      NativeAlert.alert('Update Failed', err.message || 'Could not update salary slip.');
+    } finally {
+      setUpdatingSlip(false);
+    }
+  };
 
   const recentHistory = useMemo(() => {
     const now = new Date();
@@ -179,6 +215,32 @@ export default function AdminPayrollScreen({ navigation }) {
         title="Payroll Processing"
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
       />
+
+      {/* Month Navigator */}
+      <Card style={styles.monthNavCard} elevation="xs">
+        <TouchableOpacity
+          onPress={handlePrevMonth}
+          style={styles.navBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={26} color={colors.text} />
+        </TouchableOpacity>
+
+        <View style={styles.monthCenter}>
+          <Text style={styles.monthText}>{formatMonth(month)}</Text>
+          <Text style={styles.monthSub}>
+            {data.monthCompleted ? 'Period Closed' : 'Current Active Period'}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={handleNextMonth}
+          style={styles.navBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <MaterialCommunityIcons name="chevron-right" size={26} color={colors.text} />
+        </TouchableOpacity>
+      </Card>
 
       {feedback.text ? (
         <Alert
@@ -352,27 +414,151 @@ export default function AdminPayrollScreen({ navigation }) {
           ) : (
             <View style={styles.slipsList}>
               {rows.map((slip) => (
-                <Card key={slip._id} style={styles.slipCard} elevation="xs">
-                  <View style={styles.slipHeader}>
-                    <View>
-                      <Text style={styles.slipStaffName}>{slip.staff?.name}</Text>
-                      <Text style={styles.slipStaffCode}>{slip.staff?.employeeCode}</Text>
+                <TouchableOpacity
+                  key={slip._id}
+                  onPress={() => openSlipDetails(slip)}
+                  activeOpacity={0.8}
+                >
+                  <Card style={styles.slipCard} elevation="xs">
+                    <View style={styles.slipHeader}>
+                      <View>
+                        <Text style={styles.slipStaffName}>{slip.staff?.name}</Text>
+                        <Text style={styles.slipStaffCode}>{slip.staff?.employeeCode}</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Badge
+                          label={slip.status === 'final' ? 'Final' : 'Draft'}
+                          variant={slip.status === 'final' ? 'success' : 'warning'}
+                          size="sm"
+                        />
+                        <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
+                      </View>
                     </View>
-                    <Badge
-                      label={slip.status || 'Draft'}
-                      variant={slip.status === 'final' ? 'success' : 'warning'}
-                      size="sm"
-                    />
-                  </View>
-                  <View style={styles.slipAmountRow}>
-                    <Text style={styles.slipAmountLabel}>Net Pay:</Text>
-                    <Text style={styles.slipAmountVal}>{formatCurrency(slip.netSalary)}</Text>
-                  </View>
-                </Card>
+                    <View style={styles.slipAmountRow}>
+                      <Text style={styles.slipAmountLabel}>Net Pay:</Text>
+                      <Text style={styles.slipAmountVal}>{formatCurrency(slip.netSalary)}</Text>
+                    </View>
+                  </Card>
+                </TouchableOpacity>
               ))}
             </View>
           )}
         </ScreenWrapper>
+      </Modal>
+
+      {/* Individual Slip Inspector & Edit Modal */}
+      <Modal
+        visible={Boolean(selectedSlip)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedSlip(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <Card style={styles.modalCard} elevation="lg">
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>{selectedSlip?.staff?.name || 'Salary Slip'}</Text>
+                <Text style={styles.modalSub}>{selectedSlip?.staff?.employeeCode || 'Employee'} • {formatMonth(month)}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setSelectedSlip(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Earnings Breakdown */}
+              <Text style={styles.modalSectionTitle}>Earnings Breakdown</Text>
+              <View style={styles.breakdownBox}>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Basic Salary</Text>
+                  <Text style={styles.breakdownVal}>{formatCurrency(selectedSlip?.earnings?.basic || 0)}</Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>HRA</Text>
+                  <Text style={styles.breakdownVal}>{formatCurrency(selectedSlip?.earnings?.hra || 0)}</Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Special Allowance</Text>
+                  <Text style={styles.breakdownVal}>{formatCurrency(selectedSlip?.earnings?.special || 0)}</Text>
+                </View>
+                <View style={[styles.breakdownRow, styles.breakdownRowTotal]}>
+                  <Text style={styles.breakdownLabelBold}>Earned Gross</Text>
+                  <Text style={styles.breakdownValBold}>{formatCurrency(selectedSlip?.earnings?.gross || 0)}</Text>
+                </View>
+              </View>
+
+              {/* Deductions Breakdown */}
+              <Text style={styles.modalSectionTitle}>Statutory & Other Deductions</Text>
+              <View style={styles.breakdownBox}>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Provident Fund (PF)</Text>
+                  <Text style={styles.breakdownVal}>{formatCurrency(selectedSlip?.deductions?.pf || 0)}</Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>ESI</Text>
+                  <Text style={styles.breakdownVal}>{formatCurrency(selectedSlip?.deductions?.esi || 0)}</Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Other Deductions</Text>
+                  <Text style={styles.breakdownVal}>{formatCurrency(selectedSlip?.deductions?.other || 0)}</Text>
+                </View>
+                <View style={[styles.breakdownRow, styles.breakdownRowTotal]}>
+                  <Text style={styles.breakdownLabelBold}>Total Deductions</Text>
+                  <Text style={[styles.breakdownValBold, { color: colors.danger }]}>
+                    -{formatCurrency(selectedSlip?.deductions?.total || 0)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Net Payable Highlight */}
+              <View style={styles.netHighlightBox}>
+                <Text style={styles.netHighlightLabel}>Net Take-Home Pay</Text>
+                <Text style={styles.netHighlightVal}>{formatCurrency(selectedSlip?.netSalary || 0)}</Text>
+              </View>
+
+              {/* Edit Section for Draft slips */}
+              {selectedSlip?.status !== 'final' ? (
+                <View style={styles.editSection}>
+                  <Text style={styles.modalSectionTitle}>Adjust Deductions (Draft)</Text>
+                  <Input
+                    label="Other Deductions (₹)"
+                    value={editOtherDeductions}
+                    onChangeText={setEditOtherDeductions}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    helper="Advance, unpaid fines, or loan deductions"
+                  />
+                  <Input
+                    label="Admin Remarks"
+                    value={editRemarks}
+                    onChangeText={setEditRemarks}
+                    placeholder="e.g. Adjusted advance payment"
+                  />
+                  <Button
+                    title={updatingSlip ? 'Saving Slip...' : 'Update Slip'}
+                    onPress={handleUpdateSlip}
+                    disabled={updatingSlip}
+                    style={{ marginTop: 8 }}
+                  />
+                </View>
+              ) : (
+                <View style={styles.finalizedNote}>
+                  <MaterialCommunityIcons name="check-decagram" size={20} color={colors.success} />
+                  <Text style={styles.finalizedNoteText}>
+                    This payroll has been finalized. Slips are published and locked.
+                  </Text>
+                </View>
+              )}
+
+              <Button
+                title="Close"
+                variant="outline"
+                onPress={() => setSelectedSlip(null)}
+                style={{ marginTop: 12, marginBottom: 10 }}
+              />
+            </ScrollView>
+          </Card>
+        </View>
       </Modal>
     </ScreenWrapper>
   );
@@ -597,5 +783,159 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
+  },
+
+  monthNavCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  monthCenter: {
+    alignItems: 'center',
+  },
+  monthText: {
+    fontSize: 16,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  monthSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  navBtn: {
+    padding: 6,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#F8FAFC',
+  },
+
+  // Modal Inspector Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    padding: 20,
+    borderRadius: borderRadius.xl,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  modalSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  modalSectionTitle: {
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    color: '#334155',
+    marginTop: 12,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  breakdownBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.md,
+    padding: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  breakdownRowTotal: {
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    paddingTop: 8,
+    marginTop: 4,
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  breakdownVal: {
+    fontSize: 13,
+    fontWeight: typography.weights.medium,
+    color: '#0F172A',
+  },
+  breakdownLabelBold: {
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  breakdownValBold: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  netHighlightBox: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    borderRadius: borderRadius.lg,
+    padding: 14,
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  netHighlightLabel: {
+    fontSize: 14,
+    fontWeight: typography.weights.semibold,
+    color: colors.primary,
+  },
+  netHighlightVal: {
+    fontSize: 20,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
+  editSection: {
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  finalizedNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    padding: 12,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    marginTop: 14,
+  },
+  finalizedNoteText: {
+    fontSize: 12,
+    color: '#16A34A',
+    flex: 1,
+    fontWeight: typography.weights.medium,
   },
 });
