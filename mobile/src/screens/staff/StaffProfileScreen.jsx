@@ -66,6 +66,14 @@ export default function StaffProfileScreen({ navigation }) {
       />
 
       <Button
+        title="Punch Fix Requests"
+        onPress={() => navigation.navigate('StaffCorrections')}
+        variant="outline"
+        icon="timer-edit-outline"
+        style={styles.salaryBtn}
+      />
+
+      <Button
         title="Sign Out"
         onPress={handleLogout}
         variant="danger"

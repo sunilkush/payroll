@@ -162,6 +162,30 @@ export default function StaffHomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.actionCard}
+          onPress={() => navigation.navigate('StaffSalary')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIconCircle, { backgroundColor: '#ecfdf5' }]}>
+            <MaterialCommunityIcons name="file-document-outline" size={24} color={colors.primary} />
+          </View>
+          <Text style={styles.actionLabel}>Salary Slips</Text>
+          <Text style={styles.actionDesc}>Monthly payslips</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => navigation.navigate('StaffCorrections')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIconCircle, { backgroundColor: '#fef3c7' }]}>
+            <MaterialCommunityIcons name="timer-edit-outline" size={24} color={colors.warning} />
+          </View>
+          <Text style={styles.actionLabel}>Punch Fix</Text>
+          <Text style={styles.actionDesc}>Request correction</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionCard}
           onPress={() => navigation.navigate('StaffProfile')}
           activeOpacity={0.7}
         >

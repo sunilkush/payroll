@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import StaffAttendanceScreen from '../screens/staff/StaffAttendanceScreen.jsx';
+import StaffCorrectionsScreen from '../screens/staff/StaffCorrectionsScreen.jsx';
 import StaffHomeScreen from '../screens/staff/StaffHomeScreen.jsx';
 import StaffLeavesScreen from '../screens/staff/StaffLeavesScreen.jsx';
 import StaffProfileScreen from '../screens/staff/StaffProfileScreen.jsx';
@@ -84,6 +85,14 @@ export default function StaffNavigator() {
       <Tab.Screen
         name="StaffSalary"
         component={StaffSalaryScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="StaffCorrections"
+        component={StaffCorrectionsScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

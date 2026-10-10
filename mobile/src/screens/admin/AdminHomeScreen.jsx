@@ -165,6 +165,36 @@ export default function AdminHomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.moduleRow}
+          onPress={() => navigation.navigate('AdminPayroll')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.moduleIconCircle, { backgroundColor: '#ecfdf5' }]}>
+            <MaterialCommunityIcons name="calculator-variant-outline" size={22} color={colors.success} />
+          </View>
+          <View style={styles.moduleInfo}>
+            <Text style={styles.moduleTitle}>Monthly Payroll & Slips</Text>
+            <Text style={styles.moduleDesc}>Compute draft salaries, adjust deductions & finalize</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.moduleRow}
+          onPress={() => navigation.navigate('AdminCorrections')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.moduleIconCircle, { backgroundColor: '#fef3c7' }]}>
+            <MaterialCommunityIcons name="timer-edit-outline" size={22} color={colors.warning} />
+          </View>
+          <View style={styles.moduleInfo}>
+            <Text style={styles.moduleTitle}>Punch Fix Requests</Text>
+            <Text style={styles.moduleDesc}>Review and approve missed punch corrections</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.moduleRow}
           onPress={() => navigation.navigate('AdminSettings')}
           activeOpacity={0.7}
         >

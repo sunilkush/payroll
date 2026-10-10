@@ -366,6 +366,15 @@ export default function StaffAttendanceScreen({ navigation }) {
                   </Text>
                 </View>
               </View>
+
+              <Button
+                title="Request Punch Fix for this Day"
+                variant="outline"
+                size="sm"
+                icon="timer-edit-outline"
+                onPress={() => navigation.navigate('StaffCorrections', { date: selectedDayInfo.date })}
+                style={{ marginTop: 12 }}
+              />
             </Card>
           ) : (
             <Card style={styles.emptyDetailCard}>

@@ -1,8 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen.jsx';
+import AdminCorrectionsScreen from '../screens/admin/AdminCorrectionsScreen.jsx';
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen.jsx';
 import AdminLeavesScreen from '../screens/admin/AdminLeavesScreen.jsx';
+import AdminPayrollScreen from '../screens/admin/AdminPayrollScreen.jsx';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
 import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
 import { colors, typography } from '../theme/index.js';
@@ -78,6 +80,22 @@ export default function AdminNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen
+        name="AdminPayroll"
+        component={AdminPayrollScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
+        name="AdminCorrections"
+        component={AdminCorrectionsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>
