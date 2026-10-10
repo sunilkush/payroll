@@ -11,6 +11,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTodaySummaryApi } from '../../api/attendanceApi.js';
 import Badge from '../../components/common/Badge.jsx';
 import Card from '../../components/common/Card.jsx';
+import NotificationCenterModal from '../../components/common/NotificationCenterModal.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
@@ -22,6 +23,7 @@ export default function AdminHomeScreen({ navigation }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [notifVisible, setNotifVisible] = useState(false);
 
   const fetchSummary = async () => {
     try {
@@ -66,12 +68,21 @@ export default function AdminHomeScreen({ navigation }) {
             <Badge label={company?.plan || 'Free Plan'} variant="primary" size="sm" style={styles.planBadge} />
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.avatarBtn}
-          onPress={() => navigation.navigate('AdminSettings')}
-        >
-          <Text style={styles.avatarText}>{initials(user?.name || 'AD')}</Text>
-        </TouchableOpacity>
+        <View style={styles.topRightActions}>
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => setNotifVisible(true)}
+          >
+            <MaterialCommunityIcons name="bell-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.avatarBtn}
+            onPress={() => navigation.navigate('AdminSettings')}
+          >
+            <Text style={styles.avatarText}>{initials(user?.name || 'AD')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Date Header */}
@@ -253,6 +264,12 @@ export default function AdminHomeScreen({ navigation }) {
           <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
+
+      <NotificationCenterModal
+        visible={notifVisible}
+        onClose={() => setNotifVisible(false)}
+        navigation={navigation}
+      />
     </ScreenWrapper>
   );
 }
@@ -292,10 +309,26 @@ const styles = StyleSheet.create({
   planBadge: {
     marginLeft: 8,
   },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
   avatarBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

@@ -11,6 +11,7 @@ import { getTodayApi } from '../../api/attendanceApi.js';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import NotificationCenterModal from '../../components/common/NotificationCenterModal.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
@@ -22,6 +23,7 @@ export default function StaffHomeScreen({ navigation }) {
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [notifVisible, setNotifVisible] = useState(false);
 
   const fetchToday = async () => {
     try {
@@ -67,12 +69,21 @@ export default function StaffHomeScreen({ navigation }) {
           <Text style={styles.userNameText}>{user?.name || 'Staff'}</Text>
           <Text style={styles.companyText}>{company?.name || 'PayRoster'}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.avatarBtn}
-          onPress={() => navigation.navigate('StaffProfile')}
-        >
-          <Text style={styles.avatarText}>{initials(user?.name || 'ST')}</Text>
-        </TouchableOpacity>
+        <View style={styles.topRightActions}>
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => setNotifVisible(true)}
+          >
+            <MaterialCommunityIcons name="bell-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.avatarBtn}
+            onPress={() => navigation.navigate('StaffProfile')}
+          >
+            <Text style={styles.avatarText}>{initials(user?.name || 'ST')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Today's Punch Card */}
@@ -208,6 +219,12 @@ export default function StaffHomeScreen({ navigation }) {
           <Text style={styles.actionDesc}>Details & Settings</Text>
         </TouchableOpacity>
       </View>
+
+      <NotificationCenterModal
+        visible={notifVisible}
+        onClose={() => setNotifVisible(false)}
+        navigation={navigation}
+      />
     </ScreenWrapper>
   );
 }
@@ -240,10 +257,26 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
   },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
   avatarBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
