@@ -9,6 +9,7 @@ export default function ScreenWrapper({
   contentContainerStyle,
   withPadding = true,
   backgroundColor = colors.bg,
+  refreshControl,
 }) {
   const insets = useSafeAreaInsets();
 
@@ -45,6 +46,7 @@ export default function ScreenWrapper({
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
         >
           {children}
         </ScrollView>

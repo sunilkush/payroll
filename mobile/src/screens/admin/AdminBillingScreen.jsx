@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert as NativeAlert,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -29,35 +30,97 @@ import { formatDate } from '../../utils/format.js';
 const PLANS_CONFIG = [
   {
     key: 'FREE',
-    name: 'Free Plan',
-    staffLimit: 'Up to 10 Staff',
-    price: '₹0 / month',
+    name: 'Free Starter',
+    subtitle: 'Small teams & trial testing',
+    staffLimit: 10,
+    staffLimitLabel: 'Up to 10 Staff',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    priceLabel: '₹0',
+    cycleLabel: '/ forever',
     badge: 'default',
-    features: ['Real-time Geofence Attendance', 'Staff Directory', 'Daily Reports', 'Mobile App Access'],
+    color: '#64748B',
+    bgLight: '#F1F5F9',
+    icon: 'account-outline',
+    features: [
+      'Real-time Geofence Attendance',
+      'Staff Directory & Roles',
+      'Daily Attendance Logs',
+      'Android & iOS Mobile Access',
+    ],
+    unlockedKeyFeatures: ['GPS Geofence', '10 Staff Limit'],
   },
   {
     key: 'STARTER',
-    name: 'Starter Plan',
-    staffLimit: 'Up to 50 Staff',
-    price: '₹999 / month',
+    name: 'Starter Business',
+    subtitle: 'Growing businesses & retail',
+    staffLimit: 50,
+    staffLimitLabel: 'Up to 50 Staff',
+    monthlyPrice: 999,
+    annualPrice: 799,
+    priceLabel: '₹999',
+    annualPriceLabel: '₹799',
+    cycleLabel: '/ month',
     badge: 'primary',
-    features: ['Everything in Free', 'Paid Leave (CL/EL) Management', 'Punch Fix Corrections', 'Monthly Payroll & Slips'],
+    color: '#2563EB',
+    bgLight: '#EFF6FF',
+    icon: 'shield-star',
+    features: [
+      'Everything in Free Plan',
+      'Paid Leave (CL/EL) Approval Flow',
+      'Punch In/Out Miss Corrections',
+      'Monthly Payroll Engine & Slips',
+      'Staff Direct Shift Schedules',
+    ],
+    unlockedKeyFeatures: ['Leaves (CL/EL)', 'Punch Corrections', 'Monthly Payroll', '50 Staff Limit'],
   },
   {
     key: 'PROFESSIONAL',
-    name: 'Professional Plan',
-    staffLimit: 'Up to 250 Staff',
-    price: '₹2,499 / month',
+    name: 'Professional Pro',
+    subtitle: 'Regulated companies & agencies',
+    isPopular: true,
+    staffLimit: 250,
+    staffLimitLabel: 'Up to 250 Staff',
+    monthlyPrice: 2499,
+    annualPrice: 1999,
+    priceLabel: '₹2,499',
+    annualPriceLabel: '₹1,999',
+    cycleLabel: '/ month',
     badge: 'warning',
-    features: ['Everything in Starter', 'Statutory PF & ESI Auto-calc', 'Working Hours & Late Tracking', 'Client Sales Meetings & Field Visits', 'Excel & PDF Reports'],
+    color: '#7C3AED',
+    bgLight: '#F5F3FF',
+    icon: 'star-circle',
+    features: [
+      'Everything in Starter Plan',
+      'Statutory PF & ESI Automated Deduction',
+      'Work Timings & Late Punch Tracking',
+      'Sales Executive Client Visits & Geo Tracking',
+      'Excel & PDF Report Exports',
+    ],
+    unlockedKeyFeatures: ['Statutory PF/ESI', 'Work Time & Late Grace', 'Sales Visits', 'Export Engine', '250 Staff Limit'],
   },
   {
     key: 'ENTERPRISE',
-    name: 'Enterprise Plan',
-    staffLimit: 'Unlimited Staff',
-    price: 'Custom / Contact Us',
+    name: 'Enterprise Scale',
+    subtitle: 'Unlimited staff & multi-branch',
+    staffLimit: null,
+    staffLimitLabel: 'Unlimited Staff',
+    monthlyPrice: null,
+    annualPrice: null,
+    priceLabel: 'Custom',
+    cycleLabel: 'tailored pricing',
     badge: 'success',
-    features: ['Everything in Professional', 'Unlimited Staff Members', 'Multi-Branch Geofences', 'Priority Support & Dedicated Onboarding'],
+    color: '#059669',
+    bgLight: '#ECFDF5',
+    icon: 'crown',
+    features: [
+      'Everything in Professional Plan',
+      'Unlimited Staff Members',
+      'Multi-Branch Geofences Across Cities',
+      'Dedicated Customer Success Manager',
+      '24/7 Priority SLA & Custom Integrations',
+    ],
+    unlockedKeyFeatures: ['Unlimited Staff', 'Multi-Branch Geofences', 'Dedicated SLA', 'Custom Billing'],
   },
 ];
 
@@ -67,6 +130,7 @@ export default function AdminBillingScreen({ navigation }) {
   const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'annual'
   const [feedback, setFeedback] = useState({ type: 'success', text: '' });
 
   // Upgrade Modal State
@@ -112,7 +176,7 @@ export default function AdminBillingScreen({ navigation }) {
       setUpgradeModalVisible(false);
       setFeedback({
         type: 'success',
-        text: `Upgrade request to ${selectedPlan.name} submitted. Our team will review and activate it shortly.`,
+        text: `Upgrade request to ${selectedPlan.name} submitted! Super Admin will review and activate it.`,
       });
       fetchBilling();
       setTimeout(() => setFeedback({ type: 'success', text: '' }), 5000);
@@ -136,7 +200,7 @@ export default function AdminBillingScreen({ navigation }) {
             setCancelling(true);
             try {
               await cancelUpgradeRequestApi();
-              setFeedback({ type: 'success', text: 'Upgrade request cancelled.' });
+              setFeedback({ type: 'success', text: 'Upgrade request cancelled successfully.' });
               fetchBilling();
               setTimeout(() => setFeedback({ type: 'success', text: '' }), 4000);
             } catch (err) {
@@ -150,198 +214,371 @@ export default function AdminBillingScreen({ navigation }) {
     );
   };
 
-  const currentPlanKey = billing?.plan || 'FREE';
+  const handleContactSales = () => {
+    NativeAlert.alert(
+      'Enterprise Concierge',
+      'Contact our corporate licensing team for custom invoicing and enterprise deployment.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Email',
+          onPress: () => Linking.openURL('mailto:sales@payroster.com?subject=Enterprise%20Plan%20Inquiry'),
+        },
+      ]
+    );
+  };
+
+  const currentPlanKey = (billing?.plan || 'FREE').toUpperCase();
   const currentPlanIdx = PLAN_INDEX[currentPlanKey] ?? 0;
   const currentPlanConfig = PLANS_CONFIG.find((p) => p.key === currentPlanKey) || PLANS_CONFIG[0];
   const pendingRequest = billing?.request;
 
-  const staffUsagePercent =
-    billing?.staffLimit && billing.staffLimit > 0
-      ? Math.min(Math.round(((billing.activeStaff || 0) / billing.staffLimit) * 100), 100)
-      : 100;
+  const staffUsagePercent = useMemo(() => {
+    if (!billing?.staffLimit || billing.staffLimit <= 0) return 0;
+    return Math.min(Math.round(((billing.activeStaff || 0) / billing.staffLimit) * 100), 100);
+  }, [billing]);
+
+  const remainingSlots = useMemo(() => {
+    if (!billing?.staffLimit) return 'Unlimited';
+    return Math.max(0, billing.staffLimit - (billing.activeStaff || 0));
+  }, [billing]);
 
   return (
-    <ScreenWrapper scrollable={false}>
+    <ScreenWrapper
+      contentContainerStyle={styles.container}
+      scrollable
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+    >
       <Header
-        title="Plan & Billing"
-        subtitle="Manage subscription and staff limits"
-        canGoBack
-        onBackPress={() => navigation.goBack()}
+        title="Subscription & Billing"
+        subtitle="Manage plan tier, staff slots & licensing"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
       />
 
       {feedback.text ? (
         <View style={styles.alertWrapper}>
-          <Alert
-            type={feedback.type}
-            message={feedback.text}
-            onDismiss={() => setFeedback({ type: 'success', text: '' })}
-          />
+          <Alert type={feedback.type}>{feedback.text}</Alert>
         </View>
       ) : null}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {loading ? (
-          <Loader message="Loading subscription details..." />
-        ) : (
-          <>
-            {/* Current Plan Overview Card */}
-            <Card style={styles.currentCard} elevation="md">
-              <View style={styles.currentHeader}>
-                <View>
-                  <Text style={styles.currentPlanSub}>Active Subscription</Text>
-                  <Text style={styles.currentPlanTitle}>{currentPlanConfig.name}</Text>
+      {loading ? (
+        <Loader message="Loading subscription & licensing..." />
+      ) : (
+        <>
+          {/* Executive Active Tier Hero Card */}
+          <Card style={[styles.heroPlanCard, { borderLeftColor: currentPlanConfig.color }]} elevation="sm">
+            <View style={styles.heroPlanHeader}>
+              <View style={styles.heroPlanTitleWrap}>
+                <View style={[styles.planIconWrap, { backgroundColor: currentPlanConfig.bgLight }]}>
+                  <MaterialCommunityIcons name={currentPlanConfig.icon} size={24} color={currentPlanConfig.color} />
                 </View>
-                <Badge
-                  label="CURRENT"
-                  variant={currentPlanConfig.badge}
-                  size="md"
-                />
+                <View>
+                  <Text style={styles.heroSubHeading}>Current Active Tier</Text>
+                  <Text style={styles.heroPlanTitle}>{currentPlanConfig.name}</Text>
+                </View>
               </View>
 
-              {/* Staff Usage Gauge */}
-              <View style={styles.gaugeContainer}>
-                <View style={styles.gaugeTextRow}>
-                  <Text style={styles.gaugeLabel}>Staff Capacity</Text>
-                  <Text style={styles.gaugeCount}>
-                    {billing?.activeStaff ?? 0}{' '}
-                    <Text style={styles.gaugeLimit}>
-                      / {billing?.staffLimit ? `${billing.staffLimit} allowed` : 'Unlimited'}
-                    </Text>
-                  </Text>
-                </View>
+              <View style={styles.activeStatusPill}>
+                <View style={styles.activeDot} />
+                <Text style={styles.activeStatusText}>Active</Text>
+              </View>
+            </View>
 
-                {billing?.staffLimit ? (
-                  <View style={styles.progressBarTrack}>
+            {/* Staff Capacity Gauge */}
+            <View style={styles.capacityContainer}>
+              <View style={styles.capacityHeader}>
+                <View style={styles.capacityLabelRow}>
+                  <MaterialCommunityIcons name="account-group" size={16} color={colors.textSecondary} />
+                  <Text style={styles.capacityLabel}>Staff Slots Utilization</Text>
+                </View>
+                <Text style={styles.capacityValues}>
+                  <Text style={styles.capacityActive}>{billing?.activeStaff ?? 0}</Text>
+                  <Text style={styles.capacityLimit}>
+                    {' '}/ {billing?.staffLimit ? `${billing.staffLimit} max` : 'Unlimited'}
+                  </Text>
+                </Text>
+              </View>
+
+              {billing?.staffLimit ? (
+                <>
+                  <View style={styles.progressTrack}>
                     <View
                       style={[
-                        styles.progressBarFill,
+                        styles.progressFill,
                         {
                           width: `${staffUsagePercent}%`,
                           backgroundColor:
-                            staffUsagePercent > 85 ? colors.danger : colors.primary,
+                            staffUsagePercent >= 90
+                              ? colors.danger
+                              : staffUsagePercent >= 75
+                              ? colors.warning
+                              : colors.primary,
                         },
                       ]}
                     />
                   </View>
-                ) : null}
-              </View>
+                  <View style={styles.progressMetaRow}>
+                    <Text style={styles.progressMetaText}>
+                      {staffUsagePercent}% capacity consumed
+                    </Text>
+                    <Text
+                      style={[
+                        styles.remainingSlotsText,
+                        typeof remainingSlots === 'number' && remainingSlots <= 3 && styles.remainingSlotsWarning,
+                      ]}
+                    >
+                      {remainingSlots} slot{remainingSlots === 1 ? '' : 's'} available
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.unlimitedNotice}>
+                  <MaterialCommunityIcons name="infinity" size={16} color="#059669" />
+                  <Text style={styles.unlimitedNoticeText}>
+                    Enterprise unlimited staff allowance active
+                  </Text>
+                </View>
+              )}
+            </View>
 
-              {/* Included Features */}
-              <View style={styles.currentFeatures}>
-                <Text style={styles.featuresHeading}>Features Included:</Text>
-                {currentPlanConfig.features.map((feat, i) => (
-                  <View key={i} style={styles.featureItem}>
-                    <MaterialCommunityIcons name="check-circle" size={16} color={colors.success} />
-                    <Text style={styles.featureText}>{feat}</Text>
+            {/* Key Unlocked Features Strip */}
+            <View style={styles.featuresStrip}>
+              <Text style={styles.featuresStripTitle}>Included Capabilities:</Text>
+              <View style={styles.featureChipsRow}>
+                {currentPlanConfig.unlockedKeyFeatures.map((feat) => (
+                  <View key={feat} style={styles.featureChip}>
+                    <MaterialCommunityIcons name="check" size={12} color="#16A34A" />
+                    <Text style={styles.featureChipText}>{feat}</Text>
                   </View>
                 ))}
               </View>
-            </Card>
+            </View>
+          </Card>
 
-            {/* Pending Request Notice */}
-            {pendingRequest && (
-              <Card style={styles.pendingCard} elevation="sm">
-                <View style={styles.pendingHeader}>
-                  <View style={styles.pendingIconBox}>
-                    <MaterialCommunityIcons name="clock-outline" size={24} color={colors.warning} />
-                  </View>
-                  <View style={styles.pendingInfo}>
-                    <Text style={styles.pendingTitle}>Upgrade Request Pending</Text>
-                    <Text style={styles.pendingSub}>
-                      Requested plan: <Text style={styles.boldText}>{pendingRequest.plan}</Text>
-                      {pendingRequest.requestedAt ? ` on ${formatDate(pendingRequest.requestedAt)}` : ''}
-                    </Text>
-                    {pendingRequest.note ? (
-                      <Text style={styles.pendingNote}>Note: "{pendingRequest.note}"</Text>
-                    ) : null}
-                  </View>
+          {/* Pending Upgrade Request Banner */}
+          {pendingRequest && (
+            <Card style={styles.pendingCard} elevation="sm">
+              <View style={styles.pendingHeader}>
+                <View style={styles.pendingIconWrap}>
+                  <MaterialCommunityIcons name="clock-outline" size={24} color="#D97706" />
                 </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.pendingBadgeRow}>
+                    <Text style={styles.pendingTitle}>Upgrade In Review</Text>
+                    <View style={styles.pendingStatusBadge}>
+                      <Text style={styles.pendingStatusText}>Awaiting Approval</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.pendingSubtitle}>
+                    Requested Tier: <Text style={styles.boldText}>{pendingRequest.plan}</Text>
+                    {pendingRequest.requestedAt ? ` on ${formatDate(pendingRequest.requestedAt)}` : ''}
+                  </Text>
+                  {pendingRequest.note ? (
+                    <Text style={styles.pendingNote}>Note: "{pendingRequest.note}"</Text>
+                  ) : null}
+                </View>
+              </View>
 
+              <View style={styles.pendingActionsRow}>
                 <Button
                   title="Cancel Request"
                   variant="outline"
                   size="sm"
                   onPress={handleCancelRequest}
                   loading={cancelling}
-                  style={styles.cancelReqBtn}
+                  style={styles.cancelRequestBtn}
                 />
-              </Card>
-            )}
+                <TouchableOpacity
+                  style={styles.contactSupportBtn}
+                  onPress={handleContactSales}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons name="help-circle-outline" size={16} color={colors.primary} />
+                  <Text style={styles.contactSupportText}>Need Assistance?</Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+          )}
 
-            {/* Available Upgrade Plans */}
-            <Text style={styles.sectionTitle}>Available Upgrade Plans</Text>
+          {/* Billing Cycle Switcher: Monthly vs Annual */}
+          <View style={styles.cycleToggleContainer}>
+            <View style={styles.cycleToggleWrapper}>
+              <TouchableOpacity
+                style={[styles.cycleBtn, billingCycle === 'monthly' && styles.cycleBtnActive]}
+                onPress={() => setBillingCycle('monthly')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.cycleBtnText, billingCycle === 'monthly' && styles.cycleBtnTextActive]}>
+                  Monthly Billing
+                </Text>
+              </TouchableOpacity>
 
-            <View style={styles.plansList}>
-              {PLANS_CONFIG.map((plan, idx) => {
-                const isCurrent = idx === currentPlanIdx;
-                const isLower = idx < currentPlanIdx;
-                const isPendingTarget = pendingRequest?.plan === plan.key;
-
-                return (
-                  <Card key={plan.key} style={styles.planCard} elevation="sm">
-                    <View style={styles.planCardHeader}>
-                      <View>
-                        <Text style={styles.planName}>{plan.name}</Text>
-                        <Text style={styles.planCapacity}>{plan.staffLimit}</Text>
-                      </View>
-                      <View style={styles.priceContainer}>
-                        <Text style={styles.planPrice}>{plan.price}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.planDivider} />
-
-                    <View style={styles.planFeaturesList}>
-                      {plan.features.map((f, i) => (
-                        <View key={i} style={styles.featureItem}>
-                          <MaterialCommunityIcons
-                            name="check"
-                            size={16}
-                            color={isCurrent ? colors.success : colors.textSecondary}
-                          />
-                          <Text style={styles.featureTextSmall}>{f}</Text>
-                        </View>
-                      ))}
-                    </View>
-
-                    <View style={styles.planFooter}>
-                      {isCurrent ? (
-                        <Button
-                          title="Current Plan"
-                          variant="secondary"
-                          disabled
-                          style={styles.planActionBtn}
-                        />
-                      ) : isPendingTarget ? (
-                        <Button
-                          title="Request Pending Approval"
-                          variant="outline"
-                          disabled
-                          icon="clock-outline"
-                          style={styles.planActionBtn}
-                        />
-                      ) : isLower ? (
-                        <Text style={styles.lowerPlanText}>Included in your tier</Text>
-                      ) : (
-                        <Button
-                          title={`Upgrade to ${plan.name}`}
-                          variant="primary"
-                          onPress={() => handleOpenUpgrade(plan)}
-                          icon="arrow-up-circle-outline"
-                          style={styles.planActionBtn}
-                        />
-                      )}
-                    </View>
-                  </Card>
-                );
-              })}
+              <TouchableOpacity
+                style={[styles.cycleBtn, billingCycle === 'annual' && styles.cycleBtnActive]}
+                onPress={() => setBillingCycle('annual')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.cycleBtnText, billingCycle === 'annual' && styles.cycleBtnTextActive]}>
+                  Annual Billing
+                </Text>
+                <View style={styles.savePill}>
+                  <Text style={styles.savePillText}>Save 20%</Text>
+                </View>
+              </TouchableOpacity>
             </View>
-          </>
-        )}
-      </ScrollView>
+          </View>
+
+          {/* Section Heading */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Available Subscription Tiers</Text>
+            <Text style={styles.sectionSubtitle}>
+              Upgrade anytime for higher staff capacity and enterprise automation
+            </Text>
+          </View>
+
+          {/* Plans Comparison Cards List */}
+          <View style={styles.plansContainer}>
+            {PLANS_CONFIG.map((plan, idx) => {
+              const isCurrent = idx === currentPlanIdx;
+              const isLower = idx < currentPlanIdx;
+              const isPendingTarget = pendingRequest?.plan === plan.key;
+              const displayPrice =
+                plan.monthlyPrice === null
+                  ? 'Custom Quote'
+                  : billingCycle === 'annual'
+                  ? plan.annualPriceLabel
+                  : plan.priceLabel;
+
+              return (
+                <Card
+                  key={plan.key}
+                  style={[
+                    styles.planCard,
+                    plan.isPopular && styles.planCardPopular,
+                    isCurrent && styles.planCardCurrent,
+                  ]}
+                  elevation={plan.isPopular ? 'md' : 'xs'}
+                >
+                  {/* Popular Tag */}
+                  {plan.isPopular && (
+                    <View style={styles.popularBadge}>
+                      <MaterialCommunityIcons name="star" size={12} color="#FFFFFF" />
+                      <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+                    </View>
+                  )}
+
+                  {/* Header Row */}
+                  <View style={styles.planCardTop}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.planCardName, { color: plan.color }]}>{plan.name}</Text>
+                      <Text style={styles.planCardSub}>{plan.subtitle}</Text>
+                    </View>
+                    <View style={[styles.planCardIconWrap, { backgroundColor: plan.bgLight }]}>
+                      <MaterialCommunityIcons name={plan.icon} size={22} color={plan.color} />
+                    </View>
+                  </View>
+
+                  {/* Price Row */}
+                  <View style={styles.planPriceRow}>
+                    <Text style={styles.planPriceNumber}>{displayPrice}</Text>
+                    <Text style={styles.planPriceCycle}>{plan.cycleLabel}</Text>
+                  </View>
+
+                  {/* Capacity Pill */}
+                  <View style={styles.planStaffPill}>
+                    <MaterialCommunityIcons name="account-group-outline" size={14} color="#334155" />
+                    <Text style={styles.planStaffText}>{plan.staffLimitLabel}</Text>
+                  </View>
+
+                  <View style={styles.planDivider} />
+
+                  {/* Features List */}
+                  <View style={styles.planFeaturesContainer}>
+                    {plan.features.map((feat, fIdx) => (
+                      <View key={fIdx} style={styles.planFeatureRow}>
+                        <MaterialCommunityIcons
+                          name="check-circle"
+                          size={15}
+                          color={isCurrent ? '#16A34A' : plan.color}
+                        />
+                        <Text style={styles.planFeatureText}>{feat}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Action Button */}
+                  <View style={styles.planCardActionWrap}>
+                    {isCurrent ? (
+                      <View style={styles.currentPlanBadge}>
+                        <MaterialCommunityIcons name="check" size={16} color="#059669" />
+                        <Text style={styles.currentPlanBadgeText}>Current Active Tier</Text>
+                      </View>
+                    ) : isPendingTarget ? (
+                      <Button
+                        title="Upgrade In Progress"
+                        variant="outline"
+                        disabled
+                        icon="clock-outline"
+                        style={styles.planButton}
+                      />
+                    ) : isLower ? (
+                      <Text style={styles.includedTierText}>Included in your higher plan</Text>
+                    ) : plan.key === 'ENTERPRISE' ? (
+                      <Button
+                        title="Contact Enterprise Sales"
+                        onPress={handleContactSales}
+                        icon="phone-outline"
+                        style={styles.planButton}
+                      />
+                    ) : (
+                      <Button
+                        title={`Upgrade to ${plan.name}`}
+                        onPress={() => handleOpenUpgrade(plan)}
+                        icon="arrow-up-circle-outline"
+                        style={styles.planButton}
+                      />
+                    )}
+                  </View>
+                </Card>
+              );
+            })}
+          </View>
+
+          {/* Enterprise Support Contact Card */}
+          <Card style={styles.conciergeCard} elevation="xs">
+            <View style={styles.conciergeTop}>
+              <View style={styles.conciergeIconWrap}>
+                <MaterialCommunityIcons name="shield-crown-outline" size={26} color="#059669" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.conciergeTitle}>Corporate Billing & Invoicing</Text>
+                <Text style={styles.conciergeSub}>
+                  Need GST Tax Invoicing, Purchase Orders (PO), or custom multi-company accounts?
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.conciergeActions}>
+              <TouchableOpacity
+                style={styles.conciergeActionBtn}
+                onPress={() => Linking.openURL('mailto:billing@payroster.com?subject=Tax%20Invoice%20Inquiry')}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons name="email-outline" size={16} color="#059669" />
+                <Text style={styles.conciergeActionText}>Request GST Invoice</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.conciergeActionBtn, { borderColor: '#E2E8F0' }]}
+                onPress={handleContactSales}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons name="phone-outline" size={16} color="#334155" />
+                <Text style={[styles.conciergeActionText, { color: '#334155' }]}>Talk to Account Manager</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        </>
+      )}
 
       {/* Upgrade Request Modal */}
       <Modal
@@ -351,49 +588,78 @@ export default function AdminBillingScreen({ navigation }) {
         onRequestClose={() => setUpgradeModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <Card style={styles.modalCard} elevation="lg">
             <View style={styles.modalHeader}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>Request Plan Upgrade</Text>
                 <Text style={styles.modalSub}>
-                  Switching to {selectedPlan?.name} ({selectedPlan?.price})
+                  Moving to {selectedPlan?.name} ({selectedPlan?.staffLimitLabel})
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setUpgradeModalVisible(false)}
-                style={styles.closeBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalBody}>
-              <View style={styles.modalInfoBanner}>
-                <MaterialCommunityIcons name="shield-check" size={20} color={colors.primary} />
-                <Text style={styles.modalInfoText}>
-                  Upon submitting, our administration team will review your organization's request and update your account tier.
-                </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Transition Preview Ribbon */}
+              <View style={styles.transitionRibbon}>
+                <View style={styles.transitionTier}>
+                  <Text style={styles.transitionTierLabel}>Current</Text>
+                  <Text style={styles.transitionTierName}>{currentPlanConfig.name}</Text>
+                </View>
+                <MaterialCommunityIcons name="arrow-right-thick" size={20} color={colors.primary} />
+                <View style={styles.transitionTier}>
+                  <Text style={styles.transitionTierLabel}>Upgrading To</Text>
+                  <Text style={[styles.transitionTierName, { color: colors.primary }]}>
+                    {selectedPlan?.name}
+                  </Text>
+                </View>
               </View>
 
+              {/* What Unlocks Preview */}
+              {selectedPlan && (
+                <View style={styles.unlocksCard}>
+                  <Text style={styles.unlocksTitle}>What unlocks with this upgrade:</Text>
+                  {selectedPlan.unlockedKeyFeatures.map((feat) => (
+                    <View key={feat} style={styles.unlockItem}>
+                      <MaterialCommunityIcons name="check-circle" size={16} color="#16A34A" />
+                      <Text style={styles.unlockItemText}>{feat}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               <Input
-                label="Optional Note / Requirements"
-                placeholder="e.g. Need higher staff limit for upcoming hiring season..."
+                label="Optional Requirements or Message"
+                placeholder="e.g. Planning to hire 20 more staff this month..."
                 value={upgradeNote}
                 onChangeText={setUpgradeNote}
                 multiline
                 numberOfLines={3}
-                helperText="Any special request or billing contact detail"
+                helper="Provide any additional invoicing or contact notes"
               />
 
-              <Button
-                title={`Confirm Upgrade to ${selectedPlan?.name}`}
-                onPress={handleSendUpgradeRequest}
-                loading={submitting}
-                icon="send"
-                style={styles.submitUpgradeBtn}
-              />
+              <View style={styles.modalButtonsRow}>
+                <Button
+                  title="Cancel"
+                  variant="outline"
+                  onPress={() => setUpgradeModalVisible(false)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Confirm Upgrade"
+                  onPress={handleSendUpgradeRequest}
+                  loading={submitting}
+                  icon="arrow-up-bold-circle-outline"
+                  style={{ flex: 1.4 }}
+                />
+              </View>
             </ScrollView>
-          </View>
+          </Card>
         </View>
       </Modal>
     </ScreenWrapper>
@@ -401,254 +667,601 @@ export default function AdminBillingScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  alertWrapper: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  scrollContent: {
-    padding: 16,
+  container: {
     paddingBottom: 40,
   },
-  currentCard: {
-    padding: 20,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
+  alertWrapper: {
+    marginBottom: 12,
   },
-  currentHeader: {
+
+  // Active Hero Plan Card
+  heroPlanCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+  },
+  heroPlanHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  currentPlanSub: {
-    fontSize: typography.sizes.xs,
+  heroPlanTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  planIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroSubHeading: {
+    fontSize: 11,
+    fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
-    marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  currentPlanTitle: {
-    fontSize: typography.sizes.xxl,
+  heroPlanTitle: {
+    fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  gaugeContainer: {
-    backgroundColor: colors.bgApp,
-    padding: 12,
+  activeStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16A34A',
+  },
+  activeStatusText: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#16A34A',
+  },
+
+  // Capacity Container
+  capacityContainer: {
+    backgroundColor: '#F8FAFC',
     borderRadius: borderRadius.md,
-    marginBottom: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
   },
-  gaugeTextRow: {
+  capacityHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  gaugeLabel: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+  capacityLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  capacityLabel: {
+    fontSize: 12,
     fontWeight: typography.weights.medium,
+    color: colors.textSecondary,
   },
-  gaugeCount: {
-    fontSize: typography.sizes.md,
+  capacityValues: {
+    fontSize: 13,
+  },
+  capacityActive: {
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
-  gaugeLimit: {
-    fontSize: typography.sizes.xs,
-    color: colors.textMuted,
-    fontWeight: typography.weights.normal,
+  capacityLimit: {
+    color: colors.textSecondary,
   },
-  progressBarTrack: {
+  progressTrack: {
     height: 8,
-    backgroundColor: colors.border,
     borderRadius: 4,
+    backgroundColor: '#E2E8F0',
     overflow: 'hidden',
   },
-  progressBarFill: {
+  progressFill: {
     height: '100%',
     borderRadius: 4,
   },
-  currentFeatures: {
-    gap: 8,
+  progressMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
   },
-  featuresHeading: {
-    fontSize: typography.sizes.xs,
+  progressMetaText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  remainingSlotsText: {
+    fontSize: 11,
     fontWeight: typography.weights.semibold,
-    color: colors.textMuted,
-    marginBottom: 4,
-    textTransform: 'uppercase',
+    color: colors.primary,
   },
-  featureItem: {
+  remainingSlotsWarning: {
+    color: colors.danger,
+    fontWeight: typography.weights.bold,
+  },
+  unlimitedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    paddingVertical: 2,
   },
-  featureText: {
-    fontSize: typography.sizes.sm,
-    color: colors.text,
+  unlimitedNoticeText: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: typography.weights.medium,
   },
-  featureTextSmall: {
-    fontSize: typography.sizes.xs,
+
+  // Features Strip
+  featuresStrip: {
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 10,
+  },
+  featuresStripTitle: {
+    fontSize: 11,
     color: colors.textSecondary,
-    flex: 1,
+    fontWeight: typography.weights.semibold,
+    marginBottom: 6,
+    textTransform: 'uppercase',
   },
-  pendingCard: {
-    padding: 16,
-    marginBottom: 20,
-    backgroundColor: '#fffbeb',
-    borderColor: '#fde68a',
+  featureChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
     borderWidth: 1,
+    borderColor: '#BBF7D0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+  },
+  featureChipText: {
+    fontSize: 11,
+    color: '#15803D',
+    fontWeight: typography.weights.medium,
+  },
+
+  // Pending Request Card
+  pendingCard: {
+    padding: 14,
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginBottom: 14,
   },
   pendingHeader: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
   },
-  pendingIconBox: {
+  pendingIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#FEF3C7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pendingInfo: {
-    flex: 1,
+  pendingBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   pendingTitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
-    color: '#92400e',
+    color: '#92400E',
   },
-  pendingSub: {
-    fontSize: typography.sizes.xs,
-    color: '#b45309',
+  pendingStatusBadge: {
+    backgroundColor: '#FDE68A',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.pill,
+  },
+  pendingStatusText: {
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+    color: '#92400E',
+  },
+  pendingSubtitle: {
+    fontSize: 12,
+    color: '#B45309',
     marginTop: 2,
-  },
-  pendingNote: {
-    fontSize: typography.sizes.xs,
-    color: '#78350f',
-    fontStyle: 'italic',
-    marginTop: 4,
   },
   boldText: {
     fontWeight: typography.weights.bold,
   },
-  cancelReqBtn: {
-    alignSelf: 'flex-start',
+  pendingNote: {
+    fontSize: 11,
+    color: '#78350F',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  pendingActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#FEF3C7',
+  },
+  cancelRequestBtn: {
+    borderColor: '#D97706',
+  },
+  contactSupportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  contactSupportText: {
+    fontSize: 12,
+    fontWeight: typography.weights.semibold,
+    color: colors.primary,
+  },
+
+  // Billing Cycle Switcher
+  cycleToggleContainer: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  cycleToggleWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: borderRadius.pill,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  cycleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: borderRadius.pill,
+  },
+  cycleBtnActive: {
+    backgroundColor: '#FFFFFF',
+    ...shadows.xs,
+  },
+  cycleBtnText: {
+    fontSize: 12,
+    fontWeight: typography.weights.medium,
+    color: colors.textSecondary,
+  },
+  cycleBtnTextActive: {
+    color: colors.primary,
+    fontWeight: typography.weights.bold,
+  },
+  savePill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  savePillText: {
+    fontSize: 9,
+    fontWeight: typography.weights.bold,
+    color: '#16A34A',
+  },
+
+  // Section Header
+  sectionHeader: {
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginBottom: 12,
-    marginTop: 8,
+    color: '#0F172A',
   },
-  plansList: {
-    gap: 16,
+  sectionSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+
+  // Plans Container
+  plansContainer: {
+    gap: 12,
+    marginBottom: 16,
   },
   planCard: {
     padding: 16,
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  planCardHeader: {
+  planCardPopular: {
+    borderColor: '#7C3AED',
+    borderWidth: 2,
+    backgroundColor: '#FAF5FF',
+  },
+  planCardCurrent: {
+    borderColor: '#059669',
+    borderWidth: 1.5,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 16,
+    backgroundColor: '#7C3AED',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.pill,
+  },
+  popularBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: typography.weights.bold,
+    letterSpacing: 0.3,
+  },
+  planCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  planName: {
-    fontSize: typography.sizes.lg,
+  planCardName: {
+    fontSize: 16,
     fontWeight: typography.weights.bold,
-    color: colors.text,
   },
-  planCapacity: {
-    fontSize: typography.sizes.xs,
-    color: colors.textMuted,
-    marginTop: 2,
+  planCardSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
-  priceContainer: {
-    alignItems: 'flex-end',
+  planCardIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  planPrice: {
-    fontSize: typography.sizes.md,
+  planPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 8,
+  },
+  planPriceNumber: {
+    fontSize: 22,
     fontWeight: typography.weights.bold,
-    color: colors.primary,
+    color: '#0F172A',
+  },
+  planPriceCycle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  planStaffPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F1F5F9',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+    marginBottom: 10,
+  },
+  planStaffText: {
+    fontSize: 11,
+    fontWeight: typography.weights.semibold,
+    color: '#334155',
   },
   planDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginVertical: 12,
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 10,
   },
-  planFeaturesList: {
+  planFeaturesContainer: {
+    gap: 6,
+    marginBottom: 14,
+  },
+  planFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
   },
-  planFooter: {
+  planFeatureText: {
+    fontSize: 12,
+    color: '#334155',
+    flex: 1,
+  },
+  planCardActionWrap: {
     marginTop: 4,
   },
-  planActionBtn: {
-    width: '100%',
+  planButton: {
+    borderRadius: borderRadius.md,
   },
-  lowerPlanText: {
-    fontSize: typography.sizes.xs,
-    color: colors.textMuted,
+  currentPlanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 10,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  currentPlanBadgeText: {
+    fontSize: 13,
+    fontWeight: typography.weights.bold,
+    color: '#059669',
+  },
+  includedTierText: {
+    fontSize: 12,
+    color: colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
+    paddingVertical: 8,
   },
+
+  // Concierge Card
+  conciergeCard: {
+    padding: 16,
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  conciergeTop: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  conciergeIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  conciergeTitle: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#065F46',
+  },
+  conciergeSub: {
+    fontSize: 12,
+    color: '#047857',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  conciergeActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  conciergeActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    paddingVertical: 8,
+    borderRadius: borderRadius.md,
+  },
+  conciergeActionText: {
+    fontSize: 11,
+    fontWeight: typography.weights.semibold,
+    color: '#065F46',
+  },
+
+  // Upgrade Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.backdrop,
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    padding: 16,
   },
-  modalContent: {
-    backgroundColor: colors.bgCard,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    maxHeight: '85%',
-    paddingBottom: 24,
-    ...shadows.lg,
+  modalCard: {
+    padding: 20,
+    borderRadius: borderRadius.xl,
+    backgroundColor: '#FFFFFF',
+    maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
   modalTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#0F172A',
   },
   modalSub: {
-    fontSize: typography.sizes.xs,
-    color: colors.textMuted,
+    fontSize: 12,
+    color: colors.textSecondary,
     marginTop: 2,
   },
-  closeBtn: {
-    padding: 4,
-  },
-  modalBody: {
-    padding: 20,
-  },
-  modalInfoBanner: {
+  transitionRibbon: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bgApp,
-    padding: 12,
+    justifyContent: 'space-around',
+    backgroundColor: '#EFF6FF',
     borderRadius: borderRadius.md,
-    gap: 10,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
   },
-  modalInfoText: {
-    flex: 1,
-    fontSize: typography.sizes.xs,
+  transitionTier: {
+    alignItems: 'center',
+  },
+  transitionTierLabel: {
+    fontSize: 10,
     color: colors.textSecondary,
-    lineHeight: 18,
+    textTransform: 'uppercase',
   },
-  submitUpgradeBtn: {
-    marginTop: 12,
+  transitionTierName: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  unlocksCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.md,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  unlocksTitle: {
+    fontSize: 12,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  unlockItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  unlockItemText: {
+    fontSize: 12,
+    color: '#334155',
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 4,
   },
 });

@@ -94,12 +94,28 @@ export default function Settings() {
   const notify = ({ type, text }) => text && toast[type](text);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [savingLocations, setSavingLocations] = useState(false);
   const [locatingIndex, setLocatingIndex] = useState(null);
 
   useEffect(() => {
     getSettingsApi()
       .then((res) => setForm(toForm(res.data.company)))
       .catch((err) => setLoadError(err.message));
+  }, []);
+
+  // Auto-sync when returning to browser tab
+  useEffect(() => {
+    const handleFocus = () => {
+      getSettingsApi()
+        .then((res) => {
+          if (res?.data?.company) {
+            setForm(toForm(res.data.company));
+          }
+        })
+        .catch(() => {});
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   if (loadError) return <Alert>{loadError}</Alert>;
@@ -158,6 +174,57 @@ export default function Settings() {
       notify({ type: 'error', text: err.errors?.[0]?.message || err.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveLocationsOnly = async () => {
+    if (!form?.locations) return;
+    for (let i = 0; i < form.locations.length; i++) {
+      const loc = form.locations[i];
+      if (!loc.name || loc.name.trim().length < 2) {
+        notify({ type: 'error', text: `Location #${i + 1} must have a valid name (at least 2 characters).` });
+        return;
+      }
+      const latNum = Number(loc.lat);
+      const lngNum = Number(loc.lng);
+      if (isNaN(latNum) || isNaN(lngNum) || latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
+        notify({ type: 'error', text: `Location "${loc.name}" has invalid GPS coordinates.` });
+        return;
+      }
+      const radNum = Number(loc.radius);
+      if (isNaN(radNum) || radNum < 10 || radNum > 5000) {
+        notify({ type: 'error', text: `Location "${loc.name}" radius must be between 10m and 5000m.` });
+        return;
+      }
+    }
+
+    setSavingLocations(true);
+    try {
+      const payloadLocations = form.locations.map((location) => ({
+        ...(location._id && { _id: location._id }),
+        name: location.name.trim(),
+        lat: Number(location.lat),
+        lng: Number(location.lng),
+        radius: Number(location.radius || 100),
+      }));
+
+      const res = await updateSettingsApi({ locations: payloadLocations });
+      setForm((prev) => ({
+        ...prev,
+        locations: (res?.data?.company?.locations || []).map((location) => ({
+          _id: location._id,
+          name: location.name,
+          lat: String(location.lat),
+          lng: String(location.lng),
+          radius: String(location.radius || 100),
+        })),
+      }));
+      notify({ type: 'success', text: 'Office locations saved to cloud successfully!' });
+      await refresh();
+    } catch (err) {
+      notify({ type: 'error', text: err.errors?.[0]?.message || err.message || 'Failed to save locations.' });
+    } finally {
+      setSavingLocations(false);
     }
   };
 
@@ -239,9 +306,18 @@ export default function Settings() {
             </div>
           ))}
 
-          <Button variant="secondary" onClick={() => addItem('locations', NEW_LOCATION)}>
-            + Add Location
-          </Button>
+          <div className="settings__locations-btns" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <Button variant="secondary" onClick={() => addItem('locations', NEW_LOCATION)}>
+              + Add Location
+            </Button>
+            <Button
+              variant="primary"
+              loading={savingLocations}
+              onClick={handleSaveLocationsOnly}
+            >
+              Save Locations Now
+            </Button>
+          </div>
         </Card>
 
         <Card className="settings__section" size="small" title="Attendance Rules">

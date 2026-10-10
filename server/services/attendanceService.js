@@ -202,6 +202,8 @@ const toStaffInfo = (user) => ({
   _id: user._id,
   name: user.name,
   employeeCode: user.employeeCode,
+  department: user.department || '',
+  designation: user.designation || '',
   isActive: user.isActive,
 });
 
@@ -252,6 +254,12 @@ export async function getStaffMonthSummaries(month) {
 export async function getReport(month) {
   const { rows } = await getStaffMonthSummaries(month);
   return { month, rows: rows.map(({ user, summary }) => ({ staff: toStaffInfo(user), summary })) };
+}
+
+// Admin report Excel export data
+export async function getExportData(month) {
+  const { company, rows } = await getStaffMonthSummaries(month);
+  return { month, company, rows: rows.map(({ user, summary }) => ({ staff: toStaffInfo(user), summary })) };
 }
 
 // Admin dashboard ke liye: aaj kitne active staff present hain, kitne leave par, kitno ne punch nahi kiya.

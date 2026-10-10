@@ -1,4 +1,5 @@
 import * as attendanceService from '../services/attendanceService.js';
+import { writeAttendanceExcel } from '../services/attendanceExportService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const requestMeta = (req) => ({ ip: req.ip, userAgent: req.get('user-agent') });
@@ -31,4 +32,12 @@ export const monthly = asyncHandler(async (req, res) => {
 export const report = asyncHandler(async (req, res) => {
   const data = await attendanceService.getReport(req.query.month);
   res.json({ success: true, data });
+});
+
+export const exportExcel = asyncHandler(async (req, res) => {
+  const data = await attendanceService.getExportData(req.query.month);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="attendance-${data.month}.xlsx"`);
+  await writeAttendanceExcel(data, res);
+  res.end();
 });

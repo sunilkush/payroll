@@ -15,6 +15,7 @@ router.get('/today', staffOnly, attendanceController.today);
 
 router.get('/today-summary', adminOnly, attendanceController.todaySummary);
 router.get('/report', adminOnly, validate(reportQuerySchema, 'query'), attendanceController.report);
+router.get('/export', adminOnly, validate(reportQuerySchema, 'query'), attendanceController.exportExcel);
 // Staff: apna mahina. Admin: ?userId= se kisi staff ka mahina.
 router.get(
   '/',

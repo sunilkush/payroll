@@ -1,4 +1,4 @@
-import React, { Component, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert as NativeAlert,
@@ -11,42 +11,9 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { WebView } from 'react-native-webview';
 import Badge from './Badge.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
-
-let NativeMapView = null;
-let NativeMarker = null;
-let NativeCircle = null;
-
-if (Platform.OS !== 'web') {
-  try {
-    const Maps = require('react-native-maps');
-    NativeMapView = Maps.default || Maps;
-    NativeMarker = Maps.Marker || Maps.default?.Marker;
-    NativeCircle = Maps.Circle || Maps.default?.Circle;
-  } catch (e) {
-    console.warn('react-native-maps native module not available:', e.message);
-  }
-}
-
-class MapErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(err) {
-    console.warn('Native MapView error caught by boundary, falling back to radar view:', err);
-  }
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-    return this.props.children;
-  }
-}
 
 const DEFAULT_LAT = 28.6139; // New Delhi
 const DEFAULT_LNG = 77.209;
@@ -69,32 +36,24 @@ export default function LocationPickerMap({
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [mapReady, setMapReady] = useState(false);
+  const [mapLoading, setMapLoading] = useState(true);
 
-  const mapRef = useRef(null);
+  const webViewRef = useRef(null);
 
-  const region = {
-    latitude: numLat,
-    longitude: numLng,
-    latitudeDelta: 0.008,
-    longitudeDelta: 0.008,
-  };
-
+  // Sync external coordinate changes to the Leaflet Map
   useEffect(() => {
-    if (mapRef.current && NativeMapView) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: numLat,
-          longitude: numLng,
-          latitudeDelta: 0.008,
-          longitudeDelta: 0.008,
-        },
-        500
-      );
+    if (webViewRef.current) {
+      const script = `
+        if (typeof updateMapLocation === 'function') {
+          updateMapLocation(${numLat}, ${numLng}, ${numRadius});
+        }
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
     }
-  }, [numLat, numLng]);
+  }, [numLat, numLng, numRadius]);
 
-  // Search Address / Place via Nominatim & Expo Location
+  // OpenStreetMap Nominatim Free Search
   const handleSearch = async () => {
     const q = searchQuery.trim();
     if (!q) return;
@@ -118,13 +77,11 @@ export default function LocationPickerMap({
         // Fallback to OpenStreetMap
       }
 
-      // 2. OpenStreetMap Nominatim fallback (global, free)
+      // 2. OpenStreetMap Nominatim (Global Free Search)
       if (!coords) {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q=${encodeURIComponent(
-          q
-        )}`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
         const res = await fetch(url, {
-          headers: { 'User-Agent': 'PayRoster-MobileApp/1.0' },
+          headers: { 'User-Agent': 'PayRoster-App/1.0 (info@payroster.com)' },
         });
         const data = await res.json();
         if (data && data.length > 0) {
@@ -141,22 +98,20 @@ export default function LocationPickerMap({
         if (placeName && onAddressResolved) {
           onAddressResolved(placeName);
         }
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(
-            {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              latitudeDelta: 0.006,
-              longitudeDelta: 0.006,
-            },
-            600
-          );
+        if (webViewRef.current) {
+          const script = `
+            if (typeof updateMapLocation === 'function') {
+              updateMapLocation(${coords.latitude}, ${coords.longitude}, ${numRadius});
+            }
+            true;
+          `;
+          webViewRef.current.injectJavaScript(script);
         }
       } else {
-        setSearchError('Address not found. Please try a landmark, city or tap on the map.');
+        setSearchError('Address not found on OpenStreetMap. Try searching a city, landmark or tap on the map.');
       }
     } catch (err) {
-      setSearchError('Search failed. Please tap directly on the map or use GPS.');
+      setSearchError('Search failed. Please tap directly on the map or use phone GPS.');
     } finally {
       setSearching(false);
     }
@@ -170,8 +125,8 @@ export default function LocationPickerMap({
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         NativeAlert.alert(
-          'Permission Denied',
-          'Location permission is required to detect your office GPS coordinates.'
+          'Location Permission Denied',
+          'Please allow location access in your device settings to detect office coordinates.'
         );
         return;
       }
@@ -190,19 +145,17 @@ export default function LocationPickerMap({
         const cLng = pos.coords.longitude.toFixed(6);
         if (onPick) onPick(cLat, cLng);
 
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(
-            {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.005,
-            },
-            600
-          );
+        if (webViewRef.current) {
+          const script = `
+            if (typeof updateMapLocation === 'function') {
+              updateMapLocation(${pos.coords.latitude}, ${pos.coords.longitude}, ${numRadius});
+            }
+            true;
+          `;
+          webViewRef.current.injectJavaScript(script);
         }
 
-        // Reverse geocode to suggest branch name
+        // Reverse geocode to resolve address
         try {
           const rev = await Location.reverseGeocodeAsync({
             latitude: pos.coords.latitude,
@@ -217,59 +170,151 @@ export default function LocationPickerMap({
           }
         } catch (e) {}
       } else {
-        NativeAlert.alert(
-          'GPS Signal Weak',
-          'Could not lock GPS location. Please ensure location services are turned on.'
-        );
+        NativeAlert.alert('GPS Signal Weak', 'Unable to retrieve phone location coordinates.');
       }
     } catch (err) {
-      NativeAlert.alert('GPS Error', err.message || 'Unable to retrieve phone location.');
+      NativeAlert.alert('GPS Error', err.message || 'Location retrieval failed.');
     } finally {
       setLocating(false);
     }
   };
 
-  const handleMapPress = (e) => {
-    const coordinate = e.nativeEvent?.coordinate;
-    if (coordinate && onPick) {
-      onPick(coordinate.latitude.toFixed(6), coordinate.longitude.toFixed(6));
+  const handleWebViewMessage = (event) => {
+    try {
+      const payload = JSON.parse(event.nativeEvent.data);
+      if (payload.type === 'onPick') {
+        if (onPick) onPick(payload.lat, payload.lng);
+      }
+    } catch (err) {
+      // JSON parse error
     }
   };
 
-  const handleMarkerDragEnd = (e) => {
-    const coordinate = e.nativeEvent?.coordinate;
-    if (coordinate && onPick) {
-      onPick(coordinate.latitude.toFixed(6), coordinate.longitude.toFixed(6));
-    }
-  };
+  // 100% Free OpenStreetMap + Leaflet HTML template
+  const leafletHtml = useMemo(() => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+          * { -webkit-tap-highlight-color: transparent; }
+          html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: #F8FAFC;
+          }
+          .custom-office-pin {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: #2563EB;
+            border: 3px solid #FFFFFF;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+          }
+          .custom-office-pin-inner {
+            width: 12px;
+            height: 12px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            transform: rotate(45deg);
+          }
+          .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="map"></div>
+        <script>
+          var lat = ${numLat};
+          var lng = ${numLng};
+          var radius = ${numRadius};
+
+          var map = L.map('map', {
+            zoomControl: true,
+            attributionControl: false
+          }).setView([lat, lng], 16);
+
+          // Free OpenStreetMap Tile Layer (No API Key Required)
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+          }).addTo(map);
+
+          var officeIcon = L.divIcon({
+            className: '',
+            iconSize: [38, 38],
+            iconAnchor: [19, 38],
+            html: '<div class="custom-office-pin"><div class="custom-office-pin-inner"></div></div>'
+          });
+
+          var marker = L.marker([lat, lng], {
+            draggable: true,
+            icon: officeIcon
+          }).addTo(map);
+
+          var circle = L.circle([lat, lng], {
+            radius: radius,
+            color: '#2563EB',
+            fillColor: '#3B82F6',
+            fillOpacity: 0.18,
+            weight: 2
+          }).addTo(map);
+
+          function sendLocation(nLat, nLng) {
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'onPick',
+                lat: Number(nLat).toFixed(6),
+                lng: Number(nLng).toFixed(6)
+              }));
+            }
+          }
+
+          map.on('click', function(e) {
+            marker.setLatLng(e.latlng);
+            circle.setLatLng(e.latlng);
+            sendLocation(e.latlng.lat, e.latlng.lng);
+          });
+
+          marker.on('dragend', function() {
+            var pos = marker.getLatLng();
+            circle.setLatLng(pos);
+            sendLocation(pos.lat, pos.lng);
+          });
+
+          window.updateMapLocation = function(newLat, newLng, newRadius) {
+            var nL = parseFloat(newLat);
+            var nG = parseFloat(newLng);
+            var nR = parseFloat(newRadius);
+            if (!isNaN(nL) && !isNaN(nG)) {
+              marker.setLatLng([nL, nG]);
+              circle.setLatLng([nL, nG]);
+              map.panTo([nL, nG], { animate: true });
+            }
+            if (!isNaN(nR)) {
+              circle.setRadius(nR);
+            }
+          };
+        </script>
+      </body>
+      </html>
+    `;
+  }, []);
 
   const RADIUS_PRESETS = [50, 100, 200, 500];
-
-  const renderRadarFallback = () => (
-    <View style={styles.fallbackMap}>
-      <View style={styles.radarCenter}>
-        <View
-          style={[
-            styles.radarCircle,
-            {
-              width: Math.min(220, 80 + numRadius * 0.25),
-              height: Math.min(220, 80 + numRadius * 0.25),
-              borderRadius: Math.min(110, 40 + numRadius * 0.125),
-            },
-          ]}
-        />
-        <View style={styles.markerCircle}>
-          <MaterialCommunityIcons name="office-building" size={20} color="#FFFFFF" />
-        </View>
-      </View>
-      <Text style={styles.fallbackMapText}>
-        Office Location Pin at {numLat.toFixed(5)}, {numLng.toFixed(5)}
-      </Text>
-      <Text style={styles.fallbackSubText}>
-        Geofence Radius: {numRadius} meters around this coordinate
-      </Text>
-    </View>
-  );
 
   return (
     <View style={styles.container}>
@@ -314,54 +359,27 @@ export default function LocationPickerMap({
         </View>
       ) : null}
 
-      {/* 2. Interactive Map Container */}
+      {/* 2. Interactive Free OpenStreetMap View */}
       <View style={styles.mapFrame}>
-        <MapErrorBoundary fallback={renderRadarFallback()}>
-          {NativeMapView && NativeMarker && NativeCircle ? (
-            <NativeMapView
-              ref={mapRef}
-              style={styles.map}
-              initialRegion={region}
-              onPress={handleMapPress}
-              onMapReady={() => setMapReady(true)}
-              showsUserLocation
-              showsMyLocationButton={false}
-              scrollEnabled={true}
-              zoomEnabled={true}
-              rotateEnabled={false}
-              pitchEnabled={false}
-            >
-              {/* Office Center Marker */}
-              <NativeMarker
-                coordinate={{ latitude: numLat, longitude: numLng }}
-                draggable
-                onDragEnd={handleMarkerDragEnd}
-                title="Office Geofence Center"
-                description={`Radius: ${numRadius}m`}
-              >
-                <View style={styles.markerContainer}>
-                  <View style={styles.markerCircle}>
-                    <MaterialCommunityIcons name="office-building" size={18} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.markerTail} />
-                </View>
-              </NativeMarker>
-
-              {/* Geofence Perimeter Circle */}
-              <NativeCircle
-                center={{ latitude: numLat, longitude: numLng }}
-                radius={numRadius}
-                strokeColor="rgba(37, 99, 235, 0.85)"
-                fillColor="rgba(37, 99, 235, 0.18)"
-                strokeWidth={2}
-              />
-            </NativeMapView>
-          ) : (
-            renderRadarFallback()
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+          source={{ html: leafletHtml }}
+          onMessage={handleWebViewMessage}
+          onLoadEnd={() => setMapLoading(false)}
+          style={styles.webView}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Loading Free OpenStreetMap...</Text>
+            </View>
           )}
-        </MapErrorBoundary>
+        />
 
-        {/* Floating Quick Action: GPS Location Button */}
+        {/* Floating Quick GPS & Help Pill */}
         <TouchableOpacity
           style={styles.gpsFloatingBtn}
           onPress={handleUseGps}
@@ -371,55 +389,54 @@ export default function LocationPickerMap({
           {locating ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <>
-              <MaterialCommunityIcons name="crosshairs-gps" size={20} color={colors.primary} />
-              <Text style={styles.gpsFloatingText}>My GPS</Text>
-            </>
+            <MaterialCommunityIcons name="crosshairs-gps" size={18} color={colors.primary} />
           )}
+          <Text style={styles.gpsFloatingBtnText}>
+            {locating ? 'Detecting GPS...' : 'Use Phone Location'}
+          </Text>
         </TouchableOpacity>
 
-        {/* Floating Hint Overlay */}
-        <View style={styles.mapHintBadge}>
-          <MaterialCommunityIcons name="gesture-tap" size={14} color="#FFFFFF" />
-          <Text style={styles.mapHintText}>Tap map or drag pin to position office</Text>
+        {/* Free Map Provider Badge */}
+        <View style={styles.providerBadge}>
+          <MaterialCommunityIcons name="map-check-outline" size={12} color="#059669" />
+          <Text style={styles.providerBadgeText}>OpenStreetMap • 100% Free</Text>
         </View>
       </View>
 
-      {/* 3. Radius Quick Presets */}
-      <View style={styles.radiusRow}>
-        <Text style={styles.radiusLabel}>Geofence Radius:</Text>
-        <View style={styles.presetsWrap}>
-          {RADIUS_PRESETS.map((p) => {
-            const isSelected = numRadius === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                style={[styles.presetChip, isSelected && styles.presetChipActive]}
-                onPress={() => onRadiusChange && onRadiusChange(String(p))}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.presetText, isSelected && styles.presetTextActive]}>
-                  {p}m
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {/* 3. Coordinates & Radius Control Bar */}
+      <View style={styles.metaControlBar}>
+        <View style={styles.coordsDisplay}>
+          <Text style={styles.coordsLabel}>Office Center Coordinates:</Text>
+          <Text style={styles.coordsValue}>
+            {numLat.toFixed(6)}, {numLng.toFixed(6)}
+          </Text>
         </View>
-      </View>
 
-      {/* 4. Active Coordinates Badge */}
-      <View style={styles.coordsBadge}>
-        <View style={styles.coordsLeft}>
-          <MaterialCommunityIcons name="map-marker-check" size={20} color={colors.success} />
-          <View>
-            <Text style={styles.coordsTitle}>Target Coordinates Locked</Text>
-            <Text style={styles.coordsValue}>
-              {numLat.toFixed(6)}, {numLng.toFixed(6)} • ±{numRadius}m
-            </Text>
+        <View style={styles.radiusPresetsRow}>
+          <Text style={styles.radiusPresetsLabel}>Geofence Radius:</Text>
+          <View style={styles.radiusChips}>
+            {RADIUS_PRESETS.map((r) => {
+              const isSelected = numRadius === r;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.radiusChip, isSelected && styles.radiusChipActive]}
+                  onPress={() => onRadiusChange?.(String(r))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.radiusChipText, isSelected && styles.radiusChipTextActive]}>
+                    {r}m
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
-        <Badge label="Validated" variant="success" size="sm" />
       </View>
+
+      <Text style={styles.mapHelpText}>
+        💡 <Text style={{ fontWeight: '700' }}>Tip:</Text> Tap anywhere on the map or drag the blue pin to position the office entrance. Staff within the blue circle can punch in.
+      </Text>
     </View>
   );
 }
@@ -437,32 +454,31 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
+    height: 42,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
-    color: colors.text,
+    fontSize: 13,
+    color: '#0F172A',
+    marginLeft: 6,
     paddingVertical: 0,
   },
   searchBtn: {
     backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
     paddingHorizontal: 16,
-    height: 44,
+    height: 42,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 64,
   },
   searchBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: typography.weights.bold,
   },
   errorBox: {
@@ -470,8 +486,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
     padding: 8,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.sm,
     marginBottom: 8,
   },
   errorText: {
@@ -480,167 +498,131 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapFrame: {
-    width: '100%',
     height: 250,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#E2E8F0',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
     position: 'relative',
-    ...shadows.sm,
   },
-  map: {
+  webView: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
     ...StyleSheet.absoluteFillObject,
-  },
-  markerContainer: {
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
   },
-  markerCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    ...shadows.md,
-  },
-  markerTail: {
-    width: 4,
-    height: 6,
-    backgroundColor: colors.primary,
+  loadingText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
   },
   gpsFloatingBtn: {
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...shadows.md,
+    borderColor: '#DBEAFE',
+    ...shadows.sm,
   },
-  gpsFloatingText: {
-    fontSize: 12,
+  gpsFloatingBtnText: {
+    fontSize: 11,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
-  mapHintBadge: {
+  providerBadge: {
     position: 'absolute',
-    bottom: 8,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    bottom: 6,
+    left: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: borderRadius.pill,
-  },
-  mapHintText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: typography.weights.medium,
-  },
-  fallbackMap: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  radarCenter: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  radarCircle: {
-    position: 'absolute',
-    backgroundColor: 'rgba(37, 99, 235, 0.15)',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-  },
-  fallbackMapText: {
-    fontSize: 13,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  fallbackSubText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  radiusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  radiusLabel: {
-    fontSize: 13,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-  },
-  presetsWrap: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: borderRadius.pill,
-    backgroundColor: '#F1F5F9',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  presetChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  providerBadgeText: {
+    fontSize: 9,
+    fontWeight: typography.weights.bold,
+    color: '#059669',
   },
-  presetText: {
-    fontSize: 12,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
-  },
-  presetTextActive: {
-    color: '#FFFFFF',
-  },
-  coordsBadge: {
+  metaControlBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#DCFCE7',
-    borderRadius: borderRadius.lg,
+    borderColor: '#E2E8F0',
+    borderRadius: borderRadius.md,
     padding: 10,
-    marginTop: 10,
+    marginTop: 8,
   },
-  coordsLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  coordsDisplay: {
     flex: 1,
   },
-  coordsTitle: {
-    fontSize: 12,
-    fontWeight: typography.weights.bold,
-    color: '#166534',
+  coordsLabel: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   coordsValue: {
     fontSize: 12,
-    color: '#15803D',
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
     marginTop: 1,
+  },
+  radiusPresetsRow: {
+    alignItems: 'flex-end',
+  },
+  radiusPresetsLabel: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    marginBottom: 3,
+  },
+  radiusChips: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  radiusChip: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  radiusChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  radiusChipText: {
+    fontSize: 11,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+  },
+  radiusChipTextActive: {
+    color: '#FFFFFF',
+  },
+  mapHelpText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 6,
+    lineHeight: 16,
   },
 });

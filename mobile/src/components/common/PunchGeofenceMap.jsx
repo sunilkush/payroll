@@ -10,25 +10,8 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import Badge from './Badge.jsx';
+import { WebView } from 'react-native-webview';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
-
-let NativeMapView = null;
-let NativeMarker = null;
-let NativeCircle = null;
-let NativePolyline = null;
-
-if (Platform.OS !== 'web') {
-  try {
-    const Maps = require('react-native-maps');
-    NativeMapView = Maps.default || Maps;
-    NativeMarker = Maps.Marker || Maps.default?.Marker;
-    NativeCircle = Maps.Circle || Maps.default?.Circle;
-    NativePolyline = Maps.Polyline || Maps.default?.Polyline;
-  } catch (e) {
-    console.warn('react-native-maps module not available:', e.message);
-  }
-}
 
 class MapErrorBoundary extends Component {
   constructor(props) {
@@ -39,7 +22,7 @@ class MapErrorBoundary extends Component {
     return { hasError: true };
   }
   componentDidCatch(err) {
-    console.warn('Native MapView error in PunchGeofenceMap:', err);
+    console.warn('WebView error in PunchGeofenceMap:', err);
   }
   render() {
     if (this.state.hasError) {
@@ -63,8 +46,8 @@ export default function PunchGeofenceMap({
   refreshing,
   style,
 }) {
-  const mapRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
+  const webViewRef = useRef(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   // Parse office coordinates
   const officeLat = Number.isFinite(officeLocation?.lat)
@@ -85,7 +68,7 @@ export default function PunchGeofenceMap({
   const userLng = hasUser ? userLocation.lng : null;
   const userAccuracy = Math.round(userLocation?.accuracy || 10);
 
-  // Animated pulse for radar sweep
+  // Animated pulse for radar sweep fallback
   const pulseAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     Animated.loop(
@@ -104,58 +87,42 @@ export default function PunchGeofenceMap({
     ).start();
   }, [pulseAnim]);
 
-  // Compute bounding region
-  const region = useMemo(() => {
-    if (hasUser) {
-      const midLat = (userLat + officeLat) / 2;
-      const midLng = (userLng + officeLng) / 2;
-      const latDelta = Math.max(0.004, Math.abs(userLat - officeLat) * 1.9);
-      const lngDelta = Math.max(0.004, Math.abs(userLng - officeLng) * 1.9);
-      return {
-        latitude: midLat,
-        longitude: midLng,
-        latitudeDelta: Math.min(latDelta, 0.08),
-        longitudeDelta: Math.min(lngDelta, 0.08),
-      };
-    }
-    return {
-      latitude: officeLat,
-      longitude: officeLng,
-      latitudeDelta: 0.006,
-      longitudeDelta: 0.006,
-    };
-  }, [hasUser, userLat, userLng, officeLat, officeLng]);
-
-  // Auto-fit to both user & office when coordinates change
+  // Sync coordinates & states dynamically to Leaflet WebView
   useEffect(() => {
-    if (mapReady && mapRef.current) {
-      mapRef.current.animateToRegion(region, 500);
+    if (webViewRef.current && mapLoaded) {
+      const script = `
+        if (typeof updateLivePositions === 'function') {
+          updateLivePositions(
+            ${userLat !== null ? userLat : 'null'},
+            ${userLng !== null ? userLng : 'null'},
+            ${Boolean(isInside)},
+            ${officeLat},
+            ${officeLng},
+            ${officeRadius}
+          );
+        }
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
     }
-  }, [region, mapReady]);
+  }, [userLat, userLng, isInside, officeLat, officeLng, officeRadius, mapLoaded]);
 
   const fitBoth = () => {
-    if (mapRef.current) {
-      mapRef.current.animateToRegion(region, 400);
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript('if(typeof fitBoth==="function"){fitBoth();}true;');
     }
   };
 
   const centerOnUser = () => {
-    if (mapRef.current && hasUser) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: userLat,
-          longitude: userLng,
-          latitudeDelta: 0.003,
-          longitudeDelta: 0.003,
-        },
-        400
-      );
-    } else if (onRefreshLocation) {
+    if (webViewRef.current && hasUser) {
+      webViewRef.current.injectJavaScript('if(typeof centerOnUser==="function"){centerOnUser();}true;');
+    }
+    if (onRefreshLocation) {
       onRefreshLocation();
     }
   };
 
-  const openGoogleMaps = () => {
+  const openExternalMaps = () => {
     let url = '';
     if (hasUser) {
       url = `https://www.google.com/maps/dir/?api=1&destination=${officeLat},${officeLng}&origin=${userLat},${userLng}`;
@@ -171,11 +138,268 @@ export default function PunchGeofenceMap({
     return `${(distance / 1000).toFixed(2)}km`;
   }, [distance]);
 
-  // Fallback interactive radar view (when native maps unavailable)
+  // Serialized extra branches for the map
+  const sanitizedBranchesJson = useMemo(() => {
+    const list = (allLocations || [])
+      .filter((loc) => loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng))
+      .filter((loc) => Math.abs(loc.lat - officeLat) > 0.0001 || Math.abs(loc.lng - officeLng) > 0.0001)
+      .map((loc) => ({
+        name: loc.name || 'Branch',
+        lat: loc.lat,
+        lng: loc.lng,
+        radius: loc.radius || 100,
+      }));
+    return JSON.stringify(list);
+  }, [allLocations, officeLat, officeLng]);
+
+  // 100% Free OpenStreetMap + Leaflet HTML template
+  const leafletHtml = useMemo(() => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+          * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+          html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: #F8FAFC;
+          }
+          .custom-office-pin {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: ${isInside ? '#10B981' : '#2563EB'};
+            border: 3px solid #FFFFFF;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+            transition: background 0.3s ease;
+          }
+          .custom-office-pin-inner {
+            width: 12px;
+            height: 12px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            transform: rotate(45deg);
+          }
+          .custom-user-marker {
+            position: relative;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: ${isInside ? '#10B981' : '#3B82F6'};
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .custom-user-pulse {
+            position: absolute;
+            top: -7px;
+            left: -7px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: ${isInside ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.35)'};
+            animation: pulse-ring 2s infinite ease-out;
+            pointer-events: none;
+          }
+          @keyframes pulse-ring {
+            0% { transform: scale(0.7); opacity: 0.9; }
+            100% { transform: scale(1.5); opacity: 0; }
+          }
+          .branch-node {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #64748B;
+            border: 2px solid #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          }
+          .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="map"></div>
+        <script>
+          var officeLat = ${officeLat};
+          var officeLng = ${officeLng};
+          var officeRadius = ${officeRadius};
+          var officeName = ${JSON.stringify(officeName)};
+          var userLat = ${userLat !== null ? userLat : 'null'};
+          var userLng = ${userLng !== null ? userLng : 'null'};
+          var isInside = ${Boolean(isInside)};
+          var extraBranches = ${sanitizedBranchesJson};
+
+          var map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+          });
+
+          // Free OpenStreetMap Standard Tiles
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+          }).addTo(map);
+
+          function getOfficeIcon(inside) {
+            return L.divIcon({
+              className: '',
+              iconSize: [36, 36],
+              iconAnchor: [18, 36],
+              popupAnchor: [0, -36],
+              html: '<div class="custom-office-pin" style="background:' + (inside ? '#10B981' : '#2563EB') + '"><div class="custom-office-pin-inner"></div></div>'
+            });
+          }
+
+          function getUserIcon(inside) {
+            return L.divIcon({
+              className: '',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
+              popupAnchor: [0, -15],
+              html: '<div class="custom-user-marker" style="background:' + (inside ? '#10B981' : '#3B82F6') + '"><div class="custom-user-pulse" style="background:' + (inside ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.35)') + '"></div></div>'
+            });
+          }
+
+          // Office Pin
+          var officeMarker = L.marker([officeLat, officeLng], {
+            icon: getOfficeIcon(isInside)
+          }).addTo(map).bindPopup('<b>' + officeName + '</b><br>Geofence: ' + officeRadius + 'm');
+
+          // Office Geofence Circle
+          var circle = L.circle([officeLat, officeLng], {
+            radius: officeRadius,
+            color: isInside ? '#10B981' : '#EF4444',
+            fillColor: isInside ? '#10B981' : '#EF4444',
+            fillOpacity: isInside ? 0.22 : 0.14,
+            weight: 2
+          }).addTo(map);
+
+          // Extra Branches
+          if (Array.isArray(extraBranches)) {
+            extraBranches.forEach(function(b) {
+              var branchIcon = L.divIcon({
+                className: '',
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+                html: '<div class="branch-node"></div>'
+              });
+              L.marker([b.lat, b.lng], { icon: branchIcon })
+                .addTo(map)
+                .bindPopup('<b>' + b.name + '</b>');
+            });
+          }
+
+          // User Marker & Polyline
+          var userMarker = null;
+          var distanceLine = null;
+
+          if (userLat !== null && userLng !== null) {
+            userMarker = L.marker([userLat, userLng], {
+              icon: getUserIcon(isInside)
+            }).addTo(map).bindPopup('<b>Your Live Location</b>');
+
+            distanceLine = L.polyline([[userLat, userLng], [officeLat, officeLng]], {
+              color: isInside ? '#10B981' : '#64748B',
+              weight: 2,
+              dashArray: '5, 5'
+            }).addTo(map);
+
+            var group = new L.featureGroup([officeMarker, userMarker]);
+            map.fitBounds(group.getBounds().pad(0.35));
+          } else {
+            map.setView([officeLat, officeLng], 16);
+          }
+
+          window.fitBoth = function() {
+            if (userMarker) {
+              var group = new L.featureGroup([officeMarker, userMarker]);
+              map.fitBounds(group.getBounds().pad(0.35), { animate: true });
+            } else {
+              map.setView([officeLat, officeLng], 16, { animate: true });
+            }
+          };
+
+          window.centerOnUser = function() {
+            if (userMarker) {
+              map.setView(userMarker.getLatLng(), 17, { animate: true });
+            } else {
+              map.setView([officeLat, officeLng], 16, { animate: true });
+            }
+          };
+
+          window.updateLivePositions = function(nUserLat, nUserLng, nInside, nOfficeLat, nOfficeLng, nRadius) {
+            officeLat = parseFloat(nOfficeLat) || officeLat;
+            officeLng = parseFloat(nOfficeLng) || officeLng;
+            officeRadius = parseFloat(nRadius) || officeRadius;
+            isInside = Boolean(nInside);
+
+            officeMarker.setLatLng([officeLat, officeLng]);
+            officeMarker.setIcon(getOfficeIcon(isInside));
+
+            circle.setLatLng([officeLat, officeLng]);
+            circle.setRadius(officeRadius);
+            circle.setStyle({
+              color: isInside ? '#10B981' : '#EF4444',
+              fillColor: isInside ? '#10B981' : '#EF4444',
+              fillOpacity: isInside ? 0.22 : 0.14
+            });
+
+            var parsedULat = parseFloat(nUserLat);
+            var parsedULng = parseFloat(nUserLng);
+
+            if (!isNaN(parsedULat) && !isNaN(parsedULng)) {
+              if (!userMarker) {
+                userMarker = L.marker([parsedULat, parsedULng], {
+                  icon: getUserIcon(isInside)
+                }).addTo(map).bindPopup('<b>Your Live Location</b>');
+              } else {
+                userMarker.setLatLng([parsedULat, parsedULng]);
+                userMarker.setIcon(getUserIcon(isInside));
+              }
+
+              if (!distanceLine) {
+                distanceLine = L.polyline([[parsedULat, parsedULng], [officeLat, officeLng]], {
+                  color: isInside ? '#10B981' : '#64748B',
+                  weight: 2,
+                  dashArray: '5, 5'
+                }).addTo(map);
+              } else {
+                distanceLine.setLatLngs([[parsedULat, parsedULng], [officeLat, officeLng]]);
+                distanceLine.setStyle({
+                  color: isInside ? '#10B981' : '#64748B'
+                });
+              }
+
+              var grp = new L.featureGroup([officeMarker, userMarker]);
+              map.fitBounds(grp.getBounds().pad(0.35), { animate: true });
+            }
+          };
+        </script>
+      </body>
+      </html>
+    `;
+  }, [officeLat, officeLng, officeRadius, officeName, sanitizedBranchesJson]);
+
+  // Fallback interactive radar view (when webview fails)
   const renderRadarFallback = () => {
     return (
       <View style={styles.fallbackCanvas}>
-        {/* Animated Radial Radar Rings */}
         <View style={styles.fallbackRadarWrapper}>
           <View
             style={[
@@ -193,12 +417,10 @@ export default function PunchGeofenceMap({
             ]}
           />
 
-          {/* Central Office Marker */}
           <View style={styles.fallbackOfficeNode}>
             <MaterialCommunityIcons name="office-building" size={20} color="#FFFFFF" />
           </View>
 
-          {/* User Node on Radar */}
           {hasUser && (
             <Animated.View
               style={[
@@ -206,7 +428,6 @@ export default function PunchGeofenceMap({
                 {
                   transform: [{ scale: pulseAnim }],
                   backgroundColor: isInside ? colors.success : colors.danger,
-                  // Position node based on inside/outside state
                   top: isInside ? '36%' : '14%',
                   right: isInside ? '34%' : '20%',
                 },
@@ -217,7 +438,6 @@ export default function PunchGeofenceMap({
           )}
         </View>
 
-        {/* Radar Info Box */}
         <View style={styles.fallbackInfoBox}>
           <View style={styles.fallbackTitleRow}>
             <MaterialCommunityIcons
@@ -306,117 +526,28 @@ export default function PunchGeofenceMap({
       {/* Main Map Box */}
       <View style={styles.mapFrame}>
         <MapErrorBoundary fallback={renderRadarFallback()}>
-          {NativeMapView && NativeMarker && NativeCircle ? (
-            <NativeMapView
-              ref={mapRef}
-              style={styles.map}
-              initialRegion={region}
-              onMapReady={() => setMapReady(true)}
-              showsUserLocation={false}
-              showsMyLocationButton={false}
-              showsCompass={false}
-              scrollEnabled={true}
-              zoomEnabled={true}
-              rotateEnabled={false}
-              pitchEnabled={false}
-            >
-              {/* Other Company Branches (if any) */}
-              {allLocations.map((loc, idx) => {
-                if (loc.lat === officeLat && loc.lng === officeLng) return null;
-                return (
-                  <NativeMarker
-                    key={loc._id || `branch_${idx}`}
-                    coordinate={{ latitude: loc.lat, longitude: loc.lng }}
-                    title={loc.name}
-                    description={`Radius: ${loc.radius}m`}
-                  >
-                    <View style={styles.branchMarker}>
-                      <MaterialCommunityIcons name="office-building" size={14} color="#FFFFFF" />
-                    </View>
-                  </NativeMarker>
-                );
-              })}
+          <WebView
+            ref={webViewRef}
+            originWhitelist={['*']}
+            source={{ html: leafletHtml }}
+            onLoadEnd={() => setMapLoaded(true)}
+            style={styles.map}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            renderLoading={() => (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>Loading Free OpenStreetMap...</Text>
+              </View>
+            )}
+          />
 
-              {/* Nearest Office Center Marker */}
-              <NativeMarker
-                coordinate={{ latitude: officeLat, longitude: officeLng }}
-                title={officeName}
-                description={`Geofence radius: ${officeRadius}m`}
-              >
-                <View style={styles.officeMarkerContainer}>
-                  <View
-                    style={[
-                      styles.officeMarkerCircle,
-                      { backgroundColor: isInside ? colors.success : colors.primary },
-                    ]}
-                  >
-                    <MaterialCommunityIcons name="office-building" size={18} color="#FFFFFF" />
-                  </View>
-                  <View
-                    style={[
-                      styles.officeMarkerTail,
-                      { borderTopColor: isInside ? colors.success : colors.primary },
-                    ]}
-                  />
-                </View>
-              </NativeMarker>
-
-              {/* Geofence Perimeter Circle */}
-              <NativeCircle
-                center={{ latitude: officeLat, longitude: officeLng }}
-                radius={officeRadius}
-                strokeColor={isInside ? 'rgba(16, 185, 129, 0.9)' : 'rgba(239, 68, 68, 0.85)'}
-                fillColor={isInside ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.15)'}
-                strokeWidth={2}
-              />
-
-              {/* Connecting Path / Distance Polyline */}
-              {NativePolyline && hasUser && (
-                <NativePolyline
-                  coordinates={[
-                    { latitude: userLat, longitude: userLng },
-                    { latitude: officeLat, longitude: officeLng },
-                  ]}
-                  strokeColor={isInside ? 'rgba(16, 185, 129, 0.8)' : 'rgba(100, 116, 139, 0.7)'}
-                  strokeWidth={2}
-                  lineDashPattern={[5, 5]}
-                />
-              )}
-
-              {/* User Live GPS Marker */}
-              {hasUser && (
-                <NativeMarker
-                  coordinate={{ latitude: userLat, longitude: userLng }}
-                  title="Your Location"
-                  description={`Accuracy: ±${userAccuracy}m`}
-                >
-                  <View style={styles.userMarkerContainer}>
-                    <Animated.View
-                      style={[
-                        styles.userMarkerPulse,
-                        {
-                          transform: [{ scale: pulseAnim }],
-                          backgroundColor: isInside
-                            ? 'rgba(16, 185, 129, 0.28)'
-                            : 'rgba(59, 130, 246, 0.28)',
-                        },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.userMarkerDot,
-                        { backgroundColor: isInside ? colors.success : colors.primary },
-                      ]}
-                    >
-                      <MaterialCommunityIcons name="account" size={13} color="#FFFFFF" />
-                    </View>
-                  </View>
-                </NativeMarker>
-              )}
-            </NativeMapView>
-          ) : (
-            renderRadarFallback()
-          )}
+          {/* Free OpenStreetMap Provider Badge */}
+          <View style={styles.providerBadge}>
+            <MaterialCommunityIcons name="map-check-outline" size={11} color="#059669" />
+            <Text style={styles.providerBadgeText}>OpenStreetMap • Free</Text>
+          </View>
         </MapErrorBoundary>
       </View>
 
@@ -433,11 +564,11 @@ export default function PunchGeofenceMap({
 
         <TouchableOpacity
           style={styles.openMapsBtn}
-          onPress={openGoogleMaps}
+          onPress={openExternalMaps}
           activeOpacity={0.7}
         >
-          <MaterialCommunityIcons name="google-maps" size={16} color={colors.primary} />
-          <Text style={styles.openMapsText}>Google Maps</Text>
+          <MaterialCommunityIcons name="map-marker-distance" size={16} color={colors.primary} />
+          <Text style={styles.openMapsText}>Directions</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -500,70 +631,44 @@ const styles = StyleSheet.create({
   },
   mapFrame: {
     width: '100%',
-    height: 220,
+    height: 230,
     backgroundColor: '#E2E8F0',
     position: 'relative',
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
   },
-
-  // Office Marker Callout
-  officeMarkerContainer: {
-    alignItems: 'center',
-  },
-  officeMarkerCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    ...shadows.md,
+    gap: 6,
   },
-  officeMarkerTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderTopWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+  loadingText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
   },
-  branchMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.textSecondary,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // User Marker Callout
-  userMarkerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 36,
-    height: 36,
-  },
-  userMarkerPulse: {
+  providerBadge: {
     position: 'absolute',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  userMarkerDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: 6,
+    left: 8,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    ...shadows.sm,
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  providerBadgeText: {
+    fontSize: 9,
+    fontWeight: typography.weights.bold,
+    color: '#059669',
   },
 
   // Fallback Radar Canvas
