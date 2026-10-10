@@ -23,6 +23,7 @@ import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { formatDate, todayLocal, WEEKDAYS } from '../../utils/format.js';
+import LocationPickerMap from '../../components/common/LocationPickerMap.jsx';
 
 export default function AdminSettingsScreen({ navigation }) {
   const [data, setData] = useState(null);
@@ -123,9 +124,21 @@ export default function AdminSettingsScreen({ navigation }) {
     loadSettings();
   }, []);
 
-  const openAddLoc = () => {
+  const openAddLoc = async () => {
     setEditingIndex(null);
-    setLocForm({ name: '', lat: '', lng: '', radius: '100' });
+    let initialLat = '28.613900';
+    let initialLng = '77.209000';
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const last = await Location.getLastKnownPositionAsync();
+        if (last && last.coords) {
+          initialLat = last.coords.latitude.toFixed(6);
+          initialLng = last.coords.longitude.toFixed(6);
+        }
+      }
+    } catch (e) {}
+    setLocForm({ name: '', lat: initialLat, lng: initialLng, radius: '100' });
     setLocModalVisible(true);
   };
 
@@ -143,33 +156,64 @@ export default function AdminSettingsScreen({ navigation }) {
         NativeAlert.alert('Permission Error', 'Location permission is required to capture coordinates.');
         return;
       }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
-      setLocForm((prev) => ({
-        ...prev,
-        lat: String(pos.coords.latitude),
-        lng: String(pos.coords.longitude),
-      }));
+      let pos = null;
+      try {
+        pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      } catch (e) {
+        pos = await Location.getLastKnownPositionAsync();
+      }
+      if (pos && pos.coords) {
+        setLocForm((prev) => ({
+          ...prev,
+          lat: pos.coords.latitude.toFixed(6),
+          lng: pos.coords.longitude.toFixed(6),
+        }));
+      } else {
+        NativeAlert.alert('GPS Notice', 'Could not lock GPS signal. You can also search or drag the pin on the map.');
+      }
     } catch (err) {
-      NativeAlert.alert('GPS Error', err.message);
+      NativeAlert.alert('GPS Error', err.message || 'Unable to retrieve location.');
     } finally {
       setCapturingGps(false);
     }
   };
 
   const handleSaveLoc = () => {
-    if (!locForm.name.trim() || !locForm.lat || !locForm.lng) {
-      NativeAlert.alert('Validation Error', 'Please specify a name and valid GPS coordinates.');
+    const cleanName = locForm.name.trim();
+    if (!cleanName || cleanName.length < 2) {
+      NativeAlert.alert('Validation Error', 'Please enter a valid branch name (at least 2 characters).');
       return;
     }
+
+    const nLat = parseFloat(locForm.lat);
+    const nLng = parseFloat(locForm.lng);
+    if (isNaN(nLat) || isNaN(nLng) || nLat < -90 || nLat > 90 || nLng < -180 || nLng > 180) {
+      NativeAlert.alert('Validation Error', 'Please select valid GPS coordinates on the map.');
+      return;
+    }
+
+    const nRad = parseInt(locForm.radius, 10) || 100;
+    if (nRad < 10 || nRad > 5000) {
+      NativeAlert.alert('Validation Error', 'Geofence radius must be between 10m and 5000m.');
+      return;
+    }
+
+    const itemToSave = {
+      ...(editingIndex !== null && locations[editingIndex]?._id && { _id: locations[editingIndex]._id }),
+      name: cleanName,
+      lat: nLat.toFixed(6),
+      lng: nLng.toFixed(6),
+      radius: String(nRad),
+    };
 
     if (editingIndex !== null) {
       setLocations((prev) => {
         const next = [...prev];
-        next[editingIndex] = locForm;
+        next[editingIndex] = itemToSave;
         return next;
       });
     } else {
-      setLocations((prev) => [...prev, locForm]);
+      setLocations((prev) => [...prev, itemToSave]);
     }
     setLocModalVisible(false);
   };
@@ -271,10 +315,13 @@ export default function AdminSettingsScreen({ navigation }) {
       };
 
       await updateSettingsApi(payload);
-      setStatusMsg({ type: 'success', text: 'Company settings saved successfully!' });
+      setStatusMsg({ type: 'success', text: 'Company settings & locations saved successfully!' });
+      NativeAlert.alert('Settings Saved', 'All company geofence locations and rules have been saved successfully.');
       setTimeout(() => setStatusMsg({ type: 'success', text: '' }), 4000);
     } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Failed to save settings.' });
+      const msg = err.errors?.[0]?.message || err.message || 'Failed to save settings.';
+      setStatusMsg({ type: 'error', text: msg });
+      NativeAlert.alert('Save Failed', msg);
     } finally {
       setSaving(false);
     }
@@ -729,7 +776,7 @@ export default function AdminSettingsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Add / Edit Location Modal */}
+      {/* Add / Edit Location Modal with Interactive Map */}
       <Modal
         visible={locModalVisible}
         transparent
@@ -737,68 +784,86 @@ export default function AdminSettingsScreen({ navigation }) {
         onRequestClose={() => setLocModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <Card style={styles.modalCard} elevation="lg">
+          <Card style={styles.modalCardLarge} elevation="lg">
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingIndex !== null ? 'Edit Branch Location' : 'Add Office Branch'}
-              </Text>
-              <TouchableOpacity onPress={() => setLocModalVisible(false)}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>
+                  {editingIndex !== null ? 'Edit Branch Location' : 'Add Office Branch'}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  Search place or tap map to drop office geofence pin
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setLocModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <MaterialCommunityIcons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <Input
-              label="Branch Name *"
-              value={locForm.name}
-              onChangeText={(t) => setLocForm((p) => ({ ...p, name: t }))}
-              placeholder="e.g. Headquarters / Gurgaon Branch"
-              prefixIcon="office-building"
-            />
-
-            <View style={styles.coordsRow}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled={true}
+            >
               <Input
-                label="Latitude *"
-                value={locForm.lat}
-                onChangeText={(t) => setLocForm((p) => ({ ...p, lat: t }))}
-                placeholder="28.4595"
-                keyboardType="numeric"
-                containerStyle={styles.halfInput}
+                label="Branch Name *"
+                value={locForm.name}
+                onChangeText={(t) => setLocForm((p) => ({ ...p, name: t }))}
+                placeholder="e.g. Headquarters / Gurgaon Branch"
+                prefixIcon="office-building"
               />
+
+              {/* Interactive Map Component */}
+              <LocationPickerMap
+                lat={locForm.lat}
+                lng={locForm.lng}
+                radius={locForm.radius}
+                onPick={(lat, lng) => setLocForm((p) => ({ ...p, lat, lng }))}
+                onRadiusChange={(radius) => setLocForm((p) => ({ ...p, radius }))}
+                onAddressResolved={(addr) => {
+                  if (!locForm.name.trim()) {
+                    setLocForm((p) => ({ ...p, name: addr }));
+                  }
+                }}
+              />
+
+              <View style={styles.coordsRow}>
+                <Input
+                  label="Latitude *"
+                  value={locForm.lat}
+                  onChangeText={(t) => setLocForm((p) => ({ ...p, lat: t }))}
+                  placeholder="28.613900"
+                  keyboardType="numeric"
+                  containerStyle={styles.halfInput}
+                />
+                <Input
+                  label="Longitude *"
+                  value={locForm.lng}
+                  onChangeText={(t) => setLocForm((p) => ({ ...p, lng: t }))}
+                  placeholder="77.209000"
+                  keyboardType="numeric"
+                  containerStyle={styles.halfInput}
+                />
+              </View>
+
               <Input
-                label="Longitude *"
-                value={locForm.lng}
-                onChangeText={(t) => setLocForm((p) => ({ ...p, lng: t }))}
-                placeholder="77.0266"
+                label="Geofence Radius (Meters) *"
+                value={locForm.radius}
+                onChangeText={(t) => setLocForm((p) => ({ ...p, radius: t }))}
+                placeholder="100"
                 keyboardType="numeric"
-                containerStyle={styles.halfInput}
+                helper="Recommended: 100m - 200m to account for GPS drift"
+                prefixIcon="radar"
               />
-            </View>
 
-            {/* Quick Capture Button */}
-            <Button
-              title="Use Phone's Current GPS Location"
-              variant="outline"
-              size="sm"
-              icon="crosshairs-gps"
-              onPress={handleCaptureGps}
-              loading={capturingGps}
-              style={styles.captureGpsBtn}
-            />
-
-            <Input
-              label="Geofence Radius (Meters) *"
-              value={locForm.radius}
-              onChangeText={(t) => setLocForm((p) => ({ ...p, radius: t }))}
-              placeholder="100"
-              keyboardType="numeric"
-              helper="Recommended: 100m - 200m to account for GPS drift"
-            />
-
-            <Button
-              title="Save Branch"
-              onPress={handleSaveLoc}
-              style={styles.saveBranchBtn}
-            />
+              <Button
+                title={editingIndex !== null ? 'Update Branch Location' : 'Save Branch Location'}
+                onPress={handleSaveLoc}
+                style={styles.saveBranchBtn}
+              />
+            </ScrollView>
           </Card>
         </View>
       </Modal>
@@ -1131,16 +1196,29 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: borderRadius.xl,
   },
+  modalCardLarge: {
+    padding: 20,
+    borderRadius: borderRadius.xl,
+    maxHeight: '92%',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 10,
   },
   modalTitle: {
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.bold,
     color: colors.text,
+  },
+  modalSubtitle: {
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   coordsRow: {
     flexDirection: 'row',
@@ -1150,6 +1228,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   saveBranchBtn: {
-    marginTop: 10,
+    marginTop: 14,
+    marginBottom: 8,
   },
 });
