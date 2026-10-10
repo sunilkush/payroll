@@ -212,6 +212,7 @@ export default function StaffPunchScreen({ navigation }) {
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <Header
         title="Geofence Punch"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
         rightIcon="refresh"
         onRightPress={() => {
           fetchToday();

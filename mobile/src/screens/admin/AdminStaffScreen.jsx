@@ -211,16 +211,13 @@ export default function AdminStaffScreen({ navigation }) {
 
       {/* Search Input Row with search icon & filter icon */}
       <View style={styles.searchRow}>
-        <View style={styles.searchInputWrap}>
-          <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
-          <Input
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search employees..."
-            containerStyle={styles.searchInputContainer}
-            inputStyle={styles.searchInput}
-          />
-        </View>
+        <Input
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search employees..."
+          prefixIcon="magnify"
+          containerStyle={styles.searchInputContainer}
+        />
         <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7} onPress={openAddModal}>
           <MaterialCommunityIcons name="filter-variant" size={22} color={colors.primary} />
         </TouchableOpacity>
@@ -407,7 +404,7 @@ export default function AdminStaffScreen({ navigation }) {
                     <View style={styles.infoCol}>
                       <Text style={styles.infoLabel}>Joining Date</Text>
                       <Text style={styles.infoValue}>
-                        {selectedStaff.joiningDate ? formatDate(selectedStaff.joiningDate) : '15 Jan 2023'}
+                        {selectedStaff.joiningDate ? formatDate(selectedStaff.joiningDate) : 'Not specified'}
                       </Text>
                     </View>
                   </View>
@@ -418,7 +415,7 @@ export default function AdminStaffScreen({ navigation }) {
                     <MaterialCommunityIcons name="briefcase-outline" size={20} color={colors.textSecondary} />
                     <View style={styles.infoCol}>
                       <Text style={styles.infoLabel}>Designation</Text>
-                      <Text style={styles.infoValue}>{selectedStaff.designation || 'Software Developer'}</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.designation || 'Staff Member'}</Text>
                     </View>
                   </View>
 
@@ -428,7 +425,7 @@ export default function AdminStaffScreen({ navigation }) {
                     <MaterialCommunityIcons name="domain" size={20} color={colors.textSecondary} />
                     <View style={styles.infoCol}>
                       <Text style={styles.infoLabel}>Department</Text>
-                      <Text style={styles.infoValue}>{selectedStaff.department || 'IT'}</Text>
+                      <Text style={styles.infoValue}>{selectedStaff.department || 'General'}</Text>
                     </View>
                   </View>
                 </Card>
@@ -437,8 +434,10 @@ export default function AdminStaffScreen({ navigation }) {
               {/* Tab 2: Attendance */}
               {detailTab === 'Attendance' && (
                 <Card style={styles.infoCard} elevation="xs">
-                  <Text style={styles.tabSectionTitle}>Monthly Attendance</Text>
-                  <Text style={styles.tabSectionSub}>Present Days: 26 / 30 • Leaves: 2 • LOP: 0</Text>
+                  <Text style={styles.tabSectionTitle}>Staff Attendance</Text>
+                  <Text style={styles.tabSectionSub}>
+                    Account: {selectedStaff.isActive ? 'Active' : 'Inactive'} • Role: {selectedStaff.role || 'Employee'}
+                  </Text>
                   <Button
                     title="View Attendance Logs"
                     variant="outline"
@@ -456,7 +455,11 @@ export default function AdminStaffScreen({ navigation }) {
               {detailTab === 'Leave' && (
                 <Card style={styles.infoCard} elevation="xs">
                   <Text style={styles.tabSectionTitle}>Leave Balance</Text>
-                  <Text style={styles.tabSectionSub}>Casual Leave: 6 Available • Sick Leave: 4 Available</Text>
+                  <Text style={styles.tabSectionSub}>
+                    {selectedStaff.leaves?.remaining !== undefined
+                      ? `Available Leaves: ${selectedStaff.leaves.remaining} Days`
+                      : 'Leave record as per company configuration'}
+                  </Text>
                   <Button
                     title="View Leave Requests"
                     variant="outline"

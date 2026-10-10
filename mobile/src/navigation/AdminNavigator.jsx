@@ -80,6 +80,20 @@ export default function AdminNavigator() {
         }}
       />
       <Tab.Screen
+        name="AdminAttendance"
+        component={AdminAttendanceScreen}
+        options={{
+          tabBarLabel: 'Attendance',
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'calendar-check' : 'calendar-check-outline'}
+              focused={focused}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="AdminPayroll"
         component={AdminPayrollScreen}
         options={{
@@ -105,14 +119,6 @@ export default function AdminNavigator() {
               color={color}
             />
           ),
-        }}
-      />
-      <Tab.Screen
-        name="AdminAttendance"
-        component={AdminAttendanceScreen}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tab.Screen

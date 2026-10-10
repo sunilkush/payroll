@@ -63,6 +63,20 @@ export default function StaffNavigator() {
         }}
       />
       <Tab.Screen
+        name="StaffPunch"
+        component={StaffPunchScreen}
+        options={{
+          tabBarLabel: 'Punch',
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'fingerprint' : 'fingerprint'}
+              focused={focused}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="StaffAttendance"
         component={StaffAttendanceScreen}
         options={{
@@ -70,6 +84,20 @@ export default function StaffNavigator() {
           tabBarIcon: ({ color, focused }) => (
             <Md3NavIcon
               icon={focused ? 'calendar-check' : 'calendar-check-outline'}
+              focused={focused}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="StaffLeaves"
+        component={StaffLeavesScreen}
+        options={{
+          tabBarLabel: 'Leaves',
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'calendar-arrow-right' : 'calendar-arrow-right'}
               focused={focused}
               color={color}
             />
@@ -93,28 +121,6 @@ export default function StaffNavigator() {
       <Tab.Screen
         name="StaffProfile"
         component={StaffProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, focused }) => (
-            <Md3NavIcon
-              icon={focused ? 'account-circle' : 'account-circle-outline'}
-              focused={focused}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="StaffPunch"
-        component={StaffPunchScreen}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-      <Tab.Screen
-        name="StaffLeaves"
-        component={StaffLeavesScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

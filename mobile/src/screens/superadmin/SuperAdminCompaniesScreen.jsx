@@ -156,16 +156,13 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
       {/* Search Input Row */}
       <View style={styles.searchRow}>
-        <View style={styles.searchInputWrap}>
-          <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
-          <Input
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search companies..."
-            containerStyle={styles.searchInputContainer}
-            inputStyle={styles.searchInput}
-          />
-        </View>
+        <Input
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search companies..."
+          prefixIcon="magnify"
+          containerStyle={styles.searchInputContainer}
+        />
         <TouchableOpacity
           style={styles.filterBtn}
           activeOpacity={0.7}

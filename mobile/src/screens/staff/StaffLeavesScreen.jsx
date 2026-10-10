@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert as NativeAlert,
-  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -35,8 +34,10 @@ export default function StaffLeavesScreen({ navigation }) {
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
 
-  // Apply Modal state
-  const [modalVisible, setModalVisible] = useState(false);
+  // Pill tab: 'request' | 'history'
+  const [activeTab, setActiveTab] = useState('request');
+
+  // Form state
   const [leaveType, setLeaveType] = useState('CL'); // 'CL' | 'EL'
   const [halfDay, setHalfDay] = useState(''); // '' | 'FIRST_HALF' | 'SECOND_HALF'
   const [fromDate, setFromDate] = useState(todayLocal());
@@ -48,14 +49,24 @@ export default function StaffLeavesScreen({ navigation }) {
   const loadData = useCallback(async () => {
     try {
       setActionError('');
-      const [balRes, listRes] = await Promise.all([
+      const [balRes, listRes] = await Promise.allSettled([
         getLeaveBalanceApi(),
         listLeavesApi({ page: 1 }),
       ]);
-      setBalance(balRes?.data?.balance || null);
-      setLeaves(listRes?.data?.items || []);
+
+      if (balRes.status === 'fulfilled') {
+        setBalance(balRes.value?.data?.balance || null);
+      } else {
+        console.warn('Leave balance fetch notice:', balRes.reason?.message);
+      }
+
+      if (listRes.status === 'fulfilled') {
+        setLeaves(listRes.value?.data?.items || []);
+      } else {
+        setActionError(listRes.reason?.message || 'Failed to load leaves.');
+      }
     } catch (err) {
-      setActionError(err.message || 'Failed to load leaves.');
+      setActionError(err.message || 'Failed to load leave records.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,32 +83,52 @@ export default function StaffLeavesScreen({ navigation }) {
   };
 
   const handleApply = async () => {
-    if (!reason.trim()) {
-      setFormError('Please provide a reason for the leave.');
+    setFormError('');
+
+    const cleanReason = reason.trim();
+    if (!cleanReason) {
+      setFormError('Please enter a reason for your leave request.');
+      return;
+    }
+
+    const cleanFrom = (fromDate || '').trim();
+    const cleanTo = halfDay ? cleanFrom : ((toDate || '').trim() || cleanFrom);
+
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datePattern.test(cleanFrom)) {
+      setFormError('Please enter From Date in YYYY-MM-DD format (e.g. 2026-10-15).');
+      return;
+    }
+    if (!halfDay && !datePattern.test(cleanTo)) {
+      setFormError('Please enter To Date in YYYY-MM-DD format (e.g. 2026-10-15).');
+      return;
+    }
+    if (cleanTo < cleanFrom) {
+      setFormError('To Date cannot be earlier than From Date.');
       return;
     }
 
     setSubmitting(true);
-    setFormError('');
     try {
       const payload = {
         type: leaveType,
-        fromDate,
-        toDate: halfDay ? fromDate : toDate,
+        fromDate: cleanFrom,
+        toDate: cleanTo,
         halfDay: halfDay || undefined,
-        reason: reason.trim(),
+        reason: cleanReason,
       };
 
       const res = await applyLeaveApi(payload);
-      setModalVisible(false);
       setReason('');
       setActionSuccess(
-        `Applied for ${res.data?.leave?.days || 1} day(s) of ${leaveType}. Balance is now blocked.`
+        `Leave request submitted for ${res?.data?.leave?.days || (halfDay ? 0.5 : 1)} day(s) of ${leaveType}. Waiting for approval.`
       );
+      setActiveTab('history');
       loadData();
-      setTimeout(() => setActionSuccess(''), 4000);
+      setTimeout(() => setActionSuccess(''), 5000);
     } catch (err) {
-      setFormError(err.errors?.[0]?.message || err.message || 'Failed to submit leave request.');
+      const serverMsg = err.errors?.[0]?.message || err.message || 'Failed to submit leave request.';
+      setFormError(serverMsg);
     } finally {
       setSubmitting(false);
     }
@@ -147,23 +178,56 @@ export default function StaffLeavesScreen({ navigation }) {
     return <Loader message="Fetching leave balances..." />;
   }
 
-  const [activeTab, setActiveTab] = useState('request'); // 'request' | 'history'
+  const clLeft = balance?.CL?.available ?? 0;
+  const elLeft = balance?.EL?.available ?? 0;
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <Header
         title="Apply Leave"
-        onBack={() => navigation.navigate('Home')}
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : () => navigation.navigate('StaffHome')}
       />
 
       {actionSuccess ? <Alert type="success">{actionSuccess}</Alert> : null}
       {actionError ? <Alert type="error">{actionError}</Alert> : null}
 
-      {/* Pill Tabs: Leave Request vs Leave History (Screen 5) */}
+      {/* Balance Summary Cards */}
+      <View style={styles.balanceGrid}>
+        <Card style={styles.balanceCard} elevation="xs">
+          <View style={styles.balanceHeader}>
+            <View style={styles.balanceIconWrap}>
+              <MaterialCommunityIcons name="clock-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.balanceInfo}>
+              <Text style={styles.balanceLabel}>Casual Leave (CL)</Text>
+              <Text style={styles.balanceCount}>
+                {clLeft} <Text style={styles.balanceUnit}>Days Available</Text>
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        <Card style={styles.balanceCard} elevation="xs">
+          <View style={styles.balanceHeader}>
+            <View style={[styles.balanceIconWrap, { backgroundColor: '#ECFDF5' }]}>
+              <MaterialCommunityIcons name="wallet-outline" size={20} color="#059669" />
+            </View>
+            <View style={styles.balanceInfo}>
+              <Text style={styles.balanceLabel}>Earned Leave (EL)</Text>
+              <Text style={styles.balanceCount}>
+                {elLeft} <Text style={styles.balanceUnit}>Days Available</Text>
+              </Text>
+            </View>
+          </View>
+        </Card>
+      </View>
+
+      {/* Pill Tabs: Leave Request vs Leave History */}
       <View style={styles.tabPillRow}>
         <TouchableOpacity
           style={[styles.tabPill, activeTab === 'request' && styles.tabPillActive]}
           onPress={() => setActiveTab('request')}
+          activeOpacity={0.8}
         >
           <Text style={[styles.tabPillText, activeTab === 'request' && styles.tabPillTextActive]}>
             Leave Request
@@ -173,9 +237,10 @@ export default function StaffLeavesScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.tabPill, activeTab === 'history' && styles.tabPillActive]}
           onPress={() => setActiveTab('history')}
+          activeOpacity={0.8}
         >
           <Text style={[styles.tabPillText, activeTab === 'history' && styles.tabPillTextActive]}>
-            Leave History
+            Leave History ({leaves.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -186,11 +251,11 @@ export default function StaffLeavesScreen({ navigation }) {
           {formError ? <Alert type="error">{formError}</Alert> : null}
 
           {/* Leave Type */}
-          <Text style={styles.fieldLabel}>Leave Type</Text>
+          <Text style={styles.fieldLabel}>Leave Type *</Text>
           <View style={styles.toggleRow}>
             {[
-              { key: 'CL', label: `Casual Leave (${balance?.CL?.available ?? 0} Left)` },
-              { key: 'EL', label: `Earned Leave (${balance?.EL?.available ?? 0} Left)` },
+              { key: 'CL', label: `Casual Leave (${clLeft} Left)`, icon: 'clock-outline' },
+              { key: 'EL', label: `Earned Leave (${elLeft} Left)`, icon: 'calendar-check' },
             ].map((t) => {
               const isSelected = leaveType === t.key;
               return (
@@ -200,14 +265,12 @@ export default function StaffLeavesScreen({ navigation }) {
                   onPress={() => setLeaveType(t.key)}
                   activeOpacity={0.75}
                 >
-                  {isSelected && (
-                    <MaterialCommunityIcons
-                      name="check"
-                      size={14}
-                      color={colors.onPrimaryContainer}
-                      style={{ marginRight: 4 }}
-                    />
-                  )}
+                  <MaterialCommunityIcons
+                    name={isSelected ? 'check-circle' : t.icon}
+                    size={16}
+                    color={isSelected ? '#FFFFFF' : colors.textSecondary}
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
                     {t.label}
                   </Text>
@@ -216,36 +279,75 @@ export default function StaffLeavesScreen({ navigation }) {
             })}
           </View>
 
+          {/* Duration */}
+          <Text style={styles.fieldLabel}>Duration *</Text>
+          <View style={styles.toggleRow}>
+            {[
+              { key: '', label: 'Full Day' },
+              { key: 'FIRST_HALF', label: '1st Half' },
+              { key: 'SECOND_HALF', label: '2nd Half' },
+            ].map((d) => {
+              const isSelected = halfDay === d.key;
+              return (
+                <TouchableOpacity
+                  key={d.key || 'full'}
+                  style={[styles.chipBtn, isSelected && styles.chipBtnActive]}
+                  onPress={() => setHalfDay(d.key)}
+                  activeOpacity={0.75}
+                >
+                  <MaterialCommunityIcons
+                    name={isSelected ? 'check-circle' : 'circle-outline'}
+                    size={16}
+                    color={isSelected ? '#FFFFFF' : colors.textSecondary}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
+                    {d.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {/* Date Pickers */}
           <Input
-            label="From Date"
+            label="From Date (YYYY-MM-DD) *"
             value={fromDate}
-            onChangeText={setFromDate}
+            onChangeText={(t) => {
+              setFromDate(t);
+              if (halfDay || !toDate) setToDate(t);
+            }}
             placeholder="YYYY-MM-DD"
-            prefixIcon="calendar-outline"
+            prefixIcon="calendar"
+            helper="e.g. 2026-10-15"
           />
 
-          <Input
-            label="To Date"
-            value={toDate}
-            onChangeText={setToDate}
-            placeholder="YYYY-MM-DD"
-            prefixIcon="calendar-outline"
-          />
+          {!halfDay && (
+            <Input
+              label="To Date (YYYY-MM-DD) *"
+              value={toDate}
+              onChangeText={setToDate}
+              placeholder="YYYY-MM-DD"
+              prefixIcon="calendar"
+              helper="Same as From Date for single-day leave"
+            />
+          )}
 
           <Input
-            label="Reason (Optional)"
+            label="Reason for Leave *"
             value={reason}
             onChangeText={setReason}
-            placeholder="Enter reason for leave"
+            placeholder="e.g. Doctor appointment, family function"
             multiline
             numberOfLines={3}
+            prefixIcon="text"
           />
 
           <Button
-            title="Submit Request"
+            title="Submit Leave Request"
             onPress={handleApply}
             loading={submitting}
+            icon="send"
             style={styles.submitBtn}
           />
         </Card>
@@ -253,17 +355,25 @@ export default function StaffLeavesScreen({ navigation }) {
         /* Leave History */
         <View style={styles.historySection}>
           {leaves.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <MaterialCommunityIcons name="calendar-blank" size={40} color={colors.textMuted} />
+            <Card style={styles.emptyCard} elevation="xs">
+              <MaterialCommunityIcons name="calendar-blank-outline" size={44} color={colors.textSecondary} />
               <Text style={styles.emptyText}>No leave requests recorded yet.</Text>
+              <Text style={styles.emptySubText}>Submitted leave requests will appear here with real-time approval status.</Text>
             </Card>
           ) : (
             <View style={styles.historyList}>
               {leaves.map((item) => (
-                <Card key={item._id} style={styles.leaveItemCard} elevation="sm">
+                <Card key={item._id} style={styles.leaveItemCard} elevation="xs">
                   <View style={styles.itemHeader}>
                     <View style={styles.itemTypeRow}>
-                      <Text style={styles.itemType}>{item.type}</Text>
+                      <View style={styles.typeBadgeCircle}>
+                        <MaterialCommunityIcons
+                          name={item.type === 'CL' ? 'clock-outline' : 'calendar-check'}
+                          size={16}
+                          color={colors.primary}
+                        />
+                      </View>
+                      <Text style={styles.itemType}>{item.type === 'CL' ? 'Casual Leave' : 'Earned Leave'}</Text>
                       <Text style={styles.itemDays}>
                         • {item.days} {item.days === 1 ? 'day' : 'days'}
                       </Text>
@@ -274,6 +384,7 @@ export default function StaffLeavesScreen({ navigation }) {
                   <Text style={styles.itemDates}>
                     {formatDate(item.fromDate)}
                     {item.fromDate !== item.toDate ? ` to ${formatDate(item.toDate)}` : ''}
+                    {item.halfDay ? ` (${item.halfDay === 'FIRST_HALF' ? '1st Half' : '2nd Half'})` : ''}
                   </Text>
 
                   {item.reason ? (
@@ -282,10 +393,17 @@ export default function StaffLeavesScreen({ navigation }) {
                     </Text>
                   ) : null}
 
+                  {item.actionNote ? (
+                    <Text style={styles.itemNote}>
+                      Admin note: {item.actionNote}
+                    </Text>
+                  ) : null}
+
                   {item.status === 'PENDING' && (
                     <TouchableOpacity
                       onPress={() => handleCancelLeave(item)}
                       style={styles.cancelLink}
+                      activeOpacity={0.7}
                     >
                       <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
                       <Text style={styles.cancelLinkText}>Cancel Request</Text>
@@ -297,328 +415,62 @@ export default function StaffLeavesScreen({ navigation }) {
           )}
         </View>
       )}
-
-      {/* Apply Leave Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Card style={styles.modalCard} elevation="lg">
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Apply for Leave</Text>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {formError ? <Alert type="error">{formError}</Alert> : null}
-
-            {/* Current Balance Indicator */}
-            <View style={styles.modalBalancePill}>
-              <MaterialCommunityIcons name="wallet-outline" size={16} color={colors.onPrimaryContainer} />
-              <Text style={styles.modalBalanceText}>
-                Balance: {balance?.CL?.available ?? 0} CL Available • {balance?.EL?.available ?? 0} EL Available
-              </Text>
-            </View>
-
-            {/* Leave Type MD3 Chips */}
-            <Text style={styles.fieldLabel}>Leave Type *</Text>
-            <View style={styles.toggleRow}>
-              {[
-                { key: 'CL', label: `Casual Leave (${balance?.CL?.available ?? 0})` },
-                { key: 'EL', label: `Earned Leave (${balance?.EL?.available ?? 0})` },
-              ].map((t) => {
-                const isSelected = leaveType === t.key;
-                return (
-                  <TouchableOpacity
-                    key={t.key}
-                    style={[styles.chipBtn, isSelected && styles.chipBtnActive]}
-                    onPress={() => setLeaveType(t.key)}
-                    activeOpacity={0.75}
-                  >
-                    {isSelected && (
-                      <MaterialCommunityIcons
-                        name="check"
-                        size={14}
-                        color={colors.onPrimaryContainer}
-                        style={{ marginRight: 4 }}
-                      />
-                    )}
-                    <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Duration MD3 Chips */}
-            <Text style={styles.fieldLabel}>Duration</Text>
-            <View style={styles.toggleRow}>
-              {[
-                { key: '', label: 'Full Day' },
-                { key: 'FIRST_HALF', label: '1st Half' },
-                { key: 'SECOND_HALF', label: '2nd Half' },
-              ].map((d) => {
-                const isSelected = halfDay === d.key;
-                return (
-                  <TouchableOpacity
-                    key={d.key || 'full'}
-                    style={[styles.chipBtn, isSelected && styles.chipBtnActive]}
-                    onPress={() => setHalfDay(d.key)}
-                    activeOpacity={0.75}
-                  >
-                    {isSelected && (
-                      <MaterialCommunityIcons
-                        name="check"
-                        size={14}
-                        color={colors.onPrimaryContainer}
-                        style={{ marginRight: 4 }}
-                      />
-                    )}
-                    <Text style={[styles.chipBtnText, isSelected && styles.chipBtnTextActive]}>
-                      {d.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Date Inputs */}
-            <Input
-              label="From Date (YYYY-MM-DD) *"
-              value={fromDate}
-              onChangeText={setFromDate}
-              placeholder="YYYY-MM-DD"
-              prefixIcon="calendar"
-            />
-
-            {!halfDay && (
-              <Input
-                label="To Date (YYYY-MM-DD) *"
-                value={toDate}
-                onChangeText={setToDate}
-                placeholder="YYYY-MM-DD"
-                prefixIcon="calendar"
-              />
-            )}
-
-            <Input
-              label="Reason for Leave *"
-              value={reason}
-              onChangeText={setReason}
-              placeholder="e.g. Family function / doctor appointment"
-              multiline
-              numberOfLines={3}
-            />
-
-            <Button
-              title="Submit Leave Request"
-              onPress={handleApply}
-              loading={submitting}
-              icon="send"
-              style={styles.modalSubmitBtn}
-            />
-          </Card>
-        </View>
-      </Modal>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginBottom: 12,
+    paddingBottom: 36,
   },
   balanceGrid: {
-    gap: 12,
+    flexDirection: 'row',
+    gap: 10,
     marginBottom: 16,
   },
   balanceCard: {
-    padding: 16,
+    flex: 1,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
   balanceHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  balanceTypeTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  balanceCountRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
-    padding: 10,
-  },
-  countBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  countVal: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold,
-  },
-  countLabel: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  applyBtn: {
-    marginBottom: 24,
-  },
-  emptyCard: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    marginTop: 8,
-  },
-  historyList: {
     gap: 10,
   },
-  leaveItemCard: {
-    padding: 16,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  balanceIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
-    marginBottom: 6,
+    justifyContent: 'center',
   },
-  itemTypeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemType: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  itemDays: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    marginLeft: 6,
-  },
-  itemDates: {
-    fontSize: typography.sizes.sm,
-    color: colors.text,
-    fontWeight: typography.weights.medium,
-    marginBottom: 6,
-  },
-  itemReason: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
-  cancelLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    alignSelf: 'flex-start',
-  },
-  cancelLinkText: {
-    fontSize: typography.sizes.xs,
-    color: colors.danger,
-    fontWeight: typography.weights.semibold,
-    marginLeft: 4,
-  },
-  modalOverlay: {
+  balanceInfo: {
     flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    padding: 20,
   },
-  modalCard: {
-    padding: 20,
-    maxHeight: '90%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  fieldLabel: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    color: colors.text,
-    marginBottom: 6,
-  },
-  modalBalancePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.primaryContainer,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: borderRadius.md,
-    marginBottom: 16,
-  },
-  modalBalanceText: {
-    fontSize: typography.sizes.xs,
-    color: colors.onPrimaryContainer,
-    fontWeight: typography.weights.semibold,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  chipBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.surfaceVariant,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-  },
-  chipBtnActive: {
-    backgroundColor: colors.primaryContainer,
-    borderColor: colors.primary,
-  },
-  chipBtnText: {
-    fontSize: typography.sizes.xs,
-    color: colors.onSurfaceVariant,
+  balanceLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
-  chipBtnTextActive: {
-    color: colors.onPrimaryContainer,
+  balanceCount: {
+    fontSize: 16,
     fontWeight: typography.weights.bold,
+    color: '#0F172A',
+    marginTop: 2,
   },
-  modalSubmitBtn: {
-    marginTop: 10,
+  balanceUnit: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.normal,
   },
   tabPillRow: {
     flexDirection: 'row',
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#E2E8F0',
     borderRadius: borderRadius.pill,
     padding: 4,
     marginBottom: 16,
@@ -634,23 +486,157 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   tabPillText: {
-    fontSize: typography.sizes.sm,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
   tabPillTextActive: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: typography.weights.bold,
   },
   formCard: {
     padding: 18,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
     marginBottom: 20,
+    ...shadows.sm,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: typography.weights.semibold,
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  chipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  chipBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipBtnText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
+  },
+  chipBtnTextActive: {
+    color: '#FFFFFF',
+    fontWeight: typography.weights.bold,
   },
   submitBtn: {
-    marginTop: 8,
+    marginTop: 10,
   },
   historySection: {
     marginTop: 4,
+  },
+  emptyCard: {
+    padding: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  emptyText: {
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+    marginTop: 10,
+  },
+  emptySubText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  historyList: {
+    gap: 10,
+  },
+  leaveItemCard: {
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  itemTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typeBadgeCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  itemType: {
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    color: '#0F172A',
+  },
+  itemDays: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginLeft: 4,
+  },
+  itemDates: {
+    fontSize: 13,
+    color: '#334155',
+    fontWeight: typography.weights.medium,
+    marginBottom: 6,
+  },
+  itemReason: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  itemNote: {
+    fontSize: 11,
+    color: colors.primary,
+    marginTop: 4,
+  },
+  cancelLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: borderRadius.pill,
+  },
+  cancelLinkText: {
+    fontSize: 12,
+    color: colors.danger,
+    fontWeight: typography.weights.semibold,
+    marginLeft: 4,
   },
 });

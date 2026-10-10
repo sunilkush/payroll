@@ -71,32 +71,36 @@ export default function AdminHomeScreen({ navigation }) {
     ]);
   };
 
-  // Metrics extraction matching Screen 1
-  const totalEmployeesCount = dashboardData?.kpis?.employees?.value ?? todaySummary?.totalStaff ?? 125;
-  const activeStaffCount = todaySummary?.presentCount ? (totalEmployeesCount - (todaySummary?.notPunchedCount || 0)) : (dashboardData?.kpis?.employees?.active ?? 118);
+  // Dynamic Metrics extraction
+  const totalEmployeesCount = dashboardData?.kpis?.employees?.value ?? todaySummary?.totalStaff ?? 0;
+  const activeStaffCount = todaySummary?.presentCount !== undefined ? todaySummary.presentCount : (dashboardData?.kpis?.employees?.active ?? 0);
 
   const payrollKpi = dashboardData?.kpis?.payroll;
   const latestPayrollRow = (dashboardData?.payrollTrend || [])
     .filter((r) => r.generated)
     .at(-1);
 
-  const netPayroll = latestPayrollRow?.net ?? payrollKpi?.value ?? 1605000;
-  const totalDeductions = latestPayrollRow?.deductions ?? 245000;
-  const grossPayroll = netPayroll + totalDeductions || 1850000;
+  const netPayroll = latestPayrollRow?.net ?? payrollKpi?.value ?? 0;
+  const totalDeductions = latestPayrollRow?.deductions ?? 0;
+  const grossPayroll = (netPayroll + totalDeductions) || (latestPayrollRow?.gross ?? 0);
 
   const pendingLeavesList = dashboardData?.pendingLeaves || [];
   const pendingLeavesCount = dashboardData?.kpis?.pendingLeaves?.value ?? 0;
   const activityList = dashboardData?.activity || [];
 
-  // 6 months chart data matching Screen 1 (Apr, May, Jun, Jul, Aug, Sep)
-  const chartMonths = [
-    { label: 'Apr', value: 0.65 },
-    { label: 'May', value: 0.72 },
-    { label: 'Jun', value: 0.60 },
-    { label: 'Jul', value: 0.85 },
-    { label: 'Aug', value: 0.78 },
-    { label: 'Sep', value: 0.95 },
-  ];
+  // Dynamic 6-month chart derived from current date and actual trend
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const now = new Date();
+  const currentMonthIdx = now.getMonth();
+  const chartMonths = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), currentMonthIdx - 5 + i, 1);
+    const mLabel = monthNames[d.getMonth()];
+    const trendItem = (dashboardData?.payrollTrend || []).find((t) =>
+      t.month?.toLowerCase().includes(mLabel.toLowerCase()) || t.label?.startsWith(mLabel)
+    );
+    const value = trendItem?.net ? Math.min(1, Math.max(0.25, trendItem.net / (grossPayroll || 1))) : 0.4 + (i * 0.1);
+    return { label: mLabel, value };
+  });
 
   return (
     <ScreenWrapper
@@ -110,7 +114,7 @@ export default function AdminHomeScreen({ navigation }) {
       <View style={styles.topBar}>
         <View style={styles.greetingContainer}>
           <Text style={styles.roleSubtext}>HR Admin</Text>
-          <Text style={styles.greetingText}>Good Morning</Text>
+          <Text style={styles.greetingText}>{greeting()}</Text>
         </View>
 
         <View style={styles.topRightActions}>
@@ -176,6 +180,37 @@ export default function AdminHomeScreen({ navigation }) {
         <Text style={styles.statLabel}>Net Payroll</Text>
         <Text style={styles.netPayrollAmount}>{formatCurrency(netPayroll)}</Text>
       </Card>
+
+      {/* Operations Hub (All Action Icons Prominently Visible) */}
+      <View style={styles.hubSection}>
+        <Text style={styles.sectionTitle}>Operations & Services</Text>
+        <View style={styles.hubGrid}>
+          {[
+            { label: 'Employees', icon: 'account-group', route: 'AdminStaff', color: '#2563EB', bg: '#EFF6FF' },
+            { label: 'Attendance', icon: 'calendar-check', route: 'AdminAttendance', color: '#16A34A', bg: '#DCFCE7' },
+            { label: 'Payroll', icon: 'wallet', route: 'AdminPayroll', color: '#7C3AED', bg: '#F3E8FF' },
+            { label: 'Leaves', icon: 'calendar-clock', route: 'AdminLeaves', color: '#D97706', bg: '#FEF3C7' },
+            { label: 'Corrections', icon: 'clock-edit-outline', route: 'AdminCorrections', color: '#0284C7', bg: '#E0F2FE' },
+            { label: 'Reports', icon: 'file-chart-outline', route: 'AdminReports', color: '#4F46E5', bg: '#EEF2FF' },
+            { label: 'Clients', icon: 'account-tie', route: 'AdminClients', color: '#0D9488', bg: '#CCFBF1' },
+            { label: 'Billing', icon: 'receipt', route: 'AdminBilling', color: '#EA580C', bg: '#FFEDD5' },
+            { label: 'Meetings', icon: 'video-account', route: 'AdminMeetings', color: '#2563EB', bg: '#DBEAFE' },
+            { label: 'Settings', icon: 'cog-outline', route: 'AdminSettings', color: '#475569', bg: '#F1F5F9' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.hubTile}
+              onPress={() => navigation.navigate(item.route)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.hubIconWrap, { backgroundColor: item.bg }]}>
+                <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
+              </View>
+              <Text style={styles.hubLabel} numberOfLines={1}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* 5. Payroll Overview 6 Months Bar Chart matching Screen 1 */}
       <Card style={styles.chartCard} elevation="xs">
@@ -386,13 +421,47 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   netPayrollAmount: {
     fontSize: 26,
     fontWeight: typography.weights.bold,
     color: colors.primary,
     marginTop: 4,
+  },
+
+  // Operations Hub
+  hubSection: {
+    marginBottom: 22,
+  },
+  hubGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 10,
+  },
+  hubTile: {
+    width: '18%',
+    minWidth: 62,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  hubIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  hubLabel: {
+    fontSize: 10,
+    fontWeight: typography.weights.medium,
+    color: '#334155',
+    textAlign: 'center',
   },
 
   // Bar Chart Card

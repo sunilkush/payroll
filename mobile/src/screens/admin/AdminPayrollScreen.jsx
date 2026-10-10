@@ -146,10 +146,24 @@ export default function AdminPayrollScreen({ navigation }) {
 
   const rows = data.rows || [];
   const totals = data.totals || {};
-  const totalEmployeesCount = rows.length > 0 ? rows.length : 125;
-  const grossAmount = totals.gross || 1850000;
-  const deductionsAmount = totals.deductions || 245000;
-  const netAmount = totals.net || 1605000;
+  const totalEmployeesCount = rows.length;
+  const grossAmount = totals.gross || 0;
+  const deductionsAmount = totals.deductions || 0;
+  const netAmount = totals.net || 0;
+
+  const recentHistory = useMemo(() => {
+    const now = new Date();
+    return [1, 2, 3].map((offset) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      return {
+        key: mStr,
+        monthLabel: formatMonth(mStr),
+        dateLabel: `${lastDay} ${d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}`,
+      };
+    });
+  }, []);
 
   const steps = [
     { num: 1, label: 'Calculate' },
@@ -288,51 +302,32 @@ export default function AdminPayrollScreen({ navigation }) {
         </Text>
       </TouchableOpacity>
 
-      {/* Recent Payroll History Section matching Screen 4 */}
+      {/* Recent Payroll History Section */}
       <View style={styles.historySection}>
         <Text style={styles.historySectionTitle}>Recent Payroll History</Text>
 
-        {/* September 2025 */}
-        <TouchableOpacity
-          style={styles.historyCard}
-          onPress={() => {
-            setMonth('2025-09');
-            setViewHistoryModal(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <View style={styles.historyInfo}>
-            <Text style={styles.historyMonth}>September 2025</Text>
-            <Text style={styles.historyDate}>28 Sep 2025</Text>
-          </View>
-          <View style={styles.historyRight}>
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedBadgeText}>Completed</Text>
+        {recentHistory.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={styles.historyCard}
+            onPress={() => {
+              setMonth(item.key);
+              setViewHistoryModal(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.historyInfo}>
+              <Text style={styles.historyMonth}>{item.monthLabel}</Text>
+              <Text style={styles.historyDate}>{item.dateLabel}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* August 2025 */}
-        <TouchableOpacity
-          style={styles.historyCard}
-          onPress={() => {
-            setMonth('2025-08');
-            setViewHistoryModal(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <View style={styles.historyInfo}>
-            <Text style={styles.historyMonth}>August 2025</Text>
-            <Text style={styles.historyDate}>31 Aug 2025</Text>
-          </View>
-          <View style={styles.historyRight}>
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedBadgeText}>Completed</Text>
+            <View style={styles.historyRight}>
+              <View style={styles.completedBadge}>
+                <Text style={styles.completedBadgeText}>History</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Breakdown / Employee Slips Modal */}

@@ -183,7 +183,10 @@ export default function AdminSettingsScreen({ navigation }) {
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
-      <Header title="Company Settings" />
+      <Header
+        title="Company Settings"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      />
 
       {statusMsg.text ? <Alert type={statusMsg.type}>{statusMsg.text}</Alert> : null}
 

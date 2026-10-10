@@ -74,7 +74,10 @@ export default function AdminAttendanceScreen({ navigation }) {
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
-      <Header title="Company Attendance" />
+      <Header
+        title="Company Attendance"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      />
 
       {/* Month Navigator */}
       <Card style={styles.monthNavCard} elevation="sm">

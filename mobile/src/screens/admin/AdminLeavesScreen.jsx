@@ -130,7 +130,10 @@ export default function AdminLeavesScreen({ navigation }) {
 
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
-      <Header title="Leave Requests" />
+      <Header
+        title="Leave Requests"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      />
 
       {actionMsg.text ? <Alert type={actionMsg.type}>{actionMsg.text}</Alert> : null}
 

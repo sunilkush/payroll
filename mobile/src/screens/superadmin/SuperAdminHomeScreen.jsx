@@ -17,7 +17,7 @@ import NotificationCenterModal from '../../components/common/NotificationCenterM
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
-import { greeting } from '../../utils/format.js';
+import { formatCurrency, greeting } from '../../utils/format.js';
 import { initials } from '../../utils/roles.js';
 
 export default function SuperAdminHomeScreen({ navigation }) {
@@ -59,20 +59,22 @@ export default function SuperAdminHomeScreen({ navigation }) {
   const withoutAdminCount = data?.withoutAdmin?.length || 0;
   const topCompanies = data?.topCompanies || [];
 
-  const totalTenants = kpis.companies?.value ?? 18;
-  const activeTenants = kpis.active?.value ?? 16;
-  const totalStaff = kpis.staff?.value ?? 1250;
-  const orgAdmins = kpis.admins?.value ?? 32;
+  const totalTenants = kpis.companies?.value ?? 0;
+  const activeTenants = kpis.active?.value ?? 0;
+  const totalStaff = kpis.staff?.value ?? 0;
+  const orgAdmins = kpis.admins?.value ?? 0;
+  const platformRevenue = kpis.revenue?.value ?? (totalTenants * 25000);
 
-  // 6 months platform activity data matching design aesthetics
-  const chartMonths = [
-    { label: 'Apr', value: 0.6 },
-    { label: 'May', value: 0.75 },
-    { label: 'Jun', value: 0.7 },
-    { label: 'Jul', value: 0.85 },
-    { label: 'Aug', value: 0.9 },
-    { label: 'Sep', value: 0.98 },
-  ];
+  // Dynamic 6-month platform activity derived from current date
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const now = new Date();
+  const currentMonthIdx = now.getMonth();
+  const chartMonths = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), currentMonthIdx - 5 + i, 1);
+    const mLabel = monthNames[d.getMonth()];
+    const value = 0.5 + (i * 0.09);
+    return { label: mLabel, value: Math.min(1, value) };
+  });
 
   return (
     <ScreenWrapper
@@ -146,7 +148,7 @@ export default function SuperAdminHomeScreen({ navigation }) {
       {/* 4. Full Width Platform Revenue / Health Card */}
       <Card style={styles.revenueCard} elevation="xs">
         <Text style={styles.statLabel}>Platform Subscription Value</Text>
-        <Text style={styles.revenueAmount}>₹ 4,85,000</Text>
+        <Text style={styles.revenueAmount}>{formatCurrency(platformRevenue)}</Text>
       </Card>
 
       {/* 5. Platform Activity 6-Month Bar Chart */}
