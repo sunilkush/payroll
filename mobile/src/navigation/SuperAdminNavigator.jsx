@@ -1,8 +1,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import SuperAdminCompaniesPlaceholder from '../screens/superadmin/SuperAdminCompaniesPlaceholder.jsx';
+import SuperAdminCompaniesScreen from '../screens/superadmin/SuperAdminCompaniesScreen.jsx';
 import SuperAdminHomeScreen from '../screens/superadmin/SuperAdminHomeScreen.jsx';
-import SuperAdminSettingsPlaceholder from '../screens/superadmin/SuperAdminSettingsPlaceholder.jsx';
+import SuperAdminSettingsScreen from '../screens/superadmin/SuperAdminSettingsScreen.jsx';
 import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
@@ -40,7 +40,7 @@ export default function SuperAdminNavigator() {
       />
       <Tab.Screen
         name="SuperAdminCompanies"
-        component={SuperAdminCompaniesPlaceholder}
+        component={SuperAdminCompaniesScreen}
         options={{
           tabBarLabel: 'Companies',
           tabBarIcon: ({ color, size }) => (
@@ -50,7 +50,7 @@ export default function SuperAdminNavigator() {
       />
       <Tab.Screen
         name="SuperAdminSettings"
-        component={SuperAdminSettingsPlaceholder}
+        component={SuperAdminSettingsScreen}
         options={{
           tabBarLabel: 'Settings',
           tabBarIcon: ({ color, size }) => (

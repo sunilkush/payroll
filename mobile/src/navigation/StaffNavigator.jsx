@@ -5,6 +5,7 @@ import StaffHomeScreen from '../screens/staff/StaffHomeScreen.jsx';
 import StaffLeavesScreen from '../screens/staff/StaffLeavesScreen.jsx';
 import StaffProfileScreen from '../screens/staff/StaffProfileScreen.jsx';
 import StaffPunchScreen from '../screens/staff/StaffPunchScreen.jsx';
+import StaffSalaryScreen from '../screens/staff/StaffSalaryScreen.jsx';
 import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
@@ -78,6 +79,14 @@ export default function StaffNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account-circle-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen
+        name="StaffSalary"
+        component={StaffSalaryScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>

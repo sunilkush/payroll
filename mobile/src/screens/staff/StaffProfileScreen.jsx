@@ -58,6 +58,14 @@ export default function StaffProfileScreen({ navigation }) {
       </Card>
 
       <Button
+        title="My Salary Slips"
+        onPress={() => navigation.navigate('StaffSalary')}
+        variant="secondary"
+        icon="file-document-outline"
+        style={styles.salaryBtn}
+      />
+
+      <Button
         title="Sign Out"
         onPress={handleLogout}
         variant="danger"
@@ -152,7 +160,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: 2,
   },
+  salaryBtn: {
+    marginBottom: 12,
+  },
   logoutBtn: {
-    marginTop: 8,
+    marginTop: 4,
   },
 });
