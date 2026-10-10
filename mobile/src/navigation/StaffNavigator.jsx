@@ -1,10 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import StaffAttendancePlaceholder from '../screens/staff/StaffAttendancePlaceholder.jsx';
+import StaffAttendanceScreen from '../screens/staff/StaffAttendanceScreen.jsx';
 import StaffHomeScreen from '../screens/staff/StaffHomeScreen.jsx';
-import StaffLeavesPlaceholder from '../screens/staff/StaffLeavesPlaceholder.jsx';
+import StaffLeavesScreen from '../screens/staff/StaffLeavesScreen.jsx';
 import StaffProfileScreen from '../screens/staff/StaffProfileScreen.jsx';
-import StaffPunchPlaceholder from '../screens/staff/StaffPunchPlaceholder.jsx';
+import StaffPunchScreen from '../screens/staff/StaffPunchScreen.jsx';
 import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
@@ -42,7 +42,7 @@ export default function StaffNavigator() {
       />
       <Tab.Screen
         name="StaffPunch"
-        component={StaffPunchPlaceholder}
+        component={StaffPunchScreen}
         options={{
           tabBarLabel: 'Punch',
           tabBarIcon: ({ color, size }) => (
@@ -52,7 +52,7 @@ export default function StaffNavigator() {
       />
       <Tab.Screen
         name="StaffAttendance"
-        component={StaffAttendancePlaceholder}
+        component={StaffAttendanceScreen}
         options={{
           tabBarLabel: 'Attendance',
           tabBarIcon: ({ color, size }) => (
@@ -62,7 +62,7 @@ export default function StaffNavigator() {
       />
       <Tab.Screen
         name="StaffLeaves"
-        component={StaffLeavesPlaceholder}
+        component={StaffLeavesScreen}
         options={{
           tabBarLabel: 'Leaves',
           tabBarIcon: ({ color, size }) => (
