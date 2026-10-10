@@ -1,10 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import AdminAttendancePlaceholder from '../screens/admin/AdminAttendancePlaceholder.jsx';
+import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen.jsx';
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen.jsx';
-import AdminLeavesPlaceholder from '../screens/admin/AdminLeavesPlaceholder.jsx';
-import AdminMoreScreen from '../screens/admin/AdminMoreScreen.jsx';
-import AdminStaffPlaceholder from '../screens/admin/AdminStaffPlaceholder.jsx';
+import AdminLeavesScreen from '../screens/admin/AdminLeavesScreen.jsx';
+import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
+import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
 import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
@@ -42,7 +42,7 @@ export default function AdminNavigator() {
       />
       <Tab.Screen
         name="AdminStaff"
-        component={AdminStaffPlaceholder}
+        component={AdminStaffScreen}
         options={{
           tabBarLabel: 'Staff',
           tabBarIcon: ({ color, size }) => (
@@ -52,7 +52,7 @@ export default function AdminNavigator() {
       />
       <Tab.Screen
         name="AdminAttendance"
-        component={AdminAttendancePlaceholder}
+        component={AdminAttendanceScreen}
         options={{
           tabBarLabel: 'Attendance',
           tabBarIcon: ({ color, size }) => (
@@ -62,7 +62,7 @@ export default function AdminNavigator() {
       />
       <Tab.Screen
         name="AdminLeaves"
-        component={AdminLeavesPlaceholder}
+        component={AdminLeavesScreen}
         options={{
           tabBarLabel: 'Leaves',
           tabBarIcon: ({ color, size }) => (
@@ -71,12 +71,12 @@ export default function AdminNavigator() {
         }}
       />
       <Tab.Screen
-        name="AdminMore"
-        component={AdminMoreScreen}
+        name="AdminSettings"
+        component={AdminSettingsScreen}
         options={{
-          tabBarLabel: 'More',
+          tabBarLabel: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="dots-horizontal-circle-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
           ),
         }}
       />

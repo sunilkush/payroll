@@ -68,7 +68,7 @@ export default function AdminHomeScreen({ navigation }) {
         </View>
         <TouchableOpacity
           style={styles.avatarBtn}
-          onPress={() => navigation.navigate('AdminMore')}
+          onPress={() => navigation.navigate('AdminSettings')}
         >
           <Text style={styles.avatarText}>{initials(user?.name || 'AD')}</Text>
         </TouchableOpacity>
@@ -165,7 +165,7 @@ export default function AdminHomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.moduleRow}
-          onPress={() => navigation.navigate('AdminMore')}
+          onPress={() => navigation.navigate('AdminSettings')}
           activeOpacity={0.7}
         >
           <View style={[styles.moduleIconCircle, { backgroundColor: '#ede9fe' }]}>
