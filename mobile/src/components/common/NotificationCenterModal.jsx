@@ -61,7 +61,12 @@ export default function NotificationCenterModal({ visible, onClose, navigation }
     } else if (item.to.includes('/admin/settings') || item.id === 'no-location') {
       navigation.navigate('AdminSettings');
     } else if (item.to.includes('/superadmin/companies')) {
-      navigation.navigate('SuperAdminCompanies');
+      const match = item.to.match(/\/superadmin\/companies\/([a-f0-9]{24})/i);
+      if (match) {
+        navigation.navigate('SuperAdminCompanyDetail', { companyId: match[1] });
+      } else {
+        navigation.navigate('SuperAdminCompanies');
+      }
     } else if (item.to.includes('/superadmin/settings')) {
       navigation.navigate('SuperAdminSettings');
     } else if (item.to.includes('/staff/leaves')) {

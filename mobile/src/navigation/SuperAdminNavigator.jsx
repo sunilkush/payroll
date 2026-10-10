@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import SuperAdminCompanyDetailScreen from '../screens/superadmin/SuperAdminCompanyDetailScreen.jsx';
 import SuperAdminCompaniesScreen from '../screens/superadmin/SuperAdminCompaniesScreen.jsx';
 import SuperAdminHomeScreen from '../screens/superadmin/SuperAdminHomeScreen.jsx';
 import SuperAdminSettingsScreen from '../screens/superadmin/SuperAdminSettingsScreen.jsx';
@@ -56,6 +57,14 @@ export default function SuperAdminNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen
+        name="SuperAdminCompanyDetail"
+        component={SuperAdminCompanyDetailScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>

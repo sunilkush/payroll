@@ -237,37 +237,50 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
         <View style={styles.companiesList}>
           {companies.map((company) => (
             <Card key={company._id} style={styles.companyCard} elevation="sm">
-              <View style={styles.companyHeader}>
-                <View style={styles.iconCircle}>
-                  <MaterialCommunityIcons name="domain" size={24} color={colors.primary} />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation.navigate('SuperAdminCompanyDetail', {
+                    companyId: company._id,
+                    companyName: company.name,
+                  })
+                }
+              >
+                <View style={styles.companyHeader}>
+                  <View style={styles.iconCircle}>
+                    <MaterialCommunityIcons name="domain" size={24} color={colors.primary} />
+                  </View>
+                  <View style={styles.companyInfo}>
+                    <Text style={styles.companyName}>{company.name}</Text>
+                    <Text style={styles.companyDate}>Created: {formatDate(company.createdAt)}</Text>
+                  </View>
+                  <View style={styles.badgeChevronCol}>
+                    <Badge
+                      label={company.isActive ? 'Active' : 'Blocked'}
+                      variant={company.isActive ? 'success' : 'danger'}
+                      size="sm"
+                    />
+                    <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
+                  </View>
                 </View>
-                <View style={styles.companyInfo}>
-                  <Text style={styles.companyName}>{company.name}</Text>
-                  <Text style={styles.companyDate}>Created: {formatDate(company.createdAt)}</Text>
-                </View>
-                <Badge
-                  label={company.isActive ? 'Active' : 'Blocked'}
-                  variant={company.isActive ? 'success' : 'danger'}
-                  size="sm"
-                />
-              </View>
 
-              <View style={styles.metaBox}>
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Plan</Text>
-                  <Badge label={company.plan || 'Free'} variant="primary" size="sm" />
-                </View>
+                <View style={styles.metaBox}>
+                  <View style={styles.metaItem}>
+                    <Text style={styles.metaLabel}>Plan</Text>
+                    <Badge label={company.plan || 'Free'} variant="primary" size="sm" />
+                  </View>
 
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Staff Count</Text>
-                  <Text style={styles.metaVal}>{company.staffCount || 0}</Text>
-                </View>
+                  <View style={styles.metaItem}>
+                    <Text style={styles.metaLabel}>Staff Count</Text>
+                    <Text style={styles.metaVal}>{company.staffCount || 0}</Text>
+                  </View>
 
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Locations</Text>
-                  <Text style={styles.metaVal}>{company.locations?.length || 0}</Text>
+                  <View style={styles.metaItem}>
+                    <Text style={styles.metaLabel}>Locations</Text>
+                    <Text style={styles.metaVal}>{company.locations?.length || 0}</Text>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               {/* Pending Upgrade Notice & Action */}
               {company.planRequest?.requestedPlan && (
@@ -296,6 +309,19 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
 
               {/* Action Buttons */}
               <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.editProfileBtn}
+                  onPress={() =>
+                    navigation.navigate('SuperAdminCompanyDetail', {
+                      companyId: company._id,
+                      companyName: company.name,
+                    })
+                  }
+                >
+                  <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.primary} />
+                  <Text style={styles.editProfileText}>Edit Profile</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.toggleStatusBtn}
                   onPress={() => handleToggleStatus(company)}
@@ -522,16 +548,38 @@ const styles = StyleSheet.create({
   decisionBtn: {
     flex: 1,
   },
+  badgeChevronCol: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
   actionRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-    paddingTop: 8,
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.primaryBg,
+  },
+  editProfileText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.semibold,
+    color: colors.primary,
+    marginLeft: 4,
   },
   toggleStatusBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
   },
   toggleStatusText: {
     fontSize: typography.sizes.xs,

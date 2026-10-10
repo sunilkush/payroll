@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_OVERRIDE_KEY = 'payroster_api_url_override';
 
 // Default production URL or fallback
-const PROD_API_URL = 'https://payroster.onrender.com/api/v1';
+const PROD_API_URL = 'https://payroll-hjsa.onrender.com/api/v1';
 
 /**
  * Automatically determine the default dev server API URL:

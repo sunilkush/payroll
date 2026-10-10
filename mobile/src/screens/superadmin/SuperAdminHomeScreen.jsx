@@ -200,12 +200,19 @@ export default function SuperAdminHomeScreen({ navigation }) {
                 <Text style={styles.sectionTitle}>Top Organizations by Headcount</Text>
                 <Card style={styles.topCompaniesCard} elevation="sm">
                   {topCompanies.map((c, i) => (
-                    <View
+                    <TouchableOpacity
                       key={c._id || i}
+                      activeOpacity={0.7}
                       style={[
                         styles.topCompanyRow,
                         i < topCompanies.length - 1 && styles.topCompanyBorder,
                       ]}
+                      onPress={() =>
+                        navigation.navigate('SuperAdminCompanyDetail', {
+                          companyId: c._id,
+                          companyName: c.name,
+                        })
+                      }
                     >
                       <View style={styles.rankCircle}>
                         <Text style={styles.rankText}>{i + 1}</Text>
@@ -221,7 +228,13 @@ export default function SuperAdminHomeScreen({ navigation }) {
                         variant="primary"
                         size="sm"
                       />
-                    </View>
+                      <MaterialCommunityIcons
+                        name="chevron-right"
+                        size={18}
+                        color={colors.textMuted}
+                        style={{ marginLeft: 6 }}
+                      />
+                    </TouchableOpacity>
                   ))}
                 </Card>
               </View>
