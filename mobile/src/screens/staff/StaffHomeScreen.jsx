@@ -334,16 +334,38 @@ export default function StaffHomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.quickTile}
-          onPress={() => navigation.navigate('StaffCorrections')}
+          onPress={() => navigation.navigate('StaffSalary')}
           activeOpacity={0.7}
         >
           <View style={[styles.quickIconCircle, { backgroundColor: '#eff6ff' }]}>
-            <MaterialCommunityIcons name="timer-edit-outline" size={24} color={colors.info} />
+            <MaterialCommunityIcons name="calculator-variant-outline" size={24} color={colors.info} />
           </View>
-          <Text style={styles.quickLabel}>Fix Punch</Text>
-          <Text style={styles.quickSub}>Missed Punches</Text>
+          <Text style={styles.quickLabel}>Salary Details</Text>
+          <Text style={styles.quickSub}>Earnings & Deductions</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Announcements & Important Notifications (Material Design 3 Banner) */}
+      <Card style={styles.announcementCard} elevation="sm">
+        <View style={styles.announcementHeader}>
+          <View style={styles.announcementIconCircle}>
+            <MaterialCommunityIcons name="bullhorn-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.announcementTitle}>Payroll Notice & Updates</Text>
+            <Text style={styles.announcementDesc}>
+              Statutory EPF/ESI contributions and monthly payslips for {salaryPeriod} are published. Verify your bank credits.
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.announcementAction}
+          onPress={() => setNotifVisible(true)}
+        >
+          <Text style={styles.announcementActionText}>View Details</Text>
+          <MaterialCommunityIcons name="chevron-right" size={16} color={colors.primary} />
+        </TouchableOpacity>
+      </Card>
 
       {/* 6. Recent Activity & Notifications */}
       <View style={styles.activityHeaderRow}>
@@ -765,5 +787,49 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textSecondary,
     marginTop: 1,
+  },
+  announcementCard: {
+    backgroundColor: colors.primaryContainer,
+    borderColor: '#bfdbfe',
+    marginBottom: 20,
+    padding: 14,
+  },
+  announcementHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  announcementIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  announcementTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.onPrimaryContainer,
+  },
+  announcementDesc: {
+    fontSize: typography.sizes.xs,
+    color: colors.onSurfaceVariant,
+    marginTop: 3,
+    lineHeight: 18,
+  },
+  announcementAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(37, 99, 235, 0.15)',
+  },
+  announcementActionText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.semibold,
+    color: colors.primary,
   },
 });

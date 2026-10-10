@@ -1,3 +1,4 @@
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import StaffAttendanceScreen from '../screens/staff/StaffAttendanceScreen.jsx';
@@ -8,9 +9,21 @@ import StaffMeetingsScreen from '../screens/staff/StaffMeetingsScreen.jsx';
 import StaffProfileScreen from '../screens/staff/StaffProfileScreen.jsx';
 import StaffPunchScreen from '../screens/staff/StaffPunchScreen.jsx';
 import StaffSalaryScreen from '../screens/staff/StaffSalaryScreen.jsx';
-import { colors, typography } from '../theme/index.js';
+import { borderRadius, colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
+
+function Md3NavIcon({ icon, focused, color }) {
+  return (
+    <View style={[styles.iconContainer, focused && styles.activePill]}>
+      <MaterialCommunityIcons
+        name={icon}
+        size={22}
+        color={focused ? colors.onPrimaryContainer : color}
+      />
+    </View>
+  );
+}
 
 export default function StaffNavigator() {
   return (
@@ -19,17 +32,19 @@ export default function StaffNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.border,
-          height: 64,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.outlineVariant,
+          borderTopWidth: 1,
+          height: 70,
           paddingBottom: 10,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: typography.weights.medium,
+          letterSpacing: 0.1,
         },
       }}
     >
@@ -38,8 +53,12 @@ export default function StaffNavigator() {
         component={StaffHomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-variant-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'home-variant' : 'home-variant-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -48,8 +67,12 @@ export default function StaffNavigator() {
         component={StaffAttendanceScreen}
         options={{
           tabBarLabel: 'Attendance',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'calendar-check' : 'calendar-check-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -58,8 +81,12 @@ export default function StaffNavigator() {
         component={StaffSalaryScreen}
         options={{
           tabBarLabel: 'Payroll',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'wallet' : 'wallet-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -68,8 +95,12 @@ export default function StaffNavigator() {
         component={StaffProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-circle-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'account-circle' : 'account-circle-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -108,3 +139,16 @@ export default function StaffNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activePill: {
+    backgroundColor: colors.primaryContainer,
+  },
+});

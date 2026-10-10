@@ -1,51 +1,78 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PayRoster Theme — colors, typography, spacing
-// Web app ki variables.css se match karta hai taaki dono platforms consistent dikhein.
+// Google Material Design 3 (Material You) Theme — PayRoster Mobile
+// Tokens for colors, typography, shapes, elevation, and accessibility
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const colors = {
-  // Primary (Royal Blue FinTech)
+  // MD3 Primary Palette
   primary: '#2563eb',
+  onPrimary: '#ffffff',
+  primaryContainer: '#dbeafe',
+  onPrimaryContainer: '#1e40af',
   primaryLight: '#3b82f6',
   primaryDark: '#1d4ed8',
-  primaryBg: '#eff6ff',
+  primaryBg: '#dbeafe', // alias
 
-  // Status
+  // MD3 Secondary & Neutral Variants
+  secondary: '#64748b',
+  onSecondary: '#ffffff',
+  secondaryContainer: '#e2e8f0',
+  onSecondaryContainer: '#0f172a',
+
+  // MD3 Surface & Background
+  background: '#f8fafc',
+  onBackground: '#0f172a',
+  surface: '#ffffff',
+  onSurface: '#0f172a',
+  surfaceVariant: '#f1f5f9',
+  onSurfaceVariant: '#64748b',
+  surfaceContainer: '#ffffff',
+  surfaceContainerHigh: '#f8fafc',
+
+  // MD3 Outline
+  outline: '#cbd5e1',
+  outlineVariant: '#e2e8f0',
+
+  // Status & Semantic Tones
   success: '#16a34a',
-  successBg: '#f0fdf4',
-  warning: '#d97706',
-  warningBg: '#fffbeb',
-  danger: '#dc2626',
-  dangerBg: '#fef2f2',
-  info: '#0284c7',
-  infoBg: '#f0f9ff',
+  onSuccess: '#ffffff',
+  successContainer: '#dcfce7',
+  onSuccessContainer: '#14532d',
+  successBg: '#dcfce7', // alias
 
-  // Neutrals (Slate / FinTech Clean)
+  warning: '#d97706',
+  onWarning: '#ffffff',
+  warningContainer: '#fef3c7',
+  onWarningContainer: '#78350f',
+  warningBg: '#fef3c7', // alias
+
+  danger: '#dc2626',
+  error: '#dc2626',
+  onError: '#ffffff',
+  errorContainer: '#fee2e2',
+  onErrorContainer: '#7f1d1d',
+  dangerBg: '#fee2e2', // alias
+
+  info: '#0284c7',
+  onInfo: '#ffffff',
+  infoContainer: '#e0f2fe',
+  infoBg: '#e0f2fe', // alias
+
+  // Legacy/Convenience Aliases
   text: '#0f172a',
-  textSecondary: '#475569',
+  textSecondary: '#64748b',
   textMuted: '#94a3b8',
   bg: '#f8fafc',
   bgCard: '#ffffff',
-  border: '#e2e8f0',
-  borderLight: '#f1f5f9',
+  border: '#cbd5e1',
+  borderLight: '#e2e8f0',
   divider: '#e2e8f0',
-
-  // Accent / FinTech Elements
-  accent: '#0ea5e9',
-  accentBg: '#f0fdfa',
-  cardHighlight: '#1e293b',
-
-  // Charts
-  chart1: '#2563eb',
-  chart2: '#10b981',
-  chart3: '#f59e0b',
-  chart4: '#8b5cf6',
-  chartGrid: '#f1f5f9',
 
   // Misc
   white: '#ffffff',
   black: '#000000',
   overlay: 'rgba(15, 23, 42, 0.6)',
+  ripple: 'rgba(37, 99, 235, 0.12)',
 };
 
 export const spacing = {
@@ -59,12 +86,15 @@ export const spacing = {
   section: 40,
 };
 
+// MD3 Shape System
 export const borderRadius = {
-  sm: 6,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  full: 9999,
+  xs: 4,
+  sm: 8,      // MD3 Small: text fields, chips
+  md: 12,     // MD3 Medium: cards, dialogs
+  lg: 16,     // MD3 Large: cards, bottom sheet
+  xl: 24,     // MD3 Extra Large: floating action buttons, large cards
+  pill: 28,   // MD3 Navigation pills, buttons
+  full: 9999, // MD3 Full rounded
 };
 
 export const typography = {
@@ -92,59 +122,66 @@ export const typography = {
   },
 };
 
+// MD3 Elevation System (Level 0 - Level 5)
 export const shadows = {
+  level0: {
+    shadowColor: 'transparent',
+    elevation: 0,
+  },
   sm: {
-    shadowColor: '#000',
+    shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 3,
+    elevation: 1, // MD3 Level 1
   },
   md: {
-    shadowColor: '#000',
+    shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2, // MD3 Level 2
   },
   lg: {
-    shadowColor: '#000',
+    shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 10,
+    elevation: 4, // MD3 Level 3
   },
 };
 
-// React Native Paper ka theme config
+// React Native Paper Material Design 3 Theme
 export const paperTheme = {
+  version: 3,
   colors: {
     primary: colors.primary,
-    primaryContainer: colors.primaryBg,
-    secondary: colors.textSecondary,
-    secondaryContainer: colors.borderLight,
-    tertiary: colors.chart1,
-    surface: colors.bgCard,
-    surfaceVariant: colors.bg,
-    background: colors.bg,
-    error: colors.danger,
-    errorContainer: colors.dangerBg,
-    onPrimary: colors.white,
-    onPrimaryContainer: colors.primaryDark,
-    onSecondary: colors.white,
-    onSurface: colors.text,
-    onSurfaceVariant: colors.textSecondary,
-    onBackground: colors.text,
-    onError: colors.white,
-    outline: colors.border,
-    outlineVariant: colors.borderLight,
+    onPrimary: colors.onPrimary,
+    primaryContainer: colors.primaryContainer,
+    onPrimaryContainer: colors.onPrimaryContainer,
+    secondary: colors.secondary,
+    onSecondary: colors.onSecondary,
+    secondaryContainer: colors.secondaryContainer,
+    onSecondaryContainer: colors.onSecondaryContainer,
+    background: colors.background,
+    onBackground: colors.onBackground,
+    surface: colors.surface,
+    onSurface: colors.onSurface,
+    surfaceVariant: colors.surfaceVariant,
+    onSurfaceVariant: colors.onSurfaceVariant,
+    outline: colors.outline,
+    outlineVariant: colors.outlineVariant,
+    error: colors.error,
+    onError: colors.onError,
+    errorContainer: colors.errorContainer,
+    onErrorContainer: colors.onErrorContainer,
     elevation: {
       level0: 'transparent',
-      level1: colors.bgCard,
-      level2: colors.bgCard,
-      level3: colors.bgCard,
-      level4: colors.bgCard,
-      level5: colors.bgCard,
+      level1: colors.surface,
+      level2: colors.surfaceVariant,
+      level3: colors.surface,
+      level4: colors.surface,
+      level5: colors.surface,
     },
   },
 };

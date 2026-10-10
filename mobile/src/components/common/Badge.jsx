@@ -11,18 +11,43 @@ export default function Badge({
   const getColors = () => {
     switch (variant) {
       case 'success':
-        return { bg: colors.successBg, text: colors.success, border: '#bbf7d0' };
+        return {
+          bg: colors.successContainer,
+          text: colors.onSuccessContainer,
+          border: '#bbf7d0',
+        };
       case 'danger':
-        return { bg: colors.dangerBg, text: colors.danger, border: '#fecaca' };
+      case 'error':
+        return {
+          bg: colors.errorContainer,
+          text: colors.onErrorContainer,
+          border: '#fecaca',
+        };
       case 'warning':
-        return { bg: colors.warningBg, text: colors.warning, border: '#fde68a' };
+        return {
+          bg: colors.warningContainer,
+          text: colors.onWarningContainer,
+          border: '#fde68a',
+        };
       case 'info':
-        return { bg: colors.infoBg, text: colors.info, border: '#bfdbfe' };
+        return {
+          bg: colors.infoContainer,
+          text: '#0369a1',
+          border: '#bae6fd',
+        };
       case 'primary':
-        return { bg: colors.primaryBg, text: colors.primary, border: '#c7d2fe' };
+        return {
+          bg: colors.primaryContainer,
+          text: colors.onPrimaryContainer,
+          border: '#bfdbfe',
+        };
       case 'default':
       default:
-        return { bg: colors.borderLight, text: colors.textSecondary, border: colors.border };
+        return {
+          bg: colors.surfaceVariant,
+          text: colors.onSurfaceVariant,
+          border: colors.outlineVariant,
+        };
     }
   };
 
@@ -54,14 +79,14 @@ export default function Badge({
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.sm,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeSm: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
   },
   badgeMd: {
     paddingHorizontal: 12,
@@ -69,6 +94,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: typography.weights.semibold,
+    letterSpacing: 0.1,
   },
   textSm: {
     fontSize: typography.sizes.xs,

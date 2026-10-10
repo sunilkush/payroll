@@ -204,24 +204,40 @@ export default function AdminStaffScreen({ navigation }) {
         containerStyle={styles.searchContainer}
       />
 
-      {/* Status Filter Tabs */}
+      {/* MD3 Filter Chips */}
       <View style={styles.filterRow}>
-        {['all', 'active', 'inactive'].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.filterBtn, statusFilter === tab && styles.filterBtnActive]}
-            onPress={() => setStatusFilter(tab)}
-          >
-            <Text
-              style={[
-                styles.filterBtnText,
-                statusFilter === tab && styles.filterBtnTextActive,
-              ]}
+        {[
+          { key: 'all', label: 'All Staff' },
+          { key: 'active', label: 'Active' },
+          { key: 'inactive', label: 'Inactive' },
+        ].map((tab) => {
+          const isSelected = statusFilter === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.filterChip, isSelected && styles.filterChipActive]}
+              onPress={() => setStatusFilter(tab.key)}
+              activeOpacity={0.75}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              {isSelected && (
+                <MaterialCommunityIcons
+                  name="check"
+                  size={15}
+                  color={colors.onPrimaryContainer}
+                  style={{ marginRight: 4 }}
+                />
+              )}
+              <Text
+                style={[
+                  styles.filterChipText,
+                  isSelected && styles.filterChipTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Add Staff Button */}
@@ -485,28 +501,30 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    backgroundColor: colors.borderLight,
-    borderRadius: borderRadius.md,
-    padding: 3,
+    gap: 8,
     marginBottom: 16,
   },
-  filterBtn: {
-    flex: 1,
-    paddingVertical: 8,
+  filterChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: borderRadius.sm,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surfaceVariant,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
   },
-  filterBtnActive: {
-    backgroundColor: colors.bgCard,
-    ...shadows.sm,
+  filterChipActive: {
+    backgroundColor: colors.primaryContainer,
+    borderColor: colors.primary,
   },
-  filterBtnText: {
+  filterChipText: {
     fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    color: colors.onSurfaceVariant,
     fontWeight: typography.weights.medium,
   },
-  filterBtnTextActive: {
-    color: colors.primary,
+  filterChipTextActive: {
+    color: colors.onPrimaryContainer,
     fontWeight: typography.weights.bold,
   },
   addBtn: {

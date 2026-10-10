@@ -1,3 +1,4 @@
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen.jsx';
@@ -10,9 +11,21 @@ import AdminMeetingsScreen from '../screens/admin/AdminMeetingsScreen.jsx';
 import AdminPayrollScreen from '../screens/admin/AdminPayrollScreen.jsx';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
 import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
-import { colors, typography } from '../theme/index.js';
+import { borderRadius, colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
+
+function Md3NavIcon({ icon, focused, color }) {
+  return (
+    <View style={[styles.iconContainer, focused && styles.activePill]}>
+      <MaterialCommunityIcons
+        name={icon}
+        size={22}
+        color={focused ? colors.onPrimaryContainer : color}
+      />
+    </View>
+  );
+}
 
 export default function AdminNavigator() {
   return (
@@ -21,17 +34,19 @@ export default function AdminNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.border,
-          height: 64,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.outlineVariant,
+          borderTopWidth: 1,
+          height: 70,
           paddingBottom: 10,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: typography.weights.medium,
+          letterSpacing: 0.1,
         },
       }}
     >
@@ -40,8 +55,12 @@ export default function AdminNavigator() {
         component={AdminHomeScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'view-dashboard' : 'view-dashboard-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -50,8 +69,12 @@ export default function AdminNavigator() {
         component={AdminStaffScreen}
         options={{
           tabBarLabel: 'Staff',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-group-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'account-group' : 'account-group-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -60,8 +83,12 @@ export default function AdminNavigator() {
         component={AdminAttendanceScreen}
         options={{
           tabBarLabel: 'Attendance',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'calendar-check' : 'calendar-check-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -70,8 +97,12 @@ export default function AdminNavigator() {
         component={AdminPayrollScreen}
         options={{
           tabBarLabel: 'Payroll',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'wallet' : 'wallet-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -80,8 +111,12 @@ export default function AdminNavigator() {
         component={AdminSettingsScreen}
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Md3NavIcon
+              icon={focused ? 'cog' : 'cog-outline'}
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -128,3 +163,16 @@ export default function AdminNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activePill: {
+    backgroundColor: colors.primaryContainer,
+  },
+});
