@@ -16,6 +16,7 @@ import Card from '../../components/common/Card.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
+import PayslipListItem from '../../components/common/PayslipListItem.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatCurrency, formatMonth } from '../../utils/format.js';
@@ -107,35 +108,16 @@ export default function StaffSalaryScreen({ navigation }) {
         />
       ) : (
         <View style={styles.list}>
-          {filteredPayrolls.map((payroll) => {
-            const isPaid = (payroll.status || 'paid').toLowerCase() === 'paid' || (payroll.status || '').toLowerCase() === 'final';
-            return (
-              <TouchableOpacity
-                key={payroll._id}
-                onPress={() => setSelectedSlip(payroll)}
-                activeOpacity={0.85}
-              >
-                <Card style={styles.slipCard} elevation="xs">
-                  <View style={styles.slipCardInner}>
-                    <View style={styles.slipInfo}>
-                      <Text style={styles.slipMonth}>{formatMonth(payroll.period)}</Text>
-                      <Text style={styles.slipSubLabel}>Monthly Salary</Text>
-                      <Text style={styles.slipAmount}>
-                        {formatCurrency(payroll.netSalary || payroll.earnings?.gross || 0)}
-                      </Text>
-                    </View>
-
-                    <View style={styles.slipBadgeWrap}>
-                      <Badge
-                        status={isPaid ? 'Paid' : 'Pending'}
-                        variant={isPaid ? 'success' : 'warning'}
-                      />
-                    </View>
-                  </View>
-                </Card>
-              </TouchableOpacity>
-            );
-          })}
+          {filteredPayrolls.map((payroll) => (
+            <PayslipListItem
+              key={payroll._id}
+              period={payroll.period}
+              netSalary={payroll.netSalary || payroll.earnings?.gross}
+              grossSalary={payroll.earnings?.gross}
+              status={payroll.status}
+              onPress={() => setSelectedSlip(payroll)}
+            />
+          ))}
         </View>
       )}
 

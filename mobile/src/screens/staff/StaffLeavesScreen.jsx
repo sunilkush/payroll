@@ -19,9 +19,11 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import DatePickerField from '../../components/common/DatePickerField.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
+import LeaveRequestCard from '../../components/common/LeaveRequestCard.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
@@ -363,26 +365,22 @@ export default function StaffLeavesScreen({ navigation }) {
           </View>
 
           {/* Date Pickers */}
-          <Input
-            label="From Date (YYYY-MM-DD) *"
+          <DatePickerField
+            label="From Date *"
             value={fromDate}
-            onChangeText={(t) => {
-              setFromDate(t);
-              if (halfDay || !toDate) setToDate(t);
+            onChange={(d) => {
+              setFromDate(d);
+              if (halfDay || !toDate) setToDate(d);
             }}
-            placeholder="YYYY-MM-DD"
-            prefixIcon="calendar"
-            helper="e.g. 2026-10-15"
+            helper="Tap to select starting date"
           />
 
           {!halfDay && (
-            <Input
-              label="To Date (YYYY-MM-DD) *"
+            <DatePickerField
+              label="To Date *"
               value={toDate}
-              onChangeText={setToDate}
-              placeholder="YYYY-MM-DD"
-              prefixIcon="calendar"
-              helper="Same as From Date for single-day leave"
+              onChange={setToDate}
+              helper="Tap to select ending date"
             />
           )}
 
@@ -416,53 +414,19 @@ export default function StaffLeavesScreen({ navigation }) {
           ) : (
             <View style={styles.historyList}>
               {leaves.map((item) => (
-                <Card key={item._id} style={styles.leaveItemCard} elevation="xs">
-                  <View style={styles.itemHeader}>
-                    <View style={styles.itemTypeRow}>
-                      <View style={styles.typeBadgeCircle}>
-                        <MaterialCommunityIcons
-                          name={item.type === 'CL' ? 'clock-outline' : 'calendar-check'}
-                          size={16}
-                          color={colors.primary}
-                        />
-                      </View>
-                      <Text style={styles.itemType}>{item.type === 'CL' ? 'Casual Leave' : 'Earned Leave'}</Text>
-                      <Text style={styles.itemDays}>
-                        • {item.days} {item.days === 1 ? 'day' : 'days'}
-                      </Text>
-                    </View>
-                    <Badge label={item.status} variant={getStatusVariant(item.status)} />
-                  </View>
-
-                  <Text style={styles.itemDates}>
-                    {formatDate(item.fromDate)}
-                    {item.fromDate !== item.toDate ? ` to ${formatDate(item.toDate)}` : ''}
-                    {item.halfDay ? ` (${item.halfDay === 'FIRST_HALF' ? '1st Half' : '2nd Half'})` : ''}
-                  </Text>
-
-                  {item.reason ? (
-                    <Text style={styles.itemReason} numberOfLines={2}>
-                      "{item.reason}"
-                    </Text>
-                  ) : null}
-
-                  {item.actionNote ? (
-                    <Text style={styles.itemNote}>
-                      Admin note: {item.actionNote}
-                    </Text>
-                  ) : null}
-
-                  {item.status === 'PENDING' && (
-                    <TouchableOpacity
-                      onPress={() => handleCancelLeave(item)}
-                      style={styles.cancelLink}
-                      activeOpacity={0.7}
-                    >
-                      <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
-                      <Text style={styles.cancelLinkText}>Cancel Request</Text>
-                    </TouchableOpacity>
-                  )}
-                </Card>
+                <LeaveRequestCard
+                  key={item._id}
+                  type={item.type}
+                  days={item.days}
+                  halfDay={item.halfDay}
+                  fromDate={item.fromDate}
+                  toDate={item.toDate}
+                  reason={item.reason}
+                  status={item.status}
+                  adminComment={item.actionNote}
+                  canCancel={item.status === 'PENDING'}
+                  onPressCancel={() => handleCancelLeave(item)}
+                />
               ))}
             </View>
           )}

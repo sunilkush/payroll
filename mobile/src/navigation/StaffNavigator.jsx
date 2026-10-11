@@ -50,20 +50,6 @@ export default function StaffNavigator() {
         }}
       />
       <Tab.Screen
-        name="StaffPunch"
-        component={StaffPunchScreen}
-        options={{
-          tabBarLabel: 'Punch',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="fingerprint"
-              size={size || 24}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
         name="StaffAttendance"
         component={StaffAttendanceScreen}
         options={{
@@ -95,7 +81,7 @@ export default function StaffNavigator() {
         name="StaffSalary"
         component={StaffSalaryScreen}
         options={{
-          tabBarLabel: 'Payroll',
+          tabBarLabel: 'Payslips',
           tabBarIcon: ({ color, focused, size }) => (
             <MaterialCommunityIcons
               name={focused ? 'wallet' : 'wallet-outline'}
@@ -108,6 +94,20 @@ export default function StaffNavigator() {
       <Tab.Screen
         name="StaffProfile"
         component={StaffProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused, size }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'account-circle' : 'account-circle-outline'}
+              size={size || 24}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="StaffPunch"
+        component={StaffPunchScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },

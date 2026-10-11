@@ -20,6 +20,7 @@ import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
+import DatePickerField from '../../components/common/DatePickerField.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
@@ -252,13 +253,12 @@ export default function StaffCorrectionsScreen({ navigation, route }) {
             <ScrollView showsVerticalScrollIndicator={false}>
               {formError ? <Alert type="error">{formError}</Alert> : null}
 
-              <Input
-                label="Date (YYYY-MM-DD) *"
+              <DatePickerField
+                label="Date *"
                 value={form.date}
-                onChangeText={(t) => setForm((p) => ({ ...p, date: t }))}
-                placeholder="YYYY-MM-DD"
-                prefixIcon="calendar"
+                onChange={(t) => setForm((p) => ({ ...p, date: t }))}
                 error={fieldErrors.date}
+                helper="Select the date of the missed punch"
               />
 
               <View style={styles.timesRow}>
