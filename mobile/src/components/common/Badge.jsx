@@ -1,52 +1,100 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { borderRadius, colors, typography } from '../../theme/index.js';
+import { colors, radius, spacing, typography } from '../../theme/index.js';
 
 export default function Badge({
   label,
-  variant = 'default', // 'success' | 'danger' | 'warning' | 'info' | 'primary' | 'default'
+  variant, // 'success' | 'danger' | 'warning' | 'info' | 'primary' | 'default'
+  status,  // Helper string: 'Present' | 'Half Day' | 'Absent' | 'Pending' | 'Paid' etc.
   size = 'md', // 'sm' | 'md'
   style,
   textStyle,
 }) {
+  const resolveVariant = () => {
+    if (variant) return variant;
+    if (!status && !label) return 'default';
+    const textToCheck = String(status || label).toLowerCase();
+
+    if (
+      textToCheck.includes('present') ||
+      textToCheck.includes('approved') ||
+      textToCheck.includes('paid') ||
+      textToCheck.includes('active') ||
+      textToCheck.includes('completed') ||
+      textToCheck.includes('ontime')
+    ) {
+      return 'success';
+    }
+    if (
+      textToCheck.includes('half') ||
+      textToCheck.includes('pending') ||
+      textToCheck.includes('review') ||
+      textToCheck.includes('late') ||
+      textToCheck.includes('warning')
+    ) {
+      return 'warning';
+    }
+    if (
+      textToCheck.includes('absent') ||
+      textToCheck.includes('rejected') ||
+      textToCheck.includes('failed') ||
+      textToCheck.includes('unpaid') ||
+      textToCheck.includes('overdue') ||
+      textToCheck.includes('cancelled')
+    ) {
+      return 'danger';
+    }
+    if (
+      textToCheck.includes('leave') ||
+      textToCheck.includes('holiday') ||
+      textToCheck.includes('weekoff') ||
+      textToCheck.includes('info')
+    ) {
+      return 'info';
+    }
+    return 'default';
+  };
+
+  const currentVariant = resolveVariant();
+
   const getColors = () => {
-    switch (variant) {
+    switch (currentVariant) {
       case 'success':
         return {
           bg: colors.successContainer,
-          text: colors.onSuccessContainer,
-          border: '#bbf7d0',
+          text: colors.success,
+          border: '#BBF7D0',
         };
       case 'danger':
       case 'error':
         return {
           bg: colors.errorContainer,
-          text: colors.onErrorContainer,
-          border: '#fecaca',
+          text: colors.error,
+          border: '#FECACA',
         };
       case 'warning':
         return {
           bg: colors.warningContainer,
-          text: colors.onWarningContainer,
-          border: '#fde68a',
+          text: colors.warning,
+          border: '#FDE68A',
         };
       case 'info':
         return {
           bg: colors.infoContainer,
-          text: '#0369a1',
-          border: '#bae6fd',
+          text: colors.info,
+          border: '#BAE6FD',
         };
       case 'primary':
         return {
           bg: colors.primaryContainer,
-          text: colors.onPrimaryContainer,
-          border: '#bfdbfe',
+          text: colors.primaryDark,
+          border: '#BFDBFE',
         };
       case 'default':
       default:
         return {
           bg: colors.surfaceVariant,
-          text: colors.onSurfaceVariant,
-          border: colors.outlineVariant,
+          text: colors.textSecondary,
+          border: colors.border,
         };
     }
   };
@@ -70,26 +118,28 @@ export default function Badge({
           textStyle,
         ]}
       >
-        {label}
+        {label || status}
       </Text>
     </View>
   );
 }
 
+export const StatusBadge = Badge;
+
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: borderRadius.pill,
+    borderRadius: radius.control, // 8px
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeSm: {
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
   },
   badgeMd: {
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
     paddingVertical: 4,
   },
   text: {
@@ -97,9 +147,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   textSm: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.caption,
   },
   textMd: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.label,
   },
 });

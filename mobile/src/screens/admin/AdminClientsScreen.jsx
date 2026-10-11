@@ -21,10 +21,12 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
+import SearchBar from '../../components/common/SearchBar.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 
 const EMPTY_CLIENT = {
@@ -226,12 +228,12 @@ export default function AdminClientsScreen({ navigation }) {
       ) : null}
 
       <View style={styles.filterBar}>
-        <Input
+        <SearchBar
           placeholder="Search clients..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          leftIcon="magnify"
-          containerStyle={styles.searchInput}
+          onClear={() => setSearchQuery('')}
+          style={styles.searchInput}
         />
         <View style={styles.statusChipsRow}>
           {['ALL', 'ACTIVE', 'INACTIVE'].map((opt) => {
@@ -247,7 +249,7 @@ export default function AdminClientsScreen({ navigation }) {
                   <MaterialCommunityIcons
                     name="check"
                     size={14}
-                    color={colors.onPrimaryContainer}
+                    color={colors.primary}
                     style={{ marginRight: 4 }}
                   />
                 )}
@@ -267,21 +269,17 @@ export default function AdminClientsScreen({ navigation }) {
         {loading ? (
           <Loader message="Loading client directory..." />
         ) : filteredClients.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <MaterialCommunityIcons name="domain" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No clients found</Text>
-            <Text style={styles.emptySubtitle}>
-              {searchQuery ? 'Try adjusting your search criteria.' : 'Tap "+" to register your first client account.'}
-            </Text>
-            {!searchQuery && (
-              <Button
-                title="Add Client"
-                icon="plus"
-                onPress={openAddModal}
-                style={styles.emptyBtn}
-              />
-            )}
-          </Card>
+          <EmptyState
+            icon="domain"
+            title="No clients found"
+            description={
+              searchQuery
+                ? 'Try adjusting your search criteria.'
+                : 'Tap "+" to register your first client account.'
+            }
+            actionTitle={!searchQuery ? 'Add Client' : undefined}
+            onAction={!searchQuery ? openAddModal : undefined}
+          />
         ) : (
           <View style={styles.list}>
             {filteredClients.map((client) => (

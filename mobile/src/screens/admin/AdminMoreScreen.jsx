@@ -1,13 +1,14 @@
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
-import { initials, ROLE_LABEL } from '../../utils/roles.js';
+import { borderRadius, colors, radius, shadows, typography } from '../../theme/index.js';
+import { ROLE_LABEL } from '../../utils/roles.js';
 
 export default function AdminMoreScreen({ navigation }) {
   const { user, company, logout } = useAuth();
@@ -26,10 +27,8 @@ export default function AdminMoreScreen({ navigation }) {
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
       />
 
-      <Card style={styles.profileCard} elevation="md">
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials(user?.name || 'AD')}</Text>
-        </View>
+      <Card style={styles.profileCard}>
+        <Avatar name={user?.name || 'AD'} size={68} />
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         <View style={styles.badgeRow}>

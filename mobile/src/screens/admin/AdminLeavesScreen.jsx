@@ -12,9 +12,11 @@ import {
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { approveLeaveApi, listLeavesApi, rejectLeaveApi } from '../../api/leaveApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
@@ -178,23 +180,21 @@ export default function AdminLeavesScreen({ navigation }) {
       {loading ? (
         <Loader message="Loading leave applications..." />
       ) : leaves.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="calendar-check" size={44} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No {statusFilter.toLowerCase()} requests</Text>
-          <Text style={styles.emptySub}>
-            {statusFilter === 'PENDING'
+        <EmptyState
+          icon="calendar-check"
+          title={`No ${statusFilter.toLowerCase()} requests`}
+          description={
+            statusFilter === 'PENDING'
               ? 'All caught up! No pending leave requests to review.'
-              : 'No leave applications in this category.'}
-          </Text>
-        </Card>
+              : 'No leave applications in this category.'
+          }
+        />
       ) : (
         <View style={styles.leavesList}>
           {leaves.map((item) => (
             <Card key={item._id} style={styles.leaveCard} elevation="sm">
               <View style={styles.leaveHeader}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials(item.userId?.name || 'EM')}</Text>
-                </View>
+                <Avatar name={item.userId?.name || 'Staff'} size={38} />
                 <View style={styles.staffInfo}>
                   <Text style={styles.staffName}>{item.userId?.name || 'Staff'}</Text>
                   <Text style={styles.staffEmail}>{item.userId?.email || ''}</Text>

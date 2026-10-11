@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { borderRadius, colors, typography } from '../../theme/index.js';
+import { colors, radius, spacing, typography } from '../../theme/index.js';
 
 export default function Alert({ children, message, type = 'error', onDismiss, style }) {
   const content = children || message;
@@ -10,32 +10,32 @@ export default function Alert({ children, message, type = 'error', onDismiss, st
     switch (type) {
       case 'success':
         return {
-          bg: colors.successBg,
+          bg: colors.successContainer,
           text: colors.success,
-          border: '#bbf7d0',
+          border: '#BBF7D0',
           icon: 'check-circle-outline',
         };
       case 'warning':
         return {
-          bg: colors.warningBg,
+          bg: colors.warningContainer,
           text: colors.warning,
-          border: '#fde68a',
+          border: '#FDE68A',
           icon: 'alert-circle-outline',
         };
       case 'info':
         return {
-          bg: colors.infoBg,
+          bg: colors.infoContainer,
           text: colors.info,
-          border: '#bfdbfe',
+          border: '#BAE6FD',
           icon: 'information-outline',
         };
       case 'danger':
       case 'error':
       default:
         return {
-          bg: colors.dangerBg,
-          text: colors.danger,
-          border: '#fecaca',
+          bg: colors.errorContainer,
+          text: colors.error,
+          border: '#FECACA',
           icon: 'alert-circle-outline',
         };
     }
@@ -62,7 +62,7 @@ export default function Alert({ children, message, type = 'error', onDismiss, st
         <TouchableOpacity
           onPress={onDismiss}
           style={styles.dismissBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Dismiss alert"
         >
@@ -77,22 +77,22 @@ const styles = StyleSheet.create({
   alert: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.control, // 8px
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   icon: {
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   text: {
     flex: 1,
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.body,
     fontWeight: typography.weights.medium,
   },
   dismissBtn: {
     padding: 4,
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
 });

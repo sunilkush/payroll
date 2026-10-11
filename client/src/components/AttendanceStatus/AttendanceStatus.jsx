@@ -7,6 +7,7 @@ const STATUS = {
   ABSENT: { label: 'Absent', tone: 'danger' },
   WEEK_OFF: { label: 'Week Off', tone: 'muted' },
   HOLIDAY: { label: 'Holiday', tone: 'info' },
+  PENDING: { label: 'Pending', tone: 'info' },
   NOT_MARKED: { label: 'Not marked', tone: 'warning' },
 };
 

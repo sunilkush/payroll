@@ -21,6 +21,7 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
@@ -263,21 +264,17 @@ export default function AdminMeetingsScreen({ navigation }) {
         {loading ? (
           <Loader message="Loading team field visits..." />
         ) : filteredMeetings.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <MaterialCommunityIcons name="briefcase-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No Visits Found</Text>
-            <Text style={styles.emptySub}>
-              {statusFilter !== 'ALL'
+          <EmptyState
+            icon="briefcase-outline"
+            title="No Visits Found"
+            description={
+              statusFilter !== 'ALL'
                 ? `No visits matching ${statusFilter}.`
-                : 'Schedule field visits for your team using the "+" button.'}
-            </Text>
-            <Button
-              title="Schedule Visit"
-              icon="plus"
-              onPress={openScheduleModal}
-              style={styles.emptyBtn}
-            />
-          </Card>
+                : 'Schedule field visits for your team using the "+" button.'
+            }
+            actionTitle="Schedule Visit"
+            onAction={openScheduleModal}
+          />
         ) : (
           <View style={styles.list}>
             {filteredMeetings.map((meeting) => {

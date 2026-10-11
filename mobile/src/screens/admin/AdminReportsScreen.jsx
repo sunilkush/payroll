@@ -24,7 +24,7 @@ import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import {
   currentMonth,
   formatCurrency,
@@ -38,8 +38,8 @@ const REPORT_CATEGORIES = [
     title: 'Payroll Summary',
     subtitle: 'Gross pay, net disbursement & deductions',
     icon: 'cash-register',
-    iconColor: '#2563EB',
-    bgColor: '#EFF6FF',
+    iconColor: colors.primary,
+    bgColor: colors.primaryLight,
     borderColor: '#BFDBFE',
   },
   {
@@ -47,17 +47,17 @@ const REPORT_CATEGORIES = [
     title: 'Attendance & Time',
     subtitle: 'Present rate, LOPs, work hours & overtime',
     icon: 'calendar-clock',
-    iconColor: '#059669',
-    bgColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
+    iconColor: colors.success,
+    bgColor: colors.successContainer,
+    borderColor: '#BBF7D0',
   },
   {
     id: 'statutory',
     title: 'PF & ESI Compliance',
     subtitle: 'EPF, EPS, EDLI & ESIC statutory dues',
     icon: 'shield-check-outline',
-    iconColor: '#D97706',
-    bgColor: '#FFFBEB',
+    iconColor: colors.warning,
+    bgColor: colors.warningContainer,
     borderColor: '#FDE68A',
   },
   {
@@ -65,9 +65,9 @@ const REPORT_CATEGORIES = [
     title: 'Headcount Directory',
     subtitle: 'Department distribution, roles & status',
     icon: 'account-group-outline',
-    iconColor: '#7C3AED',
-    bgColor: '#F5F3FF',
-    borderColor: '#DDD6FE',
+    iconColor: colors.primaryDark,
+    bgColor: colors.surfaceVariant,
+    borderColor: colors.border,
   },
 ];
 
@@ -802,15 +802,15 @@ const styles = StyleSheet.create({
   exportIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#DBEAFE',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   exportActionTitle: {
-    fontSize: 14,
+    fontSize: typography.sizes.body,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
   },
   exportActionSub: {
     fontSize: 11,
@@ -826,28 +826,28 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   modalCard: {
-    padding: 20,
-    borderRadius: borderRadius.xl,
-    backgroundColor: '#FFFFFF',
+    padding: spacing.xl,
+    borderRadius: radius.modal,
+    backgroundColor: colors.card,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: typography.sizes.h3,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
   },
   modalSub: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -858,21 +858,21 @@ const styles = StyleSheet.create({
   },
   formatOption: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderRadius: borderRadius.lg,
+    borderColor: colors.border,
+    borderRadius: radius.card,
     padding: 14,
     alignItems: 'center',
   },
   formatOptionActive: {
     borderColor: colors.primary,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primaryLight,
   },
   formatTitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
     marginTop: 6,
   },
   formatTitleActive: {
@@ -888,14 +888,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     padding: 10,
-    borderRadius: borderRadius.md,
-    marginBottom: 16,
+    borderRadius: radius.control,
+    marginBottom: spacing.lg,
   },
   modalSummaryNoticeText: {
     fontSize: 11,
-    color: '#334155',
+    color: colors.text,
     fontWeight: typography.weights.medium,
   },
   modalButtonRow: {

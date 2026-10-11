@@ -1,4 +1,3 @@
-import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen.jsx';
@@ -13,7 +12,7 @@ import AdminProfileScreen from '../screens/admin/AdminProfileScreen.jsx';
 import AdminReportsScreen from '../screens/admin/AdminReportsScreen.jsx';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen.jsx';
 import AdminStaffScreen from '../screens/admin/AdminStaffScreen.jsx';
-import { borderRadius, colors, typography } from '../theme/index.js';
+import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
 
@@ -24,12 +23,12 @@ export default function AdminNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.onSurfaceVariant,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.outlineVariant,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 66,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 6,
         },
@@ -58,7 +57,7 @@ export default function AdminNavigator() {
         name="AdminStaff"
         component={AdminStaffScreen}
         options={{
-          tabBarLabel: 'Employees',
+          tabBarLabel: 'Staff',
           tabBarIcon: ({ color, focused, size }) => (
             <MaterialCommunityIcons
               name={focused ? 'account-group' : 'account-group-outline'}
@@ -169,4 +168,3 @@ export default function AdminNavigator() {
     </Tab.Navigator>
   );
 }
-

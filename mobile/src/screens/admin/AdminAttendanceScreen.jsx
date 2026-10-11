@@ -18,9 +18,11 @@ import {
   getTodaySummaryApi,
 } from '../../api/attendanceApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
@@ -349,15 +351,15 @@ export default function AdminAttendanceScreen({ navigation }) {
 
                 {/* 4 Pulse KPI Tiles */}
                 <View style={styles.pulseKpiGrid}>
-                  <View style={[styles.pulseKpiCard, { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' }]}>
+                  <View style={[styles.pulseKpiCard, { borderColor: '#BBF7D0', backgroundColor: colors.successContainer }]}>
                     <View style={styles.pulseKpiIconCircle}>
-                      <MaterialCommunityIcons name="account-check" size={20} color="#16A34A" />
+                      <MaterialCommunityIcons name="account-check" size={20} color={colors.success} />
                     </View>
-                    <Text style={[styles.pulseKpiNum, { color: '#16A34A' }]}>{todaySummary.present}</Text>
+                    <Text style={[styles.pulseKpiNum, { color: colors.success }]}>{todaySummary.present}</Text>
                     <Text style={styles.pulseKpiLabel}>Present in Office</Text>
                   </View>
 
-                  <View style={[styles.pulseKpiCard, { borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }]}>
+                  <View style={[styles.pulseKpiCard, { borderColor: '#BFDBFE', backgroundColor: colors.primaryLight }]}>
                     <View style={styles.pulseKpiIconCircle}>
                       <MaterialCommunityIcons name="logout-variant" size={20} color={colors.primary} />
                     </View>
@@ -365,15 +367,15 @@ export default function AdminAttendanceScreen({ navigation }) {
                     <Text style={styles.pulseKpiLabel}>Punched Out</Text>
                   </View>
 
-                  <View style={[styles.pulseKpiCard, { borderColor: '#FDE68A', backgroundColor: '#FEFCE8' }]}>
+                  <View style={[styles.pulseKpiCard, { borderColor: '#FDE68A', backgroundColor: colors.warningContainer }]}>
                     <View style={styles.pulseKpiIconCircle}>
-                      <MaterialCommunityIcons name="beach" size={20} color="#D97706" />
+                      <MaterialCommunityIcons name="beach" size={20} color={colors.warning} />
                     </View>
-                    <Text style={[styles.pulseKpiNum, { color: '#D97706' }]}>{todaySummary.onLeave}</Text>
+                    <Text style={[styles.pulseKpiNum, { color: colors.warning }]}>{todaySummary.onLeave}</Text>
                     <Text style={styles.pulseKpiLabel}>On Approved Leave</Text>
                   </View>
 
-                  <View style={[styles.pulseKpiCard, { borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }]}>
+                  <View style={[styles.pulseKpiCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
                     <View style={styles.pulseKpiIconCircle}>
                       <MaterialCommunityIcons name="clock-alert-outline" size={20} color={colors.textSecondary} />
                     </View>
@@ -387,7 +389,7 @@ export default function AdminAttendanceScreen({ navigation }) {
                   <MaterialCommunityIcons
                     name={todaySummary.locationsCount > 0 ? 'shield-check' : 'alert-circle'}
                     size={16}
-                    color={todaySummary.locationsCount > 0 ? '#16A34A' : colors.warning}
+                    color={todaySummary.locationsCount > 0 ? colors.success : colors.warning}
                   />
                   <Text style={styles.geofenceStatusText}>
                     {todaySummary.locationsCount > 0
@@ -409,11 +411,11 @@ export default function AdminAttendanceScreen({ navigation }) {
               </View>
 
               {rows.length === 0 ? (
-                <Card style={styles.emptyCard} elevation="xs">
-                  <MaterialCommunityIcons name="account-group-outline" size={40} color={colors.textSecondary} />
-                  <Text style={styles.emptyTitle}>No staff members found</Text>
-                  <Text style={styles.emptySub}>Add employees in the Staff section to monitor live attendance.</Text>
-                </Card>
+                <EmptyState
+                  icon="account-group-outline"
+                  title="No staff members found"
+                  description="Add employees in the Staff section to monitor live attendance."
+                />
               ) : (
                 <View style={styles.staffList}>
                   {rows.map((r, idx) => {

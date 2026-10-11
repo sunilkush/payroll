@@ -1,11 +1,10 @@
-import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import SuperAdminCompanyDetailScreen from '../screens/superadmin/SuperAdminCompanyDetailScreen.jsx';
 import SuperAdminCompaniesScreen from '../screens/superadmin/SuperAdminCompaniesScreen.jsx';
 import SuperAdminHomeScreen from '../screens/superadmin/SuperAdminHomeScreen.jsx';
 import SuperAdminSettingsScreen from '../screens/superadmin/SuperAdminSettingsScreen.jsx';
-import { borderRadius, colors, typography } from '../theme/index.js';
+import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
 
@@ -16,12 +15,12 @@ export default function SuperAdminNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.onSurfaceVariant,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.outlineVariant,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 66,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 6,
         },
@@ -85,4 +84,3 @@ export default function SuperAdminNavigator() {
     </Tab.Navigator>
   );
 }
-

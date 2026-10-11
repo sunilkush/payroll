@@ -13,10 +13,11 @@ import { listMyPayrollsApi } from '../../api/payrollApi.js';
 import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatCurrency, formatMonth } from '../../utils/format.js';
 
 export default function StaffSalaryScreen({ navigation }) {
@@ -99,13 +100,11 @@ export default function StaffSalaryScreen({ navigation }) {
       {loading ? (
         <Loader message="Loading salary records..." />
       ) : filteredPayrolls.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="file-document-outline" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>No salary slips found</Text>
-          <Text style={styles.emptySub}>
-            There are no payslips under the {filterTab.toLowerCase()} category.
-          </Text>
-        </Card>
+        <EmptyState
+          icon="file-document-outline"
+          title="No salary slips found"
+          description={`There are no payslips under the ${filterTab.toLowerCase()} category.`}
+        />
       ) : (
         <View style={styles.list}>
           {filteredPayrolls.map((payroll) => {
@@ -127,11 +126,10 @@ export default function StaffSalaryScreen({ navigation }) {
                     </View>
 
                     <View style={styles.slipBadgeWrap}>
-                      <View style={[styles.statusPill, isPaid ? styles.paidPill : styles.pendingPill]}>
-                        <Text style={[styles.statusPillText, isPaid ? styles.paidPillText : styles.pendingPillText]}>
-                          {isPaid ? 'Paid' : 'Pending'}
-                        </Text>
-                      </View>
+                      <Badge
+                        status={isPaid ? 'Paid' : 'Pending'}
+                        variant={isPaid ? 'success' : 'warning'}
+                      />
                     </View>
                   </View>
                 </Card>
@@ -410,14 +408,14 @@ const styles = StyleSheet.create({
   netSalaryValue: {
     fontSize: 30,
     fontWeight: typography.weights.bold,
-    color: '#FFFFFF',
+    color: colors.white,
     marginTop: 4,
   },
   breakdownCard: {
     padding: 18,
-    borderRadius: borderRadius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   breakdownCardTitle: {
     fontSize: 16,
@@ -441,7 +439,7 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     marginVertical: 10,
   },
   breakdownTotalRow: {
@@ -461,7 +459,7 @@ const styles = StyleSheet.create({
   },
   bottomNetBar: {
     backgroundColor: colors.primary,
-    borderRadius: borderRadius.xl,
+    borderRadius: radius.card,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -473,11 +471,11 @@ const styles = StyleSheet.create({
   bottomNetBarLabel: {
     fontSize: 16,
     fontWeight: typography.weights.bold,
-    color: '#FFFFFF',
+    color: colors.white,
   },
   bottomNetBarValue: {
     fontSize: 20,
     fontWeight: typography.weights.bold,
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

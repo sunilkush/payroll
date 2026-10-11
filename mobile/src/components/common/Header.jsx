@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { colors, typography } from '../../theme/index.js';
+import { colors, radius, spacing, typography } from '../../theme/index.js';
 
 export default function Header({
   title,
@@ -11,6 +11,7 @@ export default function Header({
   rightIcon,
   onRightPress,
   rightAction,
+  rightComponent,
   style,
 }) {
   const handleBack = onBack || onBackPress;
@@ -25,11 +26,12 @@ export default function Header({
           <TouchableOpacity
             onPress={handleBack}
             style={styles.backBtn}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
             accessibilityLabel="Go back"
+            activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
           </TouchableOpacity>
         )}
         <View style={styles.titleContainer}>
@@ -43,27 +45,34 @@ export default function Header({
           ) : null}
         </View>
       </View>
-      {actionIcon && (
+      {rightComponent ? (
+        <View style={styles.rightComponent}>{rightComponent}</View>
+      ) : actionIcon ? (
         <TouchableOpacity
           onPress={actionPress}
           style={styles.rightBtn}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
+          activeOpacity={0.7}
         >
-          <MaterialCommunityIcons name={actionIcon} size={24} color={colors.primary} />
+          <MaterialCommunityIcons name={actionIcon} size={22} color={colors.primary} />
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 }
+
+export const AppHeader = Header;
 
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    marginBottom: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 2,
+    marginBottom: spacing.xs,
+    minHeight: 44,
   },
   left: {
     flexDirection: 'row',
@@ -71,24 +80,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backBtn: {
-    marginRight: 12,
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: radius.control,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceVariant,
+    marginRight: spacing.md,
   },
   titleContainer: {
     flex: 1,
   },
   title: {
-    fontSize: typography.sizes.xl,
+    fontSize: typography.sizes.h2,
     fontWeight: typography.weights.bold,
     color: colors.text,
+    letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginTop: 2,
   },
   rightBtn: {
-    padding: 6,
-    marginLeft: 12,
+    width: 36,
+    height: 36,
+    borderRadius: radius.control,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceVariant,
+    marginLeft: spacing.sm,
+  },
+  rightComponent: {
+    marginLeft: spacing.sm,
   },
 });

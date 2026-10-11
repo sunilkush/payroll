@@ -23,10 +23,12 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
+import SearchBar from '../../components/common/SearchBar.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { toFieldErrors } from '../../utils/formErrors.js';
 import { formatCurrency, formatDate, grossSalary } from '../../utils/format.js';
@@ -364,9 +366,9 @@ export default function AdminStaffScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={[styles.kpiCard, { borderLeftColor: colors.danger }]}>
+        <View style={[styles.kpiCard, { borderLeftColor: colors.error }]}>
           <View style={styles.kpiIconWrapDanger}>
-            <MaterialCommunityIcons name="account-off-outline" size={20} color={colors.danger} />
+            <MaterialCommunityIcons name="account-off-outline" size={20} color={colors.error} />
           </View>
           <View>
             <Text style={styles.kpiValue}>{kpiStats.inactive}</Text>
@@ -374,9 +376,9 @@ export default function AdminStaffScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={[styles.kpiCard, { borderLeftColor: '#7C3AED' }]}>
+        <View style={[styles.kpiCard, { borderLeftColor: colors.primaryDark }]}>
           <View style={styles.kpiIconWrapPurple}>
-            <MaterialCommunityIcons name="domain" size={20} color="#7C3AED" />
+            <MaterialCommunityIcons name="domain" size={20} color={colors.primaryDark} />
           </View>
           <View>
             <Text style={styles.kpiValue}>{kpiStats.deptsCount}</Text>
@@ -385,30 +387,14 @@ export default function AdminStaffScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Full-Width Search Bar */}
+      {/* Unified Search Bar */}
       <View style={styles.searchRow}>
-        <View style={styles.searchBarBox}>
-          <MaterialCommunityIcons name="magnify" size={21} color="#64748B" style={styles.searchIcon} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search by name, code, dept..."
-            placeholderTextColor="#94A3B8"
-            style={styles.searchInput}
-            returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearch('')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.clearSearchBtn}
-            >
-              <MaterialCommunityIcons name="close-circle" size={19} color="#94A3B8" />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by name, code, dept..."
+          onClear={() => setSearch('')}
+        />
       </View>
 
       {/* Status Filter Chips */}
@@ -487,22 +473,17 @@ export default function AdminStaffScreen({ navigation }) {
       {loading ? (
         <Loader message="Loading team directory..." />
       ) : filteredStaff.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="account-search-outline" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>No staff members found</Text>
-          <Text style={styles.emptySub}>
-            {search
+        <EmptyState
+          icon="account-search-outline"
+          title="No staff members found"
+          description={
+            search
               ? `No results matching "${search}". Try another keyword.`
-              : 'Add your first employee to start tracking attendance and payroll.'}
-          </Text>
-          <Button
-            title="Add New Employee"
-            prefixIcon="account-plus"
-            onPress={openAddModal}
-            size="sm"
-            style={{ marginTop: 14 }}
-          />
-        </Card>
+              : 'Add your first employee to start tracking attendance and payroll.'
+          }
+          actionTitle="Add New Employee"
+          onAction={openAddModal}
+        />
       ) : (
         <View style={styles.listContainer}>
           {filteredStaff.map((staff) => {

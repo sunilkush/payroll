@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { borderRadius, colors, typography } from '../../theme/index.js';
+import { colors, radius, spacing, typography } from '../../theme/index.js';
 
 export default function Input({
   label,
@@ -24,6 +24,7 @@ export default function Input({
   containerStyle,
   onBlur,
   onFocus,
+  required = false,
   ...rest
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -34,14 +35,19 @@ export default function Input({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>{label}</Text>
+          {required && <Text style={styles.requiredStar}> *</Text>}
+        </View>
+      )}
       <View
         style={[
           styles.inputWrapper,
           isFocused && styles.inputWrapperFocused,
           Boolean(error) && styles.inputWrapperError,
           disabled && styles.inputWrapperDisabled,
-          multiline && { height: numberOfLines * 24 + 24, alignItems: 'flex-start' },
+          multiline && { minHeight: numberOfLines * 24 + 24, height: 'auto', alignItems: 'flex-start' },
           style,
         ]}
       >
@@ -49,7 +55,7 @@ export default function Input({
           <MaterialCommunityIcons
             name={leadingIcon}
             size={20}
-            color={error ? colors.danger : isFocused ? colors.primary : colors.textMuted}
+            color={error ? colors.error : isFocused ? colors.primary : colors.textSecondary}
             style={styles.prefixIcon}
           />
         )}
@@ -79,13 +85,15 @@ export default function Input({
         {isPassword && (
           <TouchableOpacity
             onPress={() => setShowPassword((prev) => !prev)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={styles.eyeBtn}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
           >
             <MaterialCommunityIcons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={colors.textMuted}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         )}
@@ -99,64 +107,75 @@ export default function Input({
   );
 }
 
+export const FormInput = Input;
+
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   label: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     color: colors.text,
-    marginBottom: 6,
+  },
+  requiredStar: {
+    fontSize: typography.sizes.sm,
+    color: colors.error,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: 14,
-    height: 50,
+    borderColor: colors.border,
+    borderRadius: radius.input, // 10px
+    paddingHorizontal: spacing.md,
+    height: 48,
   },
   inputWrapperFocused: {
     borderColor: colors.primary,
-    borderWidth: 2,
-    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    backgroundColor: colors.surface,
   },
   inputWrapperError: {
     borderColor: colors.error,
-    borderWidth: 2,
+    borderWidth: 1.5,
     backgroundColor: colors.errorContainer,
   },
   inputWrapperDisabled: {
     backgroundColor: colors.surfaceVariant,
-    borderColor: colors.outlineVariant,
+    borderColor: colors.border,
     opacity: 0.6,
   },
   prefixIcon: {
-    marginRight: 10,
+    marginRight: spacing.sm,
   },
   input: {
     flex: 1,
-    fontSize: typography.sizes.md,
+    fontSize: typography.sizes.body,
     color: colors.text,
     paddingVertical: 0,
   },
   multilineInput: {
-    paddingVertical: 10,
+    paddingVertical: spacing.sm,
     textAlignVertical: 'top',
   },
   eyeBtn: {
-    padding: 4,
+    padding: spacing.xs,
   },
   errorText: {
-    fontSize: typography.sizes.xs,
-    color: colors.danger,
+    fontSize: typography.sizes.caption,
+    color: colors.error,
     marginTop: 4,
+    fontWeight: typography.weights.medium,
   },
   helperText: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginTop: 4,
   },

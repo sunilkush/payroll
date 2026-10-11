@@ -9,26 +9,22 @@ import {
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTodayApi } from '../../api/attendanceApi.js';
 import { getDashboardApi } from '../../api/dashboardApi.js';
-import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
-import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
-import Loader from '../../components/common/Loader.jsx';
 import NotificationCenterModal from '../../components/common/NotificationCenterModal.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import {
   formatCurrency,
   formatDate,
-  formatTime,
   greeting,
   monthLabel,
 } from '../../utils/format.js';
-import { initials } from '../../utils/roles.js';
 
 export default function StaffHomeScreen({ navigation }) {
-  const { user, company } = useAuth();
+  const { user } = useAuth();
 
   const [dashboardData, setDashboardData] = useState(null);
   const [todayAttendance, setTodayAttendance] = useState(null);
@@ -161,11 +157,11 @@ export default function StaffHomeScreen({ navigation }) {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
-      {/* 1. Header with Personalized Greeting & Avatar */}
+      {/* 1. Header with Greeting & Avatar */}
       <View style={styles.topBar}>
         <View style={styles.greetingContainer}>
           <View style={styles.greetingRow}>
-            <MaterialCommunityIcons name="weather-sunny" size={15} color="#eab308" style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="weather-sunny" size={15} color={colors.warning} style={{ marginRight: 4 }} />
             <Text style={styles.greetingText}>{greeting()}</Text>
           </View>
           <Text style={styles.userNameText}>{user?.name || 'Employee'}</Text>
@@ -178,22 +174,21 @@ export default function StaffHomeScreen({ navigation }) {
             onPress={() => setNotifVisible(true)}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="bell-outline" size={22} color={colors.text} />
+            <MaterialCommunityIcons name="bell-outline" size={20} color={colors.text} />
             <View style={styles.notifDot} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.avatarBtn}
             onPress={() => navigation.navigate('StaffProfile')}
             activeOpacity={0.8}
           >
-            <Text style={styles.avatarText}>{initials(user?.name || 'EM')}</Text>
+            <Avatar name={user?.name || 'Staff'} size={38} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* 2. Today's Attendance & Hero Punch Card */}
-      <Card style={styles.punchHeroCard} elevation="xs">
+      <Card style={styles.punchHeroCard}>
         <View style={styles.punchHeroTopRow}>
           <View style={styles.punchHeroStatusGroup}>
             <View
@@ -263,8 +258,8 @@ export default function StaffHomeScreen({ navigation }) {
                   ? 'door-open'
                   : 'fingerprint'
               }
-              size={22}
-              color="#FFFFFF"
+              size={20}
+              color={colors.white}
             />
             <Text style={styles.punchHeroActionBtnText}>
               {isPunchedOut
@@ -277,7 +272,7 @@ export default function StaffHomeScreen({ navigation }) {
         </View>
       </Card>
 
-      {/* 3. Royal Blue Net Salary Card with Privacy Eye & Slips Link */}
+      {/* 3. Modern SaaS Net Salary Card with Privacy Toggle */}
       <View style={styles.salaryCard}>
         <View style={styles.salaryTopRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -295,7 +290,7 @@ export default function StaffHomeScreen({ navigation }) {
               <MaterialCommunityIcons
                 name={salaryVisible ? 'eye-outline' : 'eye-off-outline'}
                 size={18}
-                color="#FFFFFF"
+                color={colors.white}
               />
             </TouchableOpacity>
             <View style={styles.paidPill}>
@@ -319,12 +314,12 @@ export default function StaffHomeScreen({ navigation }) {
             onPress={() => navigation.navigate('StaffSalary')}
           >
             <Text style={styles.viewSlipText}>View Slips</Text>
-            <MaterialCommunityIcons name="chevron-right" size={16} color="#FFFFFF" />
+            <MaterialCommunityIcons name="chevron-right" size={16} color={colors.white} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 4. Working Days & Leave Balance (2 Metric Cards Row) */}
+      {/* 4. Working Days & Leave Balance (Metric Cards Row) */}
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
           <View style={styles.metricCardTop}>
@@ -340,7 +335,7 @@ export default function StaffHomeScreen({ navigation }) {
 
         <View style={styles.metricCard}>
           <View style={styles.metricCardTop}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#eff6ff' }]}>
+            <View style={styles.metricIconCircle}>
               <MaterialCommunityIcons name="briefcase-clock-outline" size={18} color={colors.primary} />
             </View>
             <Text style={styles.metricCardTitle}>Leave Balance</Text>
@@ -353,10 +348,10 @@ export default function StaffHomeScreen({ navigation }) {
 
       {/* 5. Upcoming Holiday Banner */}
       {upcoming.length > 0 && (
-        <Card style={styles.holidayBannerCard} elevation="xs">
+        <Card style={styles.holidayBannerCard}>
           <View style={styles.holidayBannerLeft}>
             <View style={styles.holidayIconCircle}>
-              <MaterialCommunityIcons name="calendar-star" size={20} color="#EA580C" />
+              <MaterialCommunityIcons name="calendar-star" size={20} color={colors.warning} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.holidayTitle} numberOfLines={1}>
@@ -371,15 +366,15 @@ export default function StaffHomeScreen({ navigation }) {
         </Card>
       )}
 
-      {/* 6. Quick Action Grid (Vibrant Curated Palette) */}
+      {/* 6. Quick Action Grid */}
       <View style={styles.quickGrid}>
         <TouchableOpacity
           style={styles.quickTile}
           onPress={() => navigation.navigate('StaffPunch')}
           activeOpacity={0.7}
         >
-          <View style={[styles.quickIconCircle, { backgroundColor: '#ECFDF5' }]}>
-            <MaterialCommunityIcons name="fingerprint" size={24} color="#059669" />
+          <View style={[styles.quickIconCircle, { backgroundColor: colors.successContainer }]}>
+            <MaterialCommunityIcons name="fingerprint" size={22} color={colors.success} />
           </View>
           <Text style={styles.quickLabel}>Punch In/Out</Text>
           <Text style={styles.quickSub}>Quick punch</Text>
@@ -390,8 +385,8 @@ export default function StaffHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('StaffAttendance')}
           activeOpacity={0.7}
         >
-          <View style={[styles.quickIconCircle, { backgroundColor: '#EFF6FF' }]}>
-            <MaterialCommunityIcons name="calendar-check" size={24} color="#2563EB" />
+          <View style={[styles.quickIconCircle, { backgroundColor: colors.primaryLight }]}>
+            <MaterialCommunityIcons name="calendar-check" size={22} color={colors.primary} />
           </View>
           <Text style={styles.quickLabel}>Attendance</Text>
           <Text style={styles.quickSub}>View history</Text>
@@ -402,8 +397,8 @@ export default function StaffHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('StaffLeaves')}
           activeOpacity={0.7}
         >
-          <View style={[styles.quickIconCircle, { backgroundColor: '#FEF3C7' }]}>
-            <MaterialCommunityIcons name="calendar-arrow-right" size={24} color="#D97706" />
+          <View style={[styles.quickIconCircle, { backgroundColor: colors.warningContainer }]}>
+            <MaterialCommunityIcons name="calendar-arrow-right" size={22} color={colors.warning} />
           </View>
           <Text style={styles.quickLabel}>Apply Leave</Text>
           <Text style={styles.quickSub}>Time off</Text>
@@ -414,8 +409,8 @@ export default function StaffHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('StaffSalary')}
           activeOpacity={0.7}
         >
-          <View style={[styles.quickIconCircle, { backgroundColor: '#F5F3FF' }]}>
-            <MaterialCommunityIcons name="file-document-outline" size={24} color="#7C3AED" />
+          <View style={[styles.quickIconCircle, { backgroundColor: colors.infoContainer }]}>
+            <MaterialCommunityIcons name="file-document-outline" size={22} color={colors.info} />
           </View>
           <Text style={styles.quickLabel}>My Payslips</Text>
           <Text style={styles.quickSub}>Salary slips</Text>
@@ -426,8 +421,8 @@ export default function StaffHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('StaffCorrections')}
           activeOpacity={0.7}
         >
-          <View style={[styles.quickIconCircle, { backgroundColor: '#E0F2FE' }]}>
-            <MaterialCommunityIcons name="clock-edit-outline" size={24} color="#0284C7" />
+          <View style={[styles.quickIconCircle, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="clock-edit-outline" size={22} color={colors.textSecondary} />
           </View>
           <Text style={styles.quickLabel}>Corrections</Text>
           <Text style={styles.quickSub}>Attendance fix</Text>
@@ -438,18 +433,18 @@ export default function StaffHomeScreen({ navigation }) {
           onPress={() => navigation.navigate('StaffMeetings')}
           activeOpacity={0.7}
         >
-          <View style={[styles.quickIconCircle, { backgroundColor: '#EEF2FF' }]}>
-            <MaterialCommunityIcons name="video-outline" size={24} color="#4F46E5" />
+          <View style={[styles.quickIconCircle, { backgroundColor: colors.primaryLight }]}>
+            <MaterialCommunityIcons name="video-outline" size={22} color={colors.primaryDark} />
           </View>
           <Text style={styles.quickLabel}>Meetings</Text>
           <Text style={styles.quickSub}>Schedule & join</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 5. Recent Activity */}
+      {/* 7. Recent Activity */}
       <View style={styles.activitySection}>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <Card style={styles.activityCard} elevation="sm">
+        <Card style={styles.activityCard}>
           {recentActivities.length === 0 ? (
             <View style={styles.emptyActivityRow}>
               <MaterialCommunityIcons name="information-outline" size={20} color={colors.textSecondary} />
@@ -465,7 +460,7 @@ export default function StaffHomeScreen({ navigation }) {
                 ]}
               >
                 <View style={styles.activityIconCircle}>
-                  <MaterialCommunityIcons name={item.icon || 'clock-outline'} size={20} color={colors.primary} />
+                  <MaterialCommunityIcons name={item.icon || 'clock-outline'} size={18} color={colors.primary} />
                 </View>
                 <View style={styles.activityTextContainer}>
                   <Text style={styles.activityTitle}>{item.title}</Text>
@@ -490,14 +485,17 @@ export default function StaffHomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 36,
+    paddingBottom: spacing.xxxl,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    marginTop: 4,
+    marginBottom: spacing.lg,
+    marginTop: spacing.xs,
+  },
+  greetingContainer: {
+    flex: 1,
   },
   greetingRow: {
     flexDirection: 'row',
@@ -505,33 +503,33 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   greetingText: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
   userNameText: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.h2,
     fontWeight: typography.weights.bold,
     color: colors.text,
     letterSpacing: -0.2,
   },
   userRoleSubtitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
     marginTop: 1,
   },
   topRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm,
   },
   bellBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.bgCard,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -543,62 +541,41 @@ const styles = StyleSheet.create({
     right: 9,
     width: 7,
     height: 7,
-    borderRadius: 3.5,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
-  },
-  avatarBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.primaryBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#c7d2fe',
-  },
-  avatarText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.bold,
-    color: colors.primary,
   },
 
   // Today's Hero Attendance Card
   punchHeroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...shadows.sm,
+    marginBottom: spacing.lg,
   },
   punchHeroTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   punchHeroStatusGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   punchStatusIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
   },
   indicatorSuccess: {
-    backgroundColor: '#16A34A',
+    backgroundColor: colors.success,
   },
   indicatorPrimary: {
     backgroundColor: colors.primary,
   },
   indicatorWarning: {
-    backgroundColor: '#D97706',
+    backgroundColor: colors.warning,
   },
   punchHeroDateText: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     fontWeight: typography.weights.medium,
     color: colors.textSecondary,
   },
@@ -611,14 +588,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   punchHeroTimeLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginBottom: 2,
   },
   punchHeroTimeVal: {
-    fontSize: 20,
+    fontSize: typography.sizes.h2,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
   },
   punchHeroLocRow: {
     flexDirection: 'row',
@@ -627,7 +604,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   punchHeroLocText: {
-    fontSize: 11,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     flex: 1,
   },
@@ -635,62 +612,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
-    borderRadius: borderRadius.pill,
+    borderRadius: radius.button,
     ...shadows.sm,
   },
   punchHeroActionBtnIn: {
-    backgroundColor: '#059669', // Emerald
+    backgroundColor: colors.success,
   },
   punchHeroActionBtnOut: {
-    backgroundColor: '#DC2626', // Danger
+    backgroundColor: colors.error,
   },
   punchHeroActionBtnCompleted: {
     backgroundColor: colors.primary,
   },
   punchHeroActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+    color: colors.white,
+    fontSize: typography.sizes.label,
     fontWeight: typography.weights.bold,
   },
 
   // Royal Blue Salary Card
   salaryCard: {
     backgroundColor: colors.primary,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     ...shadows.md,
   },
   salaryTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   salaryPeriodLabel: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: 'rgba(255, 255, 255, 0.95)',
     fontWeight: typography.weights.medium,
   },
   paidPill: {
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 10,
+    backgroundColor: colors.successContainer,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: radius.control,
   },
   paidPillText: {
-    color: '#16a34a',
-    fontSize: 12,
+    color: colors.success,
+    fontSize: typography.sizes.caption,
     fontWeight: typography.weights.bold,
   },
   salaryAmount: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: typography.weights.bold,
     color: colors.white,
     letterSpacing: -0.5,
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   salaryFooterRow: {
     flexDirection: 'row',
@@ -698,10 +675,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.2)',
-    paddingTop: 10,
+    paddingTop: spacing.sm,
   },
   salaryCreditedText: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     color: 'rgba(255, 255, 255, 0.85)',
     flex: 1,
   },
@@ -711,8 +688,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   viewSlipText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    color: colors.white,
+    fontSize: typography.sizes.caption,
     fontWeight: typography.weights.bold,
   },
 
@@ -721,110 +698,110 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF7ED',
-    borderWidth: 1,
-    borderColor: '#FFEDD5',
-    borderRadius: borderRadius.lg,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: colors.warningContainer,
+    borderColor: '#FDE68A',
+    marginBottom: spacing.lg,
   },
   holidayBannerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
     flex: 1,
   },
   holidayIconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFEDD5',
+    borderRadius: radius.pill,
+    backgroundColor: '#FEF3C7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   holidayTitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     fontWeight: typography.weights.bold,
-    color: '#9A3412',
+    color: colors.warning,
   },
   holidaySub: {
-    fontSize: 11,
-    color: '#C2410C',
+    fontSize: typography.sizes.caption,
+    color: colors.textSecondary,
     marginTop: 1,
   },
+
+  // Metrics Row
   metricsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 18,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   metricCard: {
     flex: 1,
-    backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: colors.card,
+    borderRadius: radius.card,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
+    borderColor: colors.border,
     ...shadows.sm,
   },
   metricCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   metricIconCircle: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: '#eff6ff',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   metricCardTitle: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
   metricCardVal: {
-    fontSize: typography.sizes.md,
+    fontSize: typography.sizes.h3,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   metricCardValSub: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.normal,
+    fontSize: typography.sizes.caption,
+    fontWeight: typography.weights.regular,
     color: colors.textSecondary,
   },
+
+  // Quick Action Grid
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 22,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   quickTile: {
     width: '31.5%',
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    paddingVertical: spacing.md,
     paddingHorizontal: 4,
     alignItems: 'center',
     marginBottom: 4,
     ...shadows.sm,
   },
   quickIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#eff6ff',
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   quickLabel: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     fontWeight: typography.weights.bold,
     color: colors.text,
     textAlign: 'center',
@@ -836,32 +813,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 14,
   },
+
+  // Activity Section
   activitySection: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: typography.sizes.md,
+    fontSize: typography.sizes.h4,
     fontWeight: typography.weights.bold,
     color: colors.text,
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   activityCard: {
-    backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    ...shadows.sm,
+    padding: spacing.md,
   },
   emptyActivityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 8,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   emptyActivityText: {
-    fontSize: 14,
+    fontSize: typography.sizes.body,
     color: colors.textSecondary,
   },
   activityItem: {
@@ -870,34 +844,34 @@ const styles = StyleSheet.create({
   },
   activityItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.outlineVariant,
-    paddingBottom: 10,
-    marginBottom: 10,
+    borderBottomColor: colors.border,
+    paddingBottom: spacing.sm,
+    marginBottom: spacing.sm,
   },
   activityIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#eff6ff',
+    width: 36,
+    height: 36,
+    borderRadius: radius.control,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   activityTextContainer: {
     flex: 1,
   },
   activityTitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.body,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   activitySub: {
-    fontSize: 13,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginTop: 2,
   },
   activityTime: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
   },
 });

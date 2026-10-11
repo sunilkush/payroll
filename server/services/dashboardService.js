@@ -148,7 +148,7 @@ export async function getAdminDashboard({ days }) {
     const record = recordByUser.get(String(user._id));
     let status = todayType === 'WORKING' ? ATTENDANCE_STATUS.NOT_MARKED : todayType;
     if (onLeaveToday.has(String(user._id)) && todayType === 'WORKING') status = ATTENDANCE_STATUS.LEAVE;
-    if (record) status = ATTENDANCE_STATUS.PRESENT;
+    if (record) status = record.status || ATTENDANCE_STATUS.PRESENT;
     return {
       staff: { _id: user._id, name: user.name, employeeCode: user.employeeCode },
       status,

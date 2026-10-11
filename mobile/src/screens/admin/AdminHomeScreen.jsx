@@ -11,6 +11,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTodaySummaryApi } from '../../api/attendanceApi.js';
 import { getDashboardApi } from '../../api/dashboardApi.js';
 import { listPayrollApi } from '../../api/payrollApi.js';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
@@ -18,7 +19,7 @@ import Loader from '../../components/common/Loader.jsx';
 import NotificationCenterModal from '../../components/common/NotificationCenterModal.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import {
   currentMonth,
   formatCurrency,
@@ -194,11 +195,10 @@ export default function AdminHomeScreen({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.avatarBtn}
             onPress={() => navigation.navigate('AdminProfile')}
             activeOpacity={0.8}
           >
-            <Text style={styles.avatarText}>{initials(user?.name || 'HA')}</Text>
+            <Avatar name={user?.name || 'HR'} size={38} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -206,7 +206,7 @@ export default function AdminHomeScreen({ navigation }) {
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="logout" size={20} color={colors.danger} />
+            <MaterialCommunityIcons name="logout" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -802,37 +802,37 @@ const styles = StyleSheet.create({
   pulseNumberGreen: {
     fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: '#16A34A',
+    color: colors.success,
   },
   pulseNumberAmber: {
     fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: '#D97706',
+    color: colors.warning,
   },
   pulseNumberRed: {
     fontSize: 18,
     fontWeight: typography.weights.bold,
-    color: '#DC2626',
+    color: colors.error,
   },
   pulseLabel: {
-    fontSize: 11,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginTop: 1,
   },
   pulseDivider: {
     width: 1,
     height: 32,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.border,
   },
 
   // Full-width Net Payroll Card
   netPayrollCard: {
-    padding: 16,
-    borderRadius: borderRadius.lg,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.card,
     ...shadows.xs,
   },
   netPayrollTopRow: {
@@ -866,10 +866,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.pill,
   },
   changeUp: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: colors.successContainer,
   },
   changeDown: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.errorContainer,
   },
   changeText: {
     fontSize: 11,
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: colors.border,
     paddingTop: 10,
   },
   netPayrollHint: {
@@ -913,28 +913,28 @@ const styles = StyleSheet.create({
   hubIconWrap: {
     width: 46,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radius.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   hubLabel: {
     fontSize: 12,
     fontWeight: typography.weights.medium,
-    color: '#334155',
+    color: colors.text,
     textAlign: 'center',
   },
 
   // Bar Chart Card
   chartCard: {
-    padding: 16,
-    borderRadius: borderRadius.lg,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.card,
     ...shadows.xs,
   },
   chartHeaderRow: {
@@ -959,10 +959,10 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: borderRadius.pill,
-    backgroundColor: '#EFF6FF',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#BFDBFE',
   },
   runPayrollText: {
     fontSize: 12,
@@ -996,20 +996,20 @@ const styles = StyleSheet.create({
     height: 135,
     paddingTop: 8,
     paddingHorizontal: 6,
-    backgroundColor: '#F8FAFC',
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    borderRadius: radius.control,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   barCol: {
     alignItems: 'center',
     flex: 1,
     paddingVertical: 4,
-    borderRadius: borderRadius.sm,
+    borderRadius: radius.control,
   },
   barColSelected: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.primaryLight,
   },
   barTrackWrap: {
     width: '100%',
@@ -1023,7 +1023,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   barTrackEmpty: {
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     height: 6,
     borderRadius: 3,
   },
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   barSegmentDeductions: {
     width: '100%',
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.warning,
   },
   barSegmentNet: {
     width: '100%',
@@ -1042,7 +1042,7 @@ const styles = StyleSheet.create({
   barPlaceholderDash: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#CBD5E1',
+    backgroundColor: colors.outline,
   },
   barLabel: {
     fontSize: 11,
@@ -1062,10 +1062,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   selectedMonthCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     padding: 12,
   },
   selectedMonthHeader: {
@@ -1075,12 +1075,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
   },
   selectedMonthTitle: {
     fontSize: 14,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
   },
   selectedMonthPeriod: {
     fontSize: 11,

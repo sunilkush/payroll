@@ -24,7 +24,7 @@ import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatDate } from '../../utils/format.js';
 
 const PLANS_CONFIG = [
@@ -1170,11 +1170,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: '#86EFAC',
     paddingVertical: 8,
-    borderRadius: borderRadius.md,
+    borderRadius: radius.control,
   },
   conciergeActionText: {
     fontSize: 11,
@@ -1185,14 +1185,14 @@ const styles = StyleSheet.create({
   // Upgrade Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   modalCard: {
-    padding: 20,
-    borderRadius: borderRadius.xl,
-    backgroundColor: '#FFFFFF',
+    padding: spacing.xl,
+    borderRadius: radius.modal,
+    backgroundColor: colors.card,
     maxHeight: '90%',
   },
   modalHeader: {
@@ -1202,12 +1202,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: typography.sizes.h3,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
   },
   modalSub: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1215,8 +1215,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#EFF6FF',
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.card,
     padding: 12,
     marginBottom: 12,
   },
@@ -1229,23 +1229,23 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   transitionTierName: {
-    fontSize: 14,
+    fontSize: typography.sizes.body,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
     marginTop: 2,
   },
   unlocksCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    borderRadius: radius.card,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   unlocksTitle: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 8,
   },
   unlockItem: {
@@ -1255,8 +1255,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   unlockItemText: {
-    fontSize: 12,
-    color: '#334155',
+    fontSize: typography.sizes.caption,
+    color: colors.text,
   },
   modalButtonsRow: {
     flexDirection: 'row',

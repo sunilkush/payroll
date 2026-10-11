@@ -3,7 +3,7 @@ import { Leave } from '../models/Leave.js';
 import { Payroll } from '../models/Payroll.js';
 import { PunchCorrection } from '../models/PunchCorrection.js';
 import { ApiError } from '../utils/ApiError.js';
-import { CORRECTION_STATUS, LEAVE_STATUS, PAYROLL_STATUS, ROLES } from '../utils/constants.js';
+import { ATTENDANCE_STATUS, CORRECTION_STATUS, LEAVE_STATUS, PAYROLL_STATUS, ROLES } from '../utils/constants.js';
 import { monthLabel, toDateStr, todayStr, zonedTime } from '../utils/dateUtil.js';
 
 const PUNCHES = ['punchIn', 'punchOut'];
@@ -107,6 +107,7 @@ async function applyToAttendance(correction, times) {
     record[punch] = { ...record[punch]?.toObject(), time: times[punch], corrected: true };
   }
   if (record.punchOut) record.missedPunchOut = false;
+  record.status = ATTENDANCE_STATUS.PRESENT;
   await record.save();
 }
 

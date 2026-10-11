@@ -147,4 +147,5 @@ export const ATTENDANCE_STATUS = Object.freeze({
   WEEK_OFF: 'WEEK_OFF',
   HOLIDAY: 'HOLIDAY',
   NOT_MARKED: 'NOT_MARKED', // aaj ka din, abhi punch in nahi hua
+  PENDING: 'PENDING', // abhi kaam chal raha hai / interim status
 });

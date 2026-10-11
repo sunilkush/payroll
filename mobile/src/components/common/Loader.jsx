@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { colors, typography } from '../../theme/index.js';
+import { colors, spacing, typography } from '../../theme/index.js';
 
 export default function Loader({ message, size = 'large', fullScreen = true }) {
   return (
@@ -10,18 +10,20 @@ export default function Loader({ message, size = 'large', fullScreen = true }) {
   );
 }
 
+export const LoadingState = Loader;
+
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   fullScreen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.background,
   },
   message: {
-    marginTop: 12,
+    marginTop: spacing.md,
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,

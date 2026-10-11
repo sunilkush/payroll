@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { WebView } from 'react-native-webview';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 
 class MapErrorBoundary extends Component {
   constructor(props) {

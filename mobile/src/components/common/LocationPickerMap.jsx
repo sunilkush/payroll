@@ -13,7 +13,7 @@ import * as Location from 'expo-location';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { WebView } from 'react-native-webview';
 import Badge from './Badge.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 
 const DEFAULT_LAT = 28.6139; // New Delhi
 const DEFAULT_LNG = 77.209;

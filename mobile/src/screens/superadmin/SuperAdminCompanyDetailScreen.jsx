@@ -19,16 +19,18 @@ import {
   updateCompanyApi,
 } from '../../api/companyApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
+import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, typography } from '../../theme/index.js';
 import { toFieldErrors } from '../../utils/formErrors.js';
 import { formatDate } from '../../utils/format.js';
-import { initials } from '../../utils/roles.js';
 
 const PLAN_OPTIONS = [
   {
@@ -244,36 +246,24 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
       {loading ? (
         <Loader message="Loading company details..." />
       ) : !company ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="domain-off" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>Company not found</Text>
-        </Card>
+        <EmptyState
+          icon="domain-off"
+          title="Company not found"
+        />
       ) : (
         <View style={styles.body}>
           {/* Top Company Header Card */}
           <View style={styles.companyHeaderBox}>
-            <View style={styles.companyAvatar}>
-              <Text style={styles.companyAvatarText}>{initials(company.name)}</Text>
-            </View>
+            <Avatar name={company.name} size={64} />
             <Text style={styles.companyTitle}>{company.name}</Text>
             <Text style={styles.companySubtitle}>
               {company.plan || 'Standard'} Plan • {company.address || 'India'}
             </Text>
-            <View
-              style={[
-                styles.statusPill,
-                company.isActive ? styles.activePill : styles.blockedPill,
-                { marginTop: 8 },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusPillText,
-                  company.isActive ? styles.activePillText : styles.blockedPillText,
-                ]}
-              >
-                • {company.isActive ? 'Active Tenant' : 'Blocked Tenant'}
-              </Text>
+            <View style={{ marginTop: 8 }}>
+              <Badge
+                label={company.isActive ? 'Active Tenant' : 'Blocked Tenant'}
+                variant={company.isActive ? 'success' : 'danger'}
+              />
             </View>
           </View>
 
@@ -367,19 +357,17 @@ export default function SuperAdminCompanyDetailScreen({ route, navigation }) {
               </View>
 
               {admins.length === 0 ? (
-                <Card style={styles.emptyCard}>
-                  <MaterialCommunityIcons name="shield-alert-outline" size={40} color={colors.warning} />
-                  <Text style={styles.emptyTitle}>No Administrators</Text>
-                  <Text style={styles.emptySub}>Add an admin so this company can access their workspace.</Text>
-                </Card>
+                <EmptyState
+                  icon="shield-alert-outline"
+                  title="No Administrators"
+                  description="Add an admin so this company can access their workspace."
+                />
               ) : (
                 <View style={styles.adminsList}>
                   {admins.map((adm) => (
                     <Card key={adm._id} style={styles.adminCard} elevation="xs">
                       <View style={styles.adminRow}>
-                        <View style={styles.adminAvatar}>
-                          <Text style={styles.adminAvatarText}>{initials(adm.name)}</Text>
-                        </View>
+                        <Avatar name={adm.name} size={42} />
                         <View style={styles.adminInfo}>
                           <Text style={styles.adminName}>{adm.name}</Text>
                           <Text style={styles.adminEmail}>{adm.email}</Text>
@@ -951,14 +939,14 @@ const styles = StyleSheet.create({
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },
   modalCard: {
     maxHeight: '90%',
     padding: 20,
-    borderRadius: borderRadius.xl,
+    borderRadius: radius.modal,
   },
   modalHeader: {
     flexDirection: 'row',

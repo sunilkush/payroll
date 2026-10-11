@@ -19,11 +19,12 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatDate, todayLocal } from '../../utils/format.js';
 
 export default function StaffLeavesScreen({ navigation }) {
@@ -407,11 +408,11 @@ export default function StaffLeavesScreen({ navigation }) {
         /* Leave History */
         <View style={styles.historySection}>
           {leaves.length === 0 ? (
-            <Card style={styles.emptyCard} elevation="xs">
-              <MaterialCommunityIcons name="calendar-blank-outline" size={44} color={colors.textSecondary} />
-              <Text style={styles.emptyText}>No leave requests recorded yet.</Text>
-              <Text style={styles.emptySubText}>Submitted leave requests will appear here with real-time approval status.</Text>
-            </Card>
+            <EmptyState
+              icon="calendar-blank-outline"
+              title="No leave requests recorded yet."
+              description="Submitted leave requests will appear here with real-time approval status."
+            />
           ) : (
             <View style={styles.historyList}>
               {leaves.map((item) => (
@@ -482,22 +483,22 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     flex: 1,
-    padding: 14,
-    borderRadius: 14,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm,
   },
   balanceIconWrap: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: '#EFF6FF',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -623,17 +624,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   leaveItemCard: {
-    padding: 16,
-    borderRadius: 14,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   itemTypeRow: {
     flexDirection: 'row',
@@ -642,70 +643,70 @@ const styles = StyleSheet.create({
   typeBadgeCircle: {
     width: 26,
     height: 26,
-    borderRadius: 13,
-    backgroundColor: '#EFF6FF',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   itemType: {
-    fontSize: 15,
+    fontSize: typography.sizes.body,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
   },
   itemDays: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
     marginLeft: 4,
   },
   itemDates: {
-    fontSize: 14,
-    color: '#334155',
+    fontSize: typography.sizes.body,
+    color: colors.text,
     fontWeight: typography.weights.medium,
     marginBottom: 6,
   },
   itemReason: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
     fontStyle: 'italic',
-    lineHeight: 19,
+    lineHeight: 18,
   },
   itemNote: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.primary,
     marginTop: 4,
   },
   cancelLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: spacing.md,
     alignSelf: 'flex-start',
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.errorContainer,
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderRadius: borderRadius.pill,
+    borderRadius: radius.pill,
   },
   cancelLinkText: {
-    fontSize: 13,
-    color: colors.danger,
+    fontSize: typography.sizes.label,
+    color: colors.error,
     fontWeight: typography.weights.semibold,
     marginLeft: 4,
   },
   quickDateRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   quickDateBtn: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: borderRadius.pill,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   quickDateText: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     fontWeight: typography.weights.medium,
     color: colors.textSecondary,
   },

@@ -2,19 +2,18 @@ import { useState } from 'react';
 import {
   Keyboard,
   StyleSheet,
-  Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { resetPasswordApi } from '../../api/authApi.js';
 import Alert from '../../components/common/Alert.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { colors, typography } from '../../theme/index.js';
+import { spacing } from '../../theme/index.js';
 
 export default function ResetPasswordScreen({ navigation, route }) {
   const initialToken = route?.params?.token || '';
@@ -53,24 +52,17 @@ export default function ResetPasswordScreen({ navigation, route }) {
   };
 
   return (
-    <ScreenWrapper contentContainerStyle={styles.container}>
+    <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.title}>Reset Password</Text>
-              <Text style={styles.subtitle}>Enter reset code and your new password</Text>
-            </View>
-          </View>
+          {/* Unified App Header */}
+          <Header
+            title="Reset Password"
+            subtitle="Enter reset code and your new password"
+            onBack={() => navigation.goBack()}
+          />
 
-          <Card style={styles.card} elevation="md">
+          <Card style={styles.card}>
             {error ? <Alert type="error">{error}</Alert> : null}
             {success ? (
               <View>
@@ -85,6 +77,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
               <>
                 <Input
                   label="Reset Code / Token"
+                  required
                   value={token}
                   onChangeText={setToken}
                   placeholder="Paste token from reset email"
@@ -94,6 +87,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
 
                 <Input
                   label="New Password"
+                  required
                   value={password}
                   onChangeText={setPassword}
                   placeholder="At least 6 characters"
@@ -103,6 +97,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
 
                 <Input
                   label="Confirm New Password"
+                  required
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Repeat new password"
@@ -129,39 +124,18 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
   },
   inner: {
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backBtn: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
   card: {
-    padding: 20,
+    marginTop: spacing.sm,
+    padding: spacing.xl,
   },
   submitBtn: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 });

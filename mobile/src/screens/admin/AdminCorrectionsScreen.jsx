@@ -16,9 +16,11 @@ import {
   rejectCorrectionApi,
 } from '../../api/punchCorrectionApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
@@ -179,23 +181,21 @@ export default function AdminCorrectionsScreen({ navigation }) {
       {loading ? (
         <Loader message="Loading correction requests..." />
       ) : corrections.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="timer-sand-complete" size={44} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No {statusFilter.toLowerCase()} requests</Text>
-          <Text style={styles.emptySub}>
-            {statusFilter === 'PENDING'
+        <EmptyState
+          icon="timer-sand-complete"
+          title={`No ${statusFilter.toLowerCase()} requests`}
+          description={
+            statusFilter === 'PENDING'
               ? 'No pending punch fixes to review.'
-              : 'No correction requests in this filter.'}
-          </Text>
-        </Card>
+              : 'No correction requests in this filter.'
+          }
+        />
       ) : (
         <View style={styles.list}>
           {corrections.map((item) => (
             <Card key={item._id} style={styles.card} elevation="sm">
               <View style={styles.cardHeader}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials(item.userId?.name || 'EM')}</Text>
-                </View>
+                <Avatar name={item.userId?.name || 'Staff'} size={38} />
                 <View style={styles.staffInfo}>
                   <Text style={styles.staffName}>{item.userId?.name || 'Staff'}</Text>
                   <Text style={styles.staffCode}>

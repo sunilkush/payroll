@@ -16,7 +16,7 @@ import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import {
   currentMonth,
   formatDate,
@@ -747,8 +747,8 @@ const styles = StyleSheet.create({
   greenDot: {
     width: 7,
     height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#16a34a',
+    borderRadius: radius.pill,
+    backgroundColor: colors.success,
   },
   checkTime: {
     fontSize: typography.sizes.md,
@@ -764,26 +764,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statusCard: {
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 12,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
+    marginBottom: spacing.md,
   },
   statusSectionLabel: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     fontWeight: typography.weights.medium,
   },
   statusContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   statusIconCircle: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: '#dcfce7',
+    borderRadius: radius.pill,
+    backgroundColor: colors.successContainer,
     alignItems: 'center',
     justifyContent: 'center',
   },

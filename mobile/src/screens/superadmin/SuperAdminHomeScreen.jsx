@@ -10,13 +10,14 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getDashboardApi } from '../../api/dashboardApi.js';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Card from '../../components/common/Card.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import NotificationCenterModal from '../../components/common/NotificationCenterModal.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, typography } from '../../theme/index.js';
 import { formatCurrency, greeting } from '../../utils/format.js';
 import { initials } from '../../utils/roles.js';
 
@@ -108,11 +109,10 @@ export default function SuperAdminHomeScreen({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.avatarBtn}
             onPress={handleLogout}
             activeOpacity={0.8}
           >
-            <Text style={styles.avatarText}>{initials(user?.name || 'SA')}</Text>
+            <Avatar name={user?.name || 'SA'} size={38} />
           </TouchableOpacity>
         </View>
       </View>
@@ -288,11 +288,7 @@ export default function SuperAdminHomeScreen({ navigation }) {
                 })
               }
             >
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarCircleText}>
-                  {initials(c.name || 'CP')}
-                </Text>
-              </View>
+              <Avatar name={c.name || 'CP'} size={42} />
               <View style={styles.topCompanyInfo}>
                 <Text style={styles.topCompanyName}>{c.name}</Text>
                 <Text style={styles.topCompanySub}>

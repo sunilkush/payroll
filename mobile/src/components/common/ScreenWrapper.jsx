@@ -1,6 +1,6 @@
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../theme/index.js';
+import { colors, spacing } from '../../theme/index.js';
 
 export default function ScreenWrapper({
   children,
@@ -8,7 +8,7 @@ export default function ScreenWrapper({
   style,
   contentContainerStyle,
   withPadding = true,
-  backgroundColor = colors.bg,
+  backgroundColor = colors.background,
   refreshControl,
 }) {
   const insets = useSafeAreaInsets();
@@ -55,6 +55,8 @@ export default function ScreenWrapper({
   );
 }
 
+export const ScreenContainer = ScreenWrapper;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -63,8 +65,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   padding: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.screenPadding, // 16px
+    paddingTop: spacing.md, // 12px
+    paddingBottom: spacing.xxxl, // 32px
   },
 });

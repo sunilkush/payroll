@@ -21,11 +21,12 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatDate, formatTime, todayLocal } from '../../utils/format.js';
 import { haversineDistanceMeters } from '../../utils/geo.js';
 
@@ -33,7 +34,7 @@ const OUTCOME_OPTIONS = [
   { key: 'POSITIVE', label: 'Positive / Interested', color: colors.success },
   { key: 'FOLLOW_UP', label: 'Needs Follow-up', color: colors.warning },
   { key: 'NEUTRAL', label: 'Neutral / Reviewing', color: colors.primary },
-  { key: 'NEGATIVE', label: 'Not Interested', color: colors.danger },
+  { key: 'NEGATIVE', label: 'Not Interested', color: colors.error },
 ];
 
 export default function StaffMeetingsScreen({ navigation }) {
@@ -227,15 +228,15 @@ export default function StaffMeetingsScreen({ navigation }) {
         {loading ? (
           <Loader message="Loading assigned visits..." />
         ) : filteredMeetings.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <MaterialCommunityIcons name="briefcase-clock-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No Client Visits Found</Text>
-            <Text style={styles.emptySub}>
-              {statusFilter !== 'ALL'
+          <EmptyState
+            icon="briefcase-clock-outline"
+            title="No Client Visits Found"
+            description={
+              statusFilter !== 'ALL'
                 ? `No visits matching the ${statusFilter} filter.`
-                : 'You have no sales meetings scheduled for this period.'}
-            </Text>
-          </Card>
+                : 'You have no sales meetings scheduled for this period.'
+            }
+          />
         ) : (
           <View style={styles.list}>
             {filteredMeetings.map((meeting) => {
@@ -713,9 +714,9 @@ const styles = StyleSheet.create({
   tokenBox: {
     flexDirection: 'row',
     gap: 6,
-    backgroundColor: colors.bgApp,
+    backgroundColor: colors.background,
     padding: 8,
-    borderRadius: borderRadius.sm,
+    borderRadius: radius.control,
   },
   tokenLabel: {
     fontSize: typography.sizes.xs,
@@ -728,11 +729,11 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   checkoutModalCard: {
-    backgroundColor: colors.bgCard,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
     maxHeight: '90%',
-    padding: 20,
+    padding: spacing.xl,
     ...shadows.lg,
   },
   checkoutBody: {
@@ -753,12 +754,12 @@ const styles = StyleSheet.create({
   outcomeCard: {
     width: '48%',
     padding: 10,
-    borderRadius: borderRadius.md,
+    borderRadius: radius.control,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.bgApp,
+    backgroundColor: colors.background,
   },
   outcomeText: {
     fontSize: typography.sizes.xs,

@@ -14,7 +14,7 @@ import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatDate } from '../../utils/format.js';
 
 export default function StaffProfileScreen({ navigation }) {
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   menuRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
   },
   menuLeft: {
     flexDirection: 'row',
@@ -321,10 +321,10 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   logoutButton: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.errorContainer,
     borderWidth: 1,
-    borderColor: '#FEE2E2',
-    borderRadius: borderRadius.lg,
+    borderColor: '#FECACA',
+    borderRadius: radius.card,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoutText: {
-    color: '#DC2626',
+    color: colors.error,
     fontSize: 15,
     fontWeight: typography.weights.semibold,
   },
@@ -340,23 +340,23 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   modalCard: {
-    padding: 20,
-    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    borderRadius: radius.modal,
     maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: typography.sizes.h3,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
@@ -366,16 +366,16 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
   },
   infoLabel: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
   },
   infoValue: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     fontWeight: typography.weights.semibold,
     color: colors.text,
   },

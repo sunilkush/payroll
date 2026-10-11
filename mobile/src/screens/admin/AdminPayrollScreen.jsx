@@ -19,13 +19,16 @@ import {
   updatePayrollApi,
 } from '../../api/payrollApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
+import SearchBar from '../../components/common/SearchBar.jsx';
 import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
 import { currentMonth, formatCurrency, formatMonth } from '../../utils/format.js';
 import { initials } from '../../utils/roles.js';
@@ -461,22 +464,14 @@ export default function AdminPayrollScreen({ navigation }) {
         <View style={styles.tabContent}>
           {hasRows && (
             <View style={styles.searchAndFilters}>
-              {/* Search Bar */}
+              {/* Unified Search Bar */}
               <View style={styles.searchWrap}>
-                <MaterialCommunityIcons name="magnify" size={18} color={colors.textSecondary} />
-                <TextInput
+                <SearchBar
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder="Search staff by name or code..."
-                  placeholderTextColor={colors.textMuted}
-                  style={styles.searchInput}
-                  clearButtonMode="while-editing"
+                  onClear={() => setSearchQuery('')}
                 />
-                {searchQuery ? (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <MaterialCommunityIcons name="close-circle" size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
-                ) : null}
               </View>
 
               {/* Status Filters */}
@@ -504,21 +499,19 @@ export default function AdminPayrollScreen({ navigation }) {
           )}
 
           {!hasRows ? (
-            <Card style={styles.emptyCard} elevation="xs">
-              <View style={styles.emptyIconCircle}>
-                <MaterialCommunityIcons name="calculator" size={38} color={colors.primary} />
-              </View>
-              <Text style={styles.emptyTitle}>Payroll Not Generated Yet</Text>
-              <Text style={styles.emptySub}>
-                Click the "Compute & Generate Payroll" button above to automatically calculate attendance, LOP days, and monthly earnings.
-              </Text>
-            </Card>
+            <EmptyState
+              icon="calculator"
+              title="Payroll Not Generated Yet"
+              description="Click the Compute & Generate Payroll button above to automatically calculate attendance, LOP days, and monthly earnings."
+              actionTitle="Compute & Generate Payroll"
+              onAction={handleProcessPayroll}
+            />
           ) : filteredRows.length === 0 ? (
-            <Card style={styles.emptyCard} elevation="xs">
-              <MaterialCommunityIcons name="account-search-outline" size={36} color={colors.textSecondary} />
-              <Text style={styles.emptyTitle}>No matching employees</Text>
-              <Text style={styles.emptySub}>Try searching with a different name or employee code.</Text>
-            </Card>
+            <EmptyState
+              icon="account-search-outline"
+              title="No matching employees"
+              description="Try searching with a different name or employee code."
+            />
           ) : (
             <View style={styles.slipsList}>
               {filteredRows.map((slip) => {

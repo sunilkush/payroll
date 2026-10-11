@@ -20,7 +20,7 @@ import Header from '../../components/common/Header.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import PunchGeofenceMap from '../../components/common/PunchGeofenceMap.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { formatDate, formatTime, WEEKDAYS } from '../../utils/format.js';
 import { distanceInMeters, nearestOffice } from '../../utils/geo.js';
 
@@ -354,17 +354,28 @@ export default function StaffPunchScreen({ navigation }) {
   let statusBadgeLabel = 'Not Punched In Today';
   let statusBadgeVariant = 'warning';
 
+  const effectiveStatus = attendance?.status || metrics?.status;
+
   if (isOffDay) {
     statusBadgeLabel = holidayName ? `Holiday: ${holidayName}` : `${weekOffDayName} · Weekly Off`;
     statusBadgeVariant = 'warning';
-  } else if (metrics?.subStatus === 'COMPLETED') {
+  } else if (effectiveStatus === 'LEAVE') {
+    statusBadgeLabel = 'On Leave';
+    statusBadgeVariant = 'info';
+  } else if (effectiveStatus === 'ABSENT') {
+    statusBadgeLabel = metrics?.subStatus === 'EARLY_DEPARTURE_ABSENT' ? 'Absent (Early Departure < 4:30 PM)' : 'Absent';
+    statusBadgeVariant = 'danger';
+  } else if (effectiveStatus === 'PRESENT' || metrics?.subStatus === 'COMPLETED') {
     statusBadgeLabel = 'Full Day Present (Goal Reached)';
     statusBadgeVariant = 'success';
+  } else if (effectiveStatus === 'PENDING') {
+    statusBadgeLabel = isCurrentlyWorking ? 'Pending (In Progress)' : 'Pending (Session Paused)';
+    statusBadgeVariant = 'primary';
+  } else if (effectiveStatus === 'HALF_DAY' || metrics?.subStatus === 'HALF_DAY_FINALIZED') {
+    statusBadgeLabel = 'Half Day Recorded';
+    statusBadgeVariant = 'warning';
   } else if (metrics?.subStatus === 'HALF_DAY_ELIGIBLE') {
     statusBadgeLabel = 'Half Day Eligible / Working';
-    statusBadgeVariant = 'warning';
-  } else if (metrics?.subStatus === 'HALF_DAY_FINALIZED') {
-    statusBadgeLabel = 'Half Day Recorded';
     statusBadgeVariant = 'warning';
   } else if (isCurrentlyWorking) {
     statusBadgeLabel = 'Currently Punched In (Working)';
@@ -505,24 +516,54 @@ export default function StaffPunchScreen({ navigation }) {
             </Text>
           </View>
           <View style={styles.metricCard}>
-            <MaterialCommunityIcons name="logout" size={20} color={colors.danger} />
+            <MaterialCommunityIcons name="logout" size={20} color={colors.error} />
             <Text style={styles.metricLabel}>Last Out</Text>
             <Text style={styles.metricVal}>
               {lastOutTime ? formatTime(lastOutTime) : isCurrentlyWorking ? 'Working...' : '--:--'}
             </Text>
           </View>
           <View style={styles.metricCard}>
-            <MaterialCommunityIcons name="coffee" size={20} color="#d97706" />
-            <Text style={styles.metricLabel}>Breaks</Text>
+            <MaterialCommunityIcons name="coffee" size={20} color={colors.warning} />
+            <Text style={styles.metricLabel}>Lunch / Break</Text>
             <Text style={styles.metricVal}>
               {metrics ? `${metrics.totalBreakMinutes || 0}m` : '0m'}
             </Text>
           </View>
           <View style={styles.metricCard}>
             <MaterialCommunityIcons name="history" size={20} color={colors.primary} />
-            <Text style={styles.metricLabel}>Punches</Text>
+            <Text style={styles.metricLabel}>Total Punches</Text>
             <Text style={styles.metricVal}>
               {punches.length} {punches.length === 1 ? 'Event' : 'Events'}
+            </Text>
+          </View>
+          <View style={styles.metricCard}>
+            <MaterialCommunityIcons
+              name="check-decagram"
+              size={20}
+              color={effectiveStatus === 'ABSENT' ? colors.error : colors.primary}
+            />
+            <Text style={styles.metricLabel}>Final Status</Text>
+            <Text style={styles.metricVal}>
+              {effectiveStatus === 'PRESENT'
+                ? 'Present'
+                : effectiveStatus === 'ABSENT'
+                ? 'Absent'
+                : effectiveStatus === 'PENDING'
+                ? 'Pending'
+                : effectiveStatus === 'LEAVE'
+                ? 'On Leave'
+                : effectiveStatus || 'Not Marked'}
+            </Text>
+          </View>
+          <View style={styles.metricCard}>
+            <MaterialCommunityIcons
+              name="crosshairs-gps"
+              size={20}
+              color={nearest?.inside ? colors.success : colors.warning}
+            />
+            <Text style={styles.metricLabel}>GPS Status</Text>
+            <Text style={styles.metricVal}>
+              {nearest ? (nearest.inside ? 'Verified' : 'Out of Range') : 'Locating...'}
             </Text>
           </View>
         </View>
@@ -541,13 +582,13 @@ export default function StaffPunchScreen({ navigation }) {
                   <View
                     style={[
                       styles.timelineIconBadge,
-                      { backgroundColor: isPunchIn ? '#dcfce7' : '#fee2e2' },
+                      { backgroundColor: isPunchIn ? colors.successContainer : colors.errorContainer },
                     ]}
                   >
                     <MaterialCommunityIcons
                       name={isPunchIn ? 'login' : 'logout'}
                       size={16}
-                      color={isPunchIn ? '#166534' : '#991b1b'}
+                      color={isPunchIn ? colors.onSuccessContainer : colors.onErrorContainer}
                     />
                   </View>
                   <View style={styles.timelineContent}>
@@ -602,13 +643,13 @@ const styles = StyleSheet.create({
   },
   liveTimerContainer: {
     width: '100%',
-    backgroundColor: '#0f172a',
-    borderRadius: borderRadius.lg,
-    padding: 16,
-    marginVertical: 12,
+    backgroundColor: colors.text,
+    borderRadius: radius.card,
+    padding: spacing.cardPadding,
+    marginVertical: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: '#1E293B',
   },
   liveTimerHeader: {
     flexDirection: 'row',
@@ -624,19 +665,19 @@ const styles = StyleSheet.create({
   livePulseDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: '#22c55e',
+    borderRadius: radius.pill,
+    backgroundColor: colors.success,
     marginRight: 6,
   },
   liveTimerTitle: {
-    fontSize: typography.sizes.xs,
-    color: '#94a3b8',
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
     fontWeight: typography.weights.bold,
     letterSpacing: 0.5,
   },
   liveStatusTag: {
-    fontSize: 11,
-    color: '#38bdf8',
+    fontSize: typography.sizes.caption,
+    color: colors.info,
     fontWeight: typography.weights.semibold,
   },
   liveTimerDisplay: {
@@ -771,32 +812,32 @@ const styles = StyleSheet.create({
   },
   disabledOffDayBtn: {
     opacity: 0.75,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.border,
   },
   offDayBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fffbeb',
-    borderColor: '#fde68a',
+    backgroundColor: colors.warningContainer,
+    borderColor: '#FDE68A',
     borderWidth: 1,
-    borderRadius: borderRadius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: radius.card,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     width: '100%',
-    marginVertical: 10,
+    marginVertical: spacing.sm,
   },
   offDayTextContainer: {
-    marginLeft: 12,
+    marginLeft: spacing.md,
     flex: 1,
   },
   offDayTitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.body,
     fontWeight: typography.weights.bold,
-    color: '#b45309',
+    color: colors.warning,
   },
   offDaySubtitle: {
-    fontSize: typography.sizes.xs,
-    color: '#92400e',
+    fontSize: typography.sizes.caption,
+    color: colors.onWarningContainer,
     marginTop: 2,
     lineHeight: 16,
   },

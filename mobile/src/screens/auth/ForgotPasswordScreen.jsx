@@ -12,9 +12,10 @@ import { forgotPasswordApi } from '../../api/authApi.js';
 import Alert from '../../components/common/Alert.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, typography } from '../../theme/index.js';
+import { colors, radius, spacing, typography } from '../../theme/index.js';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -42,27 +43,19 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   return (
-    <ScreenWrapper contentContainerStyle={styles.container}>
+    <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.title}>Forgot Password</Text>
-              <Text style={styles.subtitle}>Reset instructions will be sent to your email</Text>
-            </View>
-          </View>
+          {/* Unified App Header */}
+          <Header
+            title="Forgot Password"
+            subtitle="Reset instructions will be sent to your email"
+            onBack={() => navigation.goBack()}
+          />
 
-          <Card style={styles.card} elevation="md">
+          <Card style={styles.card}>
             <View style={styles.iconCircle}>
-              <MaterialCommunityIcons name="key-outline" size={32} color={colors.primary} />
+              <MaterialCommunityIcons name="key-outline" size={28} color={colors.primary} />
             </View>
 
             {error ? <Alert type="error">{error}</Alert> : null}
@@ -82,6 +75,7 @@ export default function ForgotPasswordScreen({ navigation }) {
               <>
                 <Input
                   label="Registered Email"
+                  required
                   value={email}
                   onChangeText={setEmail}
                   placeholder="you@company.com"
@@ -118,64 +112,45 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
   },
   inner: {
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backBtn: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
   card: {
-    padding: 24,
+    marginTop: spacing.sm,
+    padding: spacing.xl,
   },
   iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primaryBg,
+    width: 56,
+    height: 56,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   helpText: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
-    marginBottom: 20,
+    marginBottom: spacing.lg,
     lineHeight: 18,
   },
   submitBtn: {
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
   },
   backToLogin: {
     alignItems: 'center',
-    padding: 8,
+    padding: spacing.sm,
   },
   backToLoginText: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.body,
     color: colors.primary,
     fontWeight: typography.weights.semibold,
   },

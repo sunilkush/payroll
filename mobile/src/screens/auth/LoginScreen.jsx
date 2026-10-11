@@ -15,7 +15,7 @@ import Input from '../../components/common/Input.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { getApiUrl, setApiUrl } from '../../config/env.js';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
@@ -77,28 +77,28 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <ScreenWrapper contentContainerStyle={styles.container} scrollable>
+    <ScreenWrapper contentContainerStyle={styles.container} scrollable backgroundColor={colors.background}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          {/* Top Brand Logo matching Screen 2 */}
+          {/* Top Brand Logo */}
           <View style={styles.brandRow}>
             <View style={styles.appIconBadge}>
-              <MaterialCommunityIcons name="wallet-outline" size={20} color="#FFFFFF" />
+              <MaterialCommunityIcons name="wallet-outline" size={20} color={colors.white} />
             </View>
             <Text style={styles.brandName}>
-              Feature <Text style={styles.brandNameHighlight}>Payroll</Text>
+              Pay<Text style={styles.brandNameHighlight}>Roster</Text>
             </Text>
           </View>
 
           {/* Welcome Titles */}
           <View style={styles.welcomeSection}>
             <Text style={styles.welcomeTitle}>Welcome Back</Text>
-            <Text style={styles.welcomeSubtitle}>Sign in to your account</Text>
+            <Text style={styles.welcomeSubtitle}>Sign in to your workplace account</Text>
           </View>
 
           {error ? <Alert type="error">{error}</Alert> : null}
 
-          {/* Inputs matching Screen 2 */}
+          {/* Login Form */}
           <View style={styles.form}>
             <Input
               label="Email or Employee ID"
@@ -144,36 +144,17 @@ export default function LoginScreen({ navigation }) {
 
             {/* Login Button */}
             <Button
-              title="Login"
+              title="Sign In"
               onPress={handleSubmit}
               loading={submitting}
               style={styles.loginBtn}
             />
 
-            {/* OR Divider */}
-            <View style={styles.orDividerRow}>
-              <View style={styles.orLine} />
-              <Text style={styles.orText}>OR</Text>
-              <View style={styles.orLine} />
-            </View>
-
-            {/* Login with OTP Button */}
-            <TouchableOpacity
-              style={styles.otpBtn}
-              onPress={() => {
-                // If OTP login is tapped, show hint or future modal
-                setError('OTP login is coming soon. Please sign in with your password.');
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.otpBtnText}>Login with OTP</Text>
-            </TouchableOpacity>
-
             {/* Contact HR Footer */}
             <View style={styles.contactHrRow}>
               <Text style={styles.contactHrText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.contactHrLink}>Contact HR</Text>
+                <Text style={styles.contactHrLink}>Create Organization</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -182,6 +163,7 @@ export default function LoginScreen({ navigation }) {
           <TouchableOpacity
             style={styles.serverConfigBtn}
             onPress={() => setServerModalVisible(true)}
+            activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="server-network" size={14} color={colors.textSecondary} />
             <Text style={styles.serverConfigText}>Server Settings</Text>
@@ -219,7 +201,7 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.modalActions}>
               <Button
                 title="Reset Default"
-                variant="outline"
+                variant="outlined"
                 size="sm"
                 onPress={handleResetServerUrl}
                 style={{ flex: 1 }}
@@ -242,9 +224,9 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 36,
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
+    backgroundColor: colors.background,
   },
   inner: {
     width: '100%',
@@ -255,109 +237,79 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 36,
+    gap: spacing.sm,
+    marginBottom: spacing.xxl,
   },
   appIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: borderRadius.md,
+    width: 36,
+    height: 36,
+    borderRadius: radius.control,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   brandName: {
-    fontSize: 22,
+    fontSize: typography.sizes.h1,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
+    letterSpacing: -0.3,
   },
   brandNameHighlight: {
     color: colors.primary,
   },
   welcomeSection: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   welcomeTitle: {
-    fontSize: 26,
+    fontSize: typography.sizes.h1,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
+    letterSpacing: -0.3,
   },
   welcomeSubtitle: {
-    fontSize: 14,
+    fontSize: typography.sizes.body,
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   form: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   rememberForgotRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 24,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xl,
   },
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.xs,
   },
   rememberText: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
   },
   forgotText: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.primary,
     fontWeight: typography.weights.semibold,
   },
   loginBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: 14,
-  },
-  orDividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-    gap: 12,
-  },
-  orLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  orText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: typography.weights.medium,
-  },
-  otpBtn: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  otpBtnText: {
-    fontSize: 15,
-    fontWeight: typography.weights.semibold,
-    color: '#0F172A',
+    marginTop: spacing.xs,
   },
   contactHrRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.xxl,
   },
   contactHrText: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
   },
   contactHrLink: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
@@ -366,46 +318,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 32,
-    paddingVertical: 8,
+    marginTop: spacing.xxxl,
+    paddingVertical: spacing.sm,
   },
   serverConfigText: {
-    fontSize: 12,
+    fontSize: typography.sizes.caption,
     color: colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.xl,
-    padding: 24,
+    backgroundColor: colors.surface,
+    borderRadius: radius.modal,
+    padding: spacing.xxl,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadows.lg,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: typography.sizes.h3,
     fontWeight: typography.weights.bold,
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 4,
   },
   modalDesc: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.textSecondary,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   serverSuccessMsg: {
-    fontSize: 13,
+    fontSize: typography.sizes.label,
     color: colors.success,
     fontWeight: typography.weights.semibold,
-    marginVertical: 8,
+    marginVertical: spacing.sm,
     textAlign: 'center',
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
+    gap: spacing.md,
+    marginTop: spacing.lg,
   },
 });

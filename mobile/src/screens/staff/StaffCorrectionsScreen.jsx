@@ -19,11 +19,12 @@ import Alert from '../../components/common/Alert.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, spacing, typography } from '../../theme/index.js';
 import { toFieldErrors } from '../../utils/formErrors.js';
 import { formatDate, formatTime, todayLocal } from '../../utils/format.js';
 
@@ -170,11 +171,13 @@ export default function StaffCorrectionsScreen({ navigation, route }) {
       {loading ? (
         <Loader message="Loading correction requests..." />
       ) : corrections.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="timer-sand-empty" size={44} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>No correction requests</Text>
-          <Text style={styles.emptySub}>You have no pending or past punch corrections.</Text>
-        </Card>
+        <EmptyState
+          icon="timer-sand-empty"
+          title="No correction requests"
+          description="You have no pending or past punch corrections."
+          actionTitle="Request Correction"
+          onAction={openForm}
+        />
       ) : (
         <View style={styles.list}>
           {corrections.map((item) => (
@@ -221,7 +224,7 @@ export default function StaffCorrectionsScreen({ navigation, route }) {
                   onPress={() => handleCancel(item)}
                   style={styles.cancelLink}
                 >
-                  <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
+                  <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.error} />
                   <Text style={styles.cancelLinkText}>Cancel Request</Text>
                 </TouchableOpacity>
               )}
@@ -381,34 +384,19 @@ const styles = StyleSheet.create({
   },
   cancelLinkText: {
     fontSize: typography.sizes.xs,
-    color: colors.danger,
+    color: colors.error,
     fontWeight: typography.weights.semibold,
     marginLeft: 4,
-  },
-  emptyCard: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginTop: 12,
-  },
-  emptySub: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   modalCard: {
-    padding: 20,
+    padding: spacing.xl,
+    borderRadius: radius.modal,
     maxHeight: '90%',
   },
   modalHeader: {

@@ -7,15 +7,15 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Alert from '../../components/common/Alert.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { toFieldErrors } from '../../utils/formErrors.js';
-import { borderRadius, colors, typography } from '../../theme/index.js';
+import { colors, spacing, typography } from '../../theme/index.js';
 
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
@@ -52,7 +52,6 @@ export default function RegisterScreen({ navigation }) {
     setSubmitting(true);
     try {
       await register(form);
-      // Auth state update in AuthContext automatically redirects to AdminHome
     } catch (err) {
       const fieldMap = toFieldErrors(err);
       setFieldErrors(fieldMap);
@@ -63,30 +62,23 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <ScreenWrapper contentContainerStyle={styles.container}>
+    <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Start free 14-day trial for your organization</Text>
-            </View>
-          </View>
+          {/* Unified App Header */}
+          <Header
+            title="Create Organization"
+            subtitle="Start free 14-day trial for your company"
+            onBack={() => navigation.goBack()}
+          />
 
           {/* Form Card */}
-          <Card style={styles.card} elevation="md">
+          <Card style={styles.card}>
             {error ? <Alert type="error">{error}</Alert> : null}
 
             <Input
-              label="Company / Organization Name *"
+              label="Company Name"
+              required
               value={form.companyName}
               onChangeText={(text) => handleChange('companyName', text)}
               placeholder="e.g. Acme Tech Solutions"
@@ -95,7 +87,8 @@ export default function RegisterScreen({ navigation }) {
             />
 
             <Input
-              label="Your Full Name *"
+              label="Your Full Name"
+              required
               value={form.name}
               onChangeText={(text) => handleChange('name', text)}
               placeholder="e.g. Rajesh Sharma"
@@ -104,7 +97,8 @@ export default function RegisterScreen({ navigation }) {
             />
 
             <Input
-              label="Work Email *"
+              label="Work Email"
+              required
               value={form.email}
               onChangeText={(text) => handleChange('email', text)}
               placeholder="you@company.com"
@@ -125,7 +119,8 @@ export default function RegisterScreen({ navigation }) {
             />
 
             <Input
-              label="Password *"
+              label="Password"
+              required
               value={form.password}
               onChangeText={(text) => handleChange('password', text)}
               placeholder="At least 6 characters"
@@ -159,41 +154,19 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
   },
   inner: {
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backBtn: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
   card: {
-    padding: 20,
+    marginTop: spacing.sm,
   },
   submitBtn: {
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
   footerRow: {
     flexDirection: 'row',
@@ -201,12 +174,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.body,
     color: colors.textSecondary,
   },
   loginLink: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.body,
     color: colors.primary,
-    fontWeight: typography.weights.semibold,
+    fontWeight: typography.weights.bold,
   },
 });

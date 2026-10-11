@@ -17,13 +17,16 @@ import {
   setCompanyStatusApi,
 } from '../../api/companyApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
+import Badge from '../../components/common/Badge.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
+import EmptyState from '../../components/common/EmptyState.jsx';
 import Header from '../../components/common/Header.jsx';
 import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, typography } from '../../theme/index.js';
 import { toFieldErrors } from '../../utils/formErrors.js';
 import { initials } from '../../utils/roles.js';
 
@@ -200,11 +203,11 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
       {loading ? (
         <Loader message="Loading tenant companies..." />
       ) : companies.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <MaterialCommunityIcons name="domain-off" size={44} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>No companies found</Text>
-          <Text style={styles.emptySub}>No organizations matched the selected filter.</Text>
-        </Card>
+        <EmptyState
+          icon="domain-off"
+          title="No companies found"
+          description="No organizations matched the selected filter."
+        />
       ) : (
         <View style={styles.listContainer}>
           {companies.map((company) => {
@@ -222,9 +225,7 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
               >
                 <Card style={styles.companyCard} elevation="xs">
                   <View style={styles.companyRow}>
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarText}>{initials(company.name)}</Text>
-                    </View>
+                    <Avatar name={company.name} size={44} />
                     <View style={styles.companyInfo}>
                       <Text style={styles.companyName}>{company.name}</Text>
                       <Text style={styles.companySub}>
@@ -233,25 +234,13 @@ export default function SuperAdminCompaniesScreen({ navigation }) {
                     </View>
                     <View style={styles.pillGroup}>
                       {hasUpgrade ? (
-                        <View style={styles.upgradePill}>
-                          <Text style={styles.upgradePillText}>Upgrade</Text>
-                        </View>
+                        <Badge label="Upgrade" variant="warning" size="sm" />
                       ) : (
-                        <View
-                          style={[
-                            styles.statusPill,
-                            company.isActive ? styles.activePill : styles.blockedPill,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.statusPillText,
-                              company.isActive ? styles.activePillText : styles.blockedPillText,
-                            ]}
-                          >
-                            {company.isActive ? 'Active' : 'Blocked'}
-                          </Text>
-                        </View>
+                        <Badge
+                          label={company.isActive ? 'Active' : 'Blocked'}
+                          variant={company.isActive ? 'success' : 'danger'}
+                          size="sm"
+                        />
                       )}
                     </View>
                   </View>
@@ -513,14 +502,14 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },
   modalCard: {
     maxHeight: '90%',
     padding: 20,
-    borderRadius: borderRadius.xl,
+    borderRadius: radius.modal,
   },
   modalHeader: {
     flexDirection: 'row',

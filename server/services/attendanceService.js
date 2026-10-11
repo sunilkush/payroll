@@ -159,38 +159,69 @@ export function evaluatePunches({
   }
 
   const nowMin = minutesOfDay(new Date(now));
-  const isPastHalfDayCutoff = nowMin >= halfDayCutoffMin;
+  const latestOutMin = latestOut ? minutesOfDay(new Date(latestOut.time)) : null;
 
-  // Status calculation
-  let status = ATTENDANCE_STATUS.PRESENT;
-  let subStatus = null; // 'COMPLETED', 'HALF_DAY_ELIGIBLE', 'IN_PROGRESS', 'HALF_DAY_FINALIZED'
+  // Status calculation:
+  // Rule 1: Present only when employee completes at least 8 hours 30 minutes net working time
+  let status = ATTENDANCE_STATUS.PENDING;
+  let subStatus = 'IN_PROGRESS';
 
-  if (totalNetWorkMinutes >= requiredWorkMinutes) {
+  if (sortedPunches.length === 0) {
+    status = ATTENDANCE_STATUS.NOT_MARKED;
+    subStatus = 'NOT_STARTED';
+  } else if (totalNetWorkMinutes >= requiredWorkMinutes) {
     status = ATTENDANCE_STATUS.PRESENT;
     subStatus = 'COMPLETED';
   } else if (isCurrentlyWorking) {
-    // If still punched in and working, do NOT prematurely mark Half-Day!
-    if (isPastHalfDayCutoff) {
-      subStatus = 'HALF_DAY_ELIGIBLE';
-    } else {
-      subStatus = 'IN_PROGRESS';
-    }
-    status = ATTENDANCE_STATUS.PRESENT;
+    // Rule 2: Actively working and under 8h 30m -> show Pending / In Progress.
+    // Never mark Absent or terminal status while punch-in session is still active!
+    status = ATTENDANCE_STATUS.PENDING;
+    subStatus = 'IN_PROGRESS';
   } else {
-    // Employee is currently punched OUT
+    // Rule 3: Employee is currently punched OUT
     if (completedWorkMinutes >= requiredWorkMinutes) {
       status = ATTENDANCE_STATUS.PRESENT;
       subStatus = 'COMPLETED';
-    } else if (
-      (latestOut && minutesOfDay(new Date(latestOut.time)) >= halfDayCutoffMin) ||
-      completedWorkMinutes >= halfDayMinMinutes ||
-      isDayClosed
-    ) {
-      status = ATTENDANCE_STATUS.HALF_DAY;
-      subStatus = 'HALF_DAY_FINALIZED';
+    } else if (isDayClosed) {
+      // Day is closed / finalized
+      if (latestOutMin !== null && latestOutMin < halfDayCutoffMin) {
+        // Final Punch Out is before 4:30 PM and under 8h 30m worked -> Absent
+        status = ATTENDANCE_STATUS.ABSENT;
+        subStatus = 'EARLY_DEPARTURE_ABSENT';
+      } else {
+        // Final Punch Out at or after 4:30 PM with under 8h 30m worked:
+        // Never mark Present; apply configured final status policy.
+        if (completedWorkMinutes >= halfDayMinMinutes) {
+          status = ATTENDANCE_STATUS.HALF_DAY;
+          subStatus = 'HALF_DAY_FINALIZED';
+        } else {
+          status = ATTENDANCE_STATUS.ABSENT;
+          subStatus = 'UNDERTIME_ABSENT';
+        }
+      }
     } else {
-      status = ATTENDANCE_STATUS.HALF_DAY;
-      subStatus = 'HALF_DAY_FINALIZED';
+      // Interim evaluation during active day
+      if (nowMin < halfDayCutoffMin) {
+        // Before 4:30 PM: temporarily punched out, may punch back in before 4:30 PM
+        status = ATTENDANCE_STATUS.PENDING;
+        subStatus = 'TEMPORARILY_OUT';
+      } else {
+        // Clock has reached/passed 4:30 PM
+        if (latestOutMin !== null && latestOutMin < halfDayCutoffMin) {
+          // Punched out before 4:30 PM and never returned before 4:30 PM -> Absent
+          status = ATTENDANCE_STATUS.ABSENT;
+          subStatus = 'EARLY_DEPARTURE_ABSENT';
+        } else {
+          // Punched out at or after 4:30 PM with under 8h 30m worked
+          if (completedWorkMinutes >= halfDayMinMinutes) {
+            status = ATTENDANCE_STATUS.HALF_DAY;
+            subStatus = 'HALF_DAY_FINALIZED';
+          } else {
+            status = ATTENDANCE_STATUS.ABSENT;
+            subStatus = 'UNDERTIME_ABSENT';
+          }
+        }
+      }
     }
   }
 
@@ -299,7 +330,7 @@ export async function punchIn(user, position, meta) {
     });
 
     record.netWorkMinutes = evalResult.completedWorkMinutes;
-    record.status = evalResult.status;
+    record.status = company.settings?.workTimeEnabled ? evalResult.status : ATTENDANCE_STATUS.PRESENT;
 
     await record.save();
     await recordAudit({ user, position, meta, type: 'IN', date, status: 'SUCCESS' });
@@ -307,6 +338,11 @@ export async function punchIn(user, position, meta) {
   }
 
   // First punch in of the day
+  const firstEval = evaluatePunches({
+    punches: [punchEvent],
+    companySettings: company.settings,
+    now: new Date(),
+  });
   try {
     record = await Attendance.create({
       userId: user._id,
@@ -315,7 +351,7 @@ export async function punchIn(user, position, meta) {
       punchOut: null,
       punches: [punchEvent],
       netWorkMinutes: 0,
-      status: ATTENDANCE_STATUS.PRESENT,
+      status: company.settings?.workTimeEnabled ? firstEval.status : ATTENDANCE_STATUS.PRESENT,
       missedPunchOut: false,
     });
     await recordAudit({ user, position, meta, type: 'IN', date, status: 'SUCCESS' });
@@ -387,7 +423,7 @@ export async function punchOut(user, position, meta) {
   });
 
   record.netWorkMinutes = evalResult.completedWorkMinutes;
-  record.status = evalResult.status;
+  record.status = company.settings?.workTimeEnabled ? evalResult.status : ATTENDANCE_STATUS.PRESENT;
 
   await record.save();
   await recordAudit({ user, position, meta, type: 'OUT', date, status: 'SUCCESS' });
@@ -513,21 +549,33 @@ function buildMonth({ user, records, leaves, company, month }) {
 
     if (record) {
       const isHalfDay = Boolean(halfLeave || record.status === ATTENDANCE_STATUS.HALF_DAY);
-      day.status = isHalfDay ? ATTENDANCE_STATUS.HALF_DAY : ATTENDANCE_STATUS.PRESENT;
+      const isAbsent = record.status === ATTENDANCE_STATUS.ABSENT;
+      const isPending = record.status === ATTENDANCE_STATUS.PENDING;
+
       day.punchIn = record.punchIn;
       day.punchOut = record.punchOut ?? null;
       day.missedPunchOut = record.missedPunchOut;
       day.punches = record.punches || [];
 
       if (halfLeave) {
+        day.status = ATTENDANCE_STATUS.HALF_DAY;
         day.note = halfLeave.type;
         day.halfDay = halfLeave.halfDay;
         summary.present += 0.5;
         summary.leave += 0.5;
-      } else if (record.status === ATTENDANCE_STATUS.HALF_DAY) {
+      } else if (isAbsent) {
+        day.status = ATTENDANCE_STATUS.ABSENT;
+        day.note = 'Absent (Under 8h 30m / Early Out)';
+        summary.absent += 1;
+      } else if (isHalfDay) {
+        day.status = ATTENDANCE_STATUS.HALF_DAY;
         day.note = 'Half Day';
         summary.present += 0.5;
+      } else if (isPending && date === today) {
+        day.status = ATTENDANCE_STATUS.PENDING;
+        day.note = 'In Progress';
       } else {
+        day.status = ATTENDANCE_STATUS.PRESENT;
         summary.present += 1;
       }
 
@@ -699,19 +747,23 @@ export async function markMissedPunchOuts({ includeToday }) {
   const today = todayStr();
   const filter = {
     date: includeToday ? { $lte: today } : { $lt: today },
-    punchOut: null,
-    missedPunchOut: false,
+    $or: [{ punchOut: null }, { status: ATTENDANCE_STATUS.PENDING }],
   };
   const records = await Attendance.find(filter);
   let count = 0;
   for (const record of records) {
-    record.missedPunchOut = true;
-    const netMins = record.netWorkMinutes || 0;
-    if (netMins >= 510) {
-      record.status = ATTENDANCE_STATUS.PRESENT;
-    } else if (netMins >= 255) {
-      record.status = ATTENDANCE_STATUS.HALF_DAY;
+    if (!record.punchOut) {
+      record.missedPunchOut = true;
     }
+    const company = await Company.findById(record.companyId);
+    const evalResult = evaluatePunches({
+      punches: record.punches?.length ? record.punches : [record.punchIn, ...(record.punchOut ? [record.punchOut] : [])],
+      companySettings: company?.settings || {},
+      now: new Date(`${record.date}T23:59:59`),
+      isDayClosed: true,
+    });
+    record.netWorkMinutes = evalResult.completedWorkMinutes;
+    record.status = evalResult.status;
     await record.save();
     count++;
   }

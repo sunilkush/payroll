@@ -1,4 +1,3 @@
-import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import StaffAttendanceScreen from '../screens/staff/StaffAttendanceScreen.jsx';
@@ -9,7 +8,7 @@ import StaffMeetingsScreen from '../screens/staff/StaffMeetingsScreen.jsx';
 import StaffProfileScreen from '../screens/staff/StaffProfileScreen.jsx';
 import StaffPunchScreen from '../screens/staff/StaffPunchScreen.jsx';
 import StaffSalaryScreen from '../screens/staff/StaffSalaryScreen.jsx';
-import { borderRadius, colors, typography } from '../theme/index.js';
+import { colors, typography } from '../theme/index.js';
 
 const Tab = createBottomTabNavigator();
 
@@ -20,12 +19,12 @@ export default function StaffNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.onSurfaceVariant,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.outlineVariant,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 66,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 6,
         },

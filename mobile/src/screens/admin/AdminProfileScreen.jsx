@@ -9,12 +9,13 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Avatar from '../../components/common/Avatar.jsx';
 import Button from '../../components/common/Button.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, typography } from '../../theme/index.js';
 import { formatDate } from '../../utils/format.js';
 import { initials, ROLE_LABEL } from '../../utils/roles.js';
 
@@ -84,11 +85,7 @@ export default function AdminProfileScreen({ navigation }) {
       {/* Top Profile Avatar & Name (Matching StaffProfileScreen style) */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {initials(user?.name || 'AD')}
-            </Text>
-          </View>
+          <Avatar name={user?.name || 'Administrator'} size={72} />
           <TouchableOpacity style={styles.cameraBadge} activeOpacity={0.8}>
             <MaterialCommunityIcons name="camera" size={14} color="#FFFFFF" />
           </TouchableOpacity>
@@ -386,13 +383,13 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },
   modalCard: {
     padding: 20,
-    borderRadius: borderRadius.xl,
+    borderRadius: radius.modal,
     maxHeight: '80%',
   },
   modalHeader: {

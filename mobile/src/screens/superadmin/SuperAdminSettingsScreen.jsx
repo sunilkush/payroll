@@ -9,6 +9,7 @@ import {
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getGlobalSettingsApi, updateGlobalSettingsApi } from '../../api/globalSettingsApi.js';
 import Alert from '../../components/common/Alert.jsx';
+import Avatar from '../../components/common/Avatar.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Card from '../../components/common/Card.jsx';
 import Header from '../../components/common/Header.jsx';
@@ -16,7 +17,7 @@ import Input from '../../components/common/Input.jsx';
 import Loader from '../../components/common/Loader.jsx';
 import ScreenWrapper from '../../components/common/ScreenWrapper.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { borderRadius, colors, shadows, typography } from '../../theme/index.js';
+import { borderRadius, colors, radius, shadows, typography } from '../../theme/index.js';
 import { initials } from '../../utils/roles.js';
 
 export default function SuperAdminSettingsScreen({ navigation }) {
@@ -121,9 +122,7 @@ export default function SuperAdminSettingsScreen({ navigation }) {
       {/* SuperAdmin Account Profile Card */}
       <Card style={styles.profileCard} elevation="xs">
         <View style={styles.profileRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials(user?.name || 'SA')}</Text>
-          </View>
+          <Avatar name={user?.name || 'SA'} size={52} />
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Super Administrator'}</Text>
             <Text style={styles.profileEmail}>{user?.email || 'admin@payroster.io'}</Text>

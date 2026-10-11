@@ -272,17 +272,28 @@ export default function PunchScreen() {
   let statusText = 'Not Punched In Today';
   let statusTone = 'default';
 
+  const effectiveStatus = attendance?.status || metrics?.status;
+
   if (isOffDay) {
     statusText = holidayName ? `Holiday: ${holidayName}` : `${displayWeekOffName} (Weekly Off)`;
     statusTone = 'warning';
-  } else if (metrics?.subStatus === 'COMPLETED') {
-    statusText = 'Full Day Present (Goal Reached)';
+  } else if (effectiveStatus === 'LEAVE') {
+    statusText = 'On Leave';
+    statusTone = 'info';
+  } else if (effectiveStatus === 'ABSENT') {
+    statusText = metrics?.subStatus === 'EARLY_DEPARTURE_ABSENT' ? 'Absent (Early Departure before 4:30 PM)' : 'Absent';
+    statusTone = 'danger';
+  } else if (effectiveStatus === 'PRESENT' || metrics?.subStatus === 'COMPLETED') {
+    statusText = 'Present (Goal Completed)';
     statusTone = 'success';
+  } else if (effectiveStatus === 'PENDING') {
+    statusText = isCurrentlyWorking ? 'Pending (In Progress)' : 'Pending (Session Paused)';
+    statusTone = 'info';
+  } else if (effectiveStatus === 'HALF_DAY' || metrics?.subStatus === 'HALF_DAY_FINALIZED') {
+    statusText = 'Half Day Recorded';
+    statusTone = 'warning';
   } else if (metrics?.subStatus === 'HALF_DAY_ELIGIBLE') {
     statusText = 'Half Day Eligible / Working';
-    statusTone = 'warning';
-  } else if (metrics?.subStatus === 'HALF_DAY_FINALIZED') {
-    statusText = 'Half Day Recorded';
     statusTone = 'warning';
   } else if (isCurrentlyWorking) {
     statusText = `Currently Working · In: ${punches[0]?.locationName || 'Office'}`;
@@ -428,7 +439,7 @@ export default function PunchScreen() {
               <CoffeeOutlined />
             </div>
             <div className="punch-screen__metric-info">
-              <span className="punch-screen__metric-lbl">Breaks Taken</span>
+              <span className="punch-screen__metric-lbl">Lunch / Break</span>
               <span className="punch-screen__metric-value">
                 {metrics ? `${metrics.totalBreakMinutes || 0}m` : '0m'}
               </span>
@@ -443,6 +454,30 @@ export default function PunchScreen() {
               <span className="punch-screen__metric-lbl">Total Punches</span>
               <span className="punch-screen__metric-value">
                 {punches.length} {punches.length === 1 ? 'event' : 'events'}
+              </span>
+            </div>
+          </div>
+
+          <div className="punch-screen__metric-box">
+            <div className="punch-screen__metric-icon punch-screen__metric-icon--in">
+              <CheckCircleOutlined />
+            </div>
+            <div className="punch-screen__metric-info">
+              <span className="punch-screen__metric-lbl">Final Status</span>
+              <span className="punch-screen__metric-value">
+                {effectiveStatus === 'PRESENT' ? 'Present' : effectiveStatus === 'ABSENT' ? 'Absent' : effectiveStatus === 'PENDING' ? 'Pending' : effectiveStatus === 'LEAVE' ? 'On Leave' : effectiveStatus || 'Not Marked'}
+              </span>
+            </div>
+          </div>
+
+          <div className="punch-screen__metric-box">
+            <div className="punch-screen__metric-icon punch-screen__metric-icon--events">
+              <FieldTimeOutlined />
+            </div>
+            <div className="punch-screen__metric-info">
+              <span className="punch-screen__metric-lbl">GPS Verification</span>
+              <span className="punch-screen__metric-value">
+                {nearest ? (nearest.inside ? 'Verified In-Range' : 'Out of Range') : 'Locating...'}
               </span>
             </div>
           </div>
