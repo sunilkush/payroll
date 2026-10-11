@@ -234,6 +234,35 @@ export default function LocationPickerMap({
             border-radius: 8px !important;
             overflow: hidden;
           }
+          .office-pin-tooltip {
+            background: #0F172A !important;
+            color: #FFFFFF !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            border-radius: 6px !important;
+            padding: 3px 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+          }
+          .office-pin-tooltip::before {
+            border-top-color: #0F172A !important;
+          }
+          .radius-tooltip {
+            background: #2563EB !important;
+            color: #FFFFFF !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            border-radius: 6px !important;
+            padding: 3px 8px !important;
+            border: none !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+            white-space: nowrap !important;
+          }
+          .radius-tooltip::before {
+            border-bottom-color: #2563EB !important;
+          }
         </style>
       </head>
       <body>
@@ -265,13 +294,43 @@ export default function LocationPickerMap({
             icon: officeIcon
           }).addTo(map);
 
+          marker.bindTooltip('<b>Office Entrance</b><br><span>Radius: ' + radius + 'm</span>', {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -38],
+            className: 'office-pin-tooltip'
+          });
+
           var circle = L.circle([lat, lng], {
             radius: radius,
             color: '#2563EB',
             fillColor: '#3B82F6',
-            fillOpacity: 0.18,
-            weight: 2
+            fillOpacity: 0.22,
+            weight: 2,
+            dashArray: '6, 6'
           }).addTo(map);
+
+          circle.bindTooltip('🎯 Geofence Area: ' + radius + 'm', {
+            permanent: true,
+            direction: 'bottom',
+            offset: [0, 16],
+            className: 'radius-tooltip'
+          });
+
+          function fitCircle() {
+            try {
+              if (circle && typeof circle.getBounds === 'function' && radius > 0) {
+                map.fitBounds(circle.getBounds().pad(0.18), { maxZoom: 18 });
+              }
+            } catch (err) {}
+          }
+
+          setTimeout(function() {
+            try {
+              map.invalidateSize();
+              fitCircle();
+            } catch (err) {}
+          }, 200);
 
           function sendLocation(nLat, nLng) {
             if (window.ReactNativeWebView) {
@@ -289,6 +348,11 @@ export default function LocationPickerMap({
             sendLocation(e.latlng.lat, e.latlng.lng);
           });
 
+          marker.on('drag', function() {
+            var pos = marker.getLatLng();
+            circle.setLatLng(pos);
+          });
+
           marker.on('dragend', function() {
             var pos = marker.getLatLng();
             circle.setLatLng(pos);
@@ -302,10 +366,21 @@ export default function LocationPickerMap({
             if (!isNaN(nL) && !isNaN(nG)) {
               marker.setLatLng([nL, nG]);
               circle.setLatLng([nL, nG]);
-              map.panTo([nL, nG], { animate: true });
             }
-            if (!isNaN(nR)) {
+            if (!isNaN(nR) && nR > 0) {
+              radius = nR;
               circle.setRadius(nR);
+              if (circle.setTooltipContent) {
+                circle.setTooltipContent('🎯 Geofence Area: ' + nR + 'm');
+              }
+              if (marker.setTooltipContent) {
+                marker.setTooltipContent('<b>Office Entrance</b><br><span>Radius: ' + nR + 'm</span>');
+              }
+            }
+            if (circle) {
+              map.fitBounds(circle.getBounds().pad(0.18), { animate: true, maxZoom: 18 });
+            } else if (!isNaN(nL) && !isNaN(nG)) {
+              map.panTo([nL, nG], { animate: true });
             }
           };
         </script>
@@ -366,7 +441,18 @@ export default function LocationPickerMap({
           originWhitelist={['*']}
           source={{ html: leafletHtml }}
           onMessage={handleWebViewMessage}
-          onLoadEnd={() => setMapLoading(false)}
+          onLoadEnd={() => {
+            setMapLoading(false);
+            if (webViewRef.current) {
+              const script = `
+                if (typeof updateMapLocation === 'function') {
+                  updateMapLocation(${numLat}, ${numLng}, ${numRadius});
+                }
+                true;
+              `;
+              webViewRef.current.injectJavaScript(script);
+            }
+          }}
           style={styles.webView}
           javaScriptEnabled={true}
           domStorageEnabled={true}
@@ -378,6 +464,15 @@ export default function LocationPickerMap({
             </View>
           )}
         />
+
+        {/* Floating Selected Geofence Radius Pill */}
+        <View style={styles.radiusFloatPill}>
+          <MaterialCommunityIcons name="radar" size={14} color="#2563EB" />
+          <Text style={styles.radiusFloatLabel}>Selected Radius:</Text>
+          <View style={styles.radiusFloatBadge}>
+            <Text style={styles.radiusFloatBadgeText}>{numRadius}m</Text>
+          </View>
+        </View>
 
         {/* Floating Quick GPS & Help Pill */}
         <TouchableOpacity
@@ -555,6 +650,39 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  radiusFloatPill: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingLeft: 8,
+    paddingRight: 4,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    ...shadows.sm,
+    zIndex: 10,
+  },
+  radiusFloatLabel: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#1E293B',
+  },
+  radiusFloatBadge: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: borderRadius.pill,
+  },
+  radiusFloatBadgeText: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#FFFFFF',
   },
   providerBadgeText: {
     fontSize: 9,

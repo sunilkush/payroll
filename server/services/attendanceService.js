@@ -19,7 +19,9 @@ function verifyLocation(company, { lat, lng, accuracy }) {
   if (!company.locations.length) {
     throw new ApiError(400, 'No office location is set. Please contact your admin.');
   }
-  if (accuracy > company.settings.maxGpsAccuracy) {
+  // Mobile phones indoors frequently have accuracy 50m-150m. Allow at least 150m or maxGpsAccuracy.
+  const maxAcc = Math.max(150, company.settings?.maxGpsAccuracy || 100);
+  if (accuracy > maxAcc) {
     throw new ApiError(
       400,
       `GPS accuracy is too low (${Math.round(accuracy)}m). Move to an open area and try again.`
@@ -27,7 +29,7 @@ function verifyLocation(company, { lat, lng, accuracy }) {
   }
   const geo = checkGeofence(company.locations, { lat, lng });
   if (!geo.allowed) {
-    throw new ApiError(403, `You are outside the office range (${geo.distance}m).`);
+    throw new ApiError(403, `You are outside the office range (${geo.distance}m from ${geo.location.name}, allowed: ${geo.location.radius}m).`);
   }
   return geo;
 }
@@ -45,8 +47,44 @@ const buildPunch = (position, geo, meta) => ({
 
 export async function punchIn(user, position, meta) {
   const company = await getCompanyOrThrow();
-  const geo = verifyLocation(company, position);
   const date = todayStr();
+  const weekday = weekdayOf(date);
+  const weekOffDays = company.settings?.weekOffDays ?? [0];
+
+  // Sunday ya weekly off ke din punch block karein
+  if (weekOffDays.includes(weekday)) {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[weekday] || 'Weekly Off day';
+    throw new ApiError(403, `Today is ${dayName} (Weekly Off). Punch-in is not allowed.`);
+  }
+
+  // Company holiday ke din punch block karein
+  const holiday = (company.holidays || []).find((h) => h.date === date);
+  if (holiday) {
+    throw new ApiError(403, `Today is a paid holiday (${holiday.name}). Punch-in is not allowed.`);
+  }
+
+  // Working hours check (agar company ne work time enable kiya ho)
+  if (company.settings?.workTimeEnabled && company.settings?.workStartTime && company.settings?.workEndTime) {
+    const nowMin = minutesOfDay(new Date());
+    const startMin = timeToMinutes(company.settings.workStartTime);
+    const endMin = timeToMinutes(company.settings.workEndTime);
+
+    if (nowMin < startMin) {
+      throw new ApiError(
+        403,
+        `Punch-in is not allowed before working hours. Office starts at ${company.settings.workStartTime} (${company.settings.workStartTime} - ${company.settings.workEndTime}).`
+      );
+    }
+    if (nowMin > endMin) {
+      throw new ApiError(
+        403,
+        `Office working hours are over (${company.settings.workStartTime} - ${company.settings.workEndTime}). Punch-in is not allowed.`
+      );
+    }
+  }
+
+  const geo = verifyLocation(company, position);
 
   if (await Attendance.exists({ userId: user._id, date })) {
     throw new ApiError(409, 'You have already punched in today.');
@@ -76,16 +114,52 @@ export async function punchOut(user, position, meta) {
 export async function getToday(user) {
   const company = await getCompanyOrThrow();
   const date = todayStr();
+  const weekday = weekdayOf(date);
+  const weekOffDays = company.settings?.weekOffDays ?? [0];
+  const isWeekOff = weekOffDays.includes(weekday);
+  const holiday = (company.holidays || []).find((h) => h.date === date);
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const weekOffDayName = isWeekOff ? dayNames[weekday] : null;
+
+  const workTime = company.settings?.workTimeEnabled && company.settings?.workStartTime && company.settings?.workEndTime
+    ? {
+        enabled: true,
+        start: company.settings.workStartTime,
+        end: company.settings.workEndTime,
+        lateGraceMin: company.settings.lateGraceMin ?? 10,
+      }
+    : null;
+
+  const nowMin = minutesOfDay(new Date());
+  let isOutsideWorkHours = false;
+  let workHoursMessage = null;
+
+  if (workTime) {
+    const startMin = timeToMinutes(workTime.start);
+    const endMin = timeToMinutes(workTime.end);
+    if (nowMin < startMin) {
+      isOutsideWorkHours = true;
+      workHoursMessage = `Office starts at ${workTime.start}. Punch-in is only allowed during working hours (${workTime.start} - ${workTime.end}).`;
+    } else if (nowMin > endMin) {
+      isOutsideWorkHours = true;
+      workHoursMessage = `Office working hours are over for today (${workTime.start} - ${workTime.end}).`;
+    }
+  }
+
   const attendance = await Attendance.findOne({ userId: user._id, date });
   return {
     date,
     attendance,
+    isWeekOff,
+    isSunday: weekday === 0,
+    weekOffDayName,
+    holidayName: holiday ? holiday.name : null,
+    workTime,
+    isOutsideWorkHours,
+    workHoursMessage,
     // lat/lng bhi: staff ke Punch page ka map office aur uski range dikhata hai
     locations: company.locations.map(({ name, lat, lng, radius }) => ({ name, lat, lng, radius })),
-    // Working time ON ho to staff ko office ka time dikhe; warna null
-    workTime: company.settings.workTimeEnabled
-      ? { start: company.settings.workStartTime, end: company.settings.workEndTime, lateGraceMin: company.settings.lateGraceMin }
-      : null,
   };
 }
 

@@ -29,10 +29,10 @@ export const getDefaultApiUrl = () => {
   }
 
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:5000/api/v1';
+    return 'https://payroll-hjsa.onrender.com/api/v1';
   }
 
-  return 'http://localhost:5000/api/v1';
+  return 'https://payroll-hjsa.onrender.com/api/v1';
 };
 
 let currentApiUrl = getDefaultApiUrl();

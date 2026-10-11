@@ -25,6 +25,32 @@
   border-radius: var(--radius-md);
 }
 
+.punch-map__radius-pill {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.punch-map__radius-pill strong {
+  background: var(--color-primary);
+  color: #ffffff;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+}
+
 /* "Recenter": map ke upar-daayein, map khiskane ke baad hi dikhta hai */
 .punch-map__recenter.ant-btn {
   position: absolute;

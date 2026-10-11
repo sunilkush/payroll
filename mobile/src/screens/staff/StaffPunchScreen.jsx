@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getTodayApi, punchInApi, punchOutApi } from '../../api/attendanceApi.js';
@@ -87,6 +88,13 @@ export default function StaffPunchScreen({ navigation }) {
     fetchToday();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchToday();
+      acquireLocation();
+    }, [])
+  );
+
   // Request GPS position via expo-location
   const acquireLocation = async () => {
     try {
@@ -100,9 +108,16 @@ export default function StaffPunchScreen({ navigation }) {
         return null;
       }
 
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
+      let pos;
+      try {
+        pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+      } catch (err) {
+        // Fallback to last known position if indoor GPS fix times out
+        pos = await Location.getLastKnownPositionAsync();
+        if (!pos) throw err;
+      }
 
       const current = {
         lat: pos.coords.latitude,
@@ -115,7 +130,7 @@ export default function StaffPunchScreen({ navigation }) {
       return current;
     } catch (err) {
       setLocationError(err.message || 'Unable to retrieve GPS coordinates.');
-      return null;
+      return location;
     } finally {
       setRefreshingLocation(false);
     }
@@ -141,17 +156,71 @@ export default function StaffPunchScreen({ navigation }) {
   const attendance = todayData?.attendance;
   const isPunchedIn = Boolean(attendance?.punchIn?.time);
   const isPunchedOut = Boolean(attendance?.punchOut?.time);
+  const isSunday = Boolean(todayData?.isSunday);
+  const isWeekOff = Boolean(todayData?.isWeekOff);
+  const weekOffDayName = todayData?.weekOffDayName || (isSunday ? 'Sunday' : 'Weekly Off');
+  const holidayName = todayData?.holidayName;
+  const workTime = todayData?.workTime;
+
+  // Real-time work hours evaluation (start se pehle ya end ke baad punch-in block)
+  const checkWorkHours = useCallback(() => {
+    if (!workTime?.enabled || !workTime?.start || !workTime?.end) {
+      return { isOutside: false, message: '' };
+    }
+    const now = new Date();
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    const [sH, sM] = workTime.start.split(':').map(Number);
+    const [eH, eM] = workTime.end.split(':').map(Number);
+    const startMin = sH * 60 + sM;
+    const endMin = eH * 60 + eM;
+
+    if (currentMin < startMin) {
+      return {
+        isOutside: true,
+        message: `Office starts at ${workTime.start}. Punch-in is only allowed during working hours (${workTime.start} - ${workTime.end}).`,
+      };
+    }
+    if (currentMin > endMin) {
+      return {
+        isOutside: true,
+        message: `Office working hours are over (${workTime.start} - ${workTime.end}). Punch-in is closed for today.`,
+      };
+    }
+    return { isOutside: false, message: '' };
+  }, [workTime]);
+
+  const workHoursStatus = checkWorkHours();
+  const isOutsideWorkHours = !isPunchedIn && workHoursStatus.isOutside;
+  const isOffDay = !isPunchedIn && (isSunday || isWeekOff || Boolean(holidayName));
+  const isPunchBlocked = !isPunchedIn && (isOffDay || isOutsideWorkHours);
+
+  const offDayReason = holidayName
+    ? `Today is a Paid Holiday (${holidayName}). Punch-in is closed.`
+    : isSunday
+    ? 'Today is Sunday (Weekly Off). Staff cannot punch in today.'
+    : isWeekOff
+    ? `Today is ${weekOffDayName} (Weekly Off). Staff cannot punch in today.`
+    : '';
 
   const handlePunch = async () => {
+    if (isPunchBlocked) {
+      setAlertMsg({
+        type: 'warning',
+        text: offDayReason || workHoursStatus.message || 'Punch-in is not allowed at this time.',
+      });
+      return;
+    }
+
     setAlertMsg({ type: 'info', text: '' });
     try {
       setStep('locating');
 
       // Ensure fresh location
       let currentPos = location;
-      const isFresh = location && Date.now() - location.at < 15000;
+      const isFresh = location && Date.now() - location.at < 30000;
       if (!isFresh) {
-        currentPos = await acquireLocation();
+        const freshPos = await acquireLocation();
+        if (freshPos) currentPos = freshPos;
       }
 
       if (!currentPos) {
@@ -234,10 +303,53 @@ export default function StaffPunchScreen({ navigation }) {
             <Badge label="Attendance Complete Today" variant="success" size="md" />
           ) : isPunchedIn ? (
             <Badge label="Active Punched In" variant="primary" size="md" />
+          ) : isOffDay ? (
+            <Badge
+              label={holidayName ? `Holiday: ${holidayName}` : `${weekOffDayName} · Weekly Off`}
+              variant="warning"
+              size="md"
+            />
+          ) : isOutsideWorkHours ? (
+            <Badge
+              label={`Outside Hours (${workTime.start} - ${workTime.end})`}
+              variant="warning"
+              size="md"
+            />
           ) : (
             <Badge label="Not Punched In Today" variant="warning" size="md" />
           )}
         </View>
+
+        {/* Off Day Banner (Sunday / Weekly Off / Holiday) */}
+        {isOffDay ? (
+          <View style={styles.offDayBox}>
+            <MaterialCommunityIcons
+              name={isSunday ? 'calendar-heart' : 'calendar-remove'}
+              size={26}
+              color="#b45309"
+            />
+            <View style={styles.offDayTextContainer}>
+              <Text style={styles.offDayTitle}>
+                {holidayName ? `Holiday: ${holidayName}` : `${weekOffDayName} - Weekly Off`}
+              </Text>
+              <Text style={styles.offDaySubtitle}>{offDayReason}</Text>
+            </View>
+          </View>
+        ) : isOutsideWorkHours ? (
+          <View style={styles.offDayBox}>
+            <MaterialCommunityIcons
+              name="clock-alert-outline"
+              size={26}
+              color="#b45309"
+            />
+            <View style={styles.offDayTextContainer}>
+              <Text style={styles.offDayTitle}>
+                Office Hours: {workTime.start} - {workTime.end}
+              </Text>
+              <Text style={styles.offDaySubtitle}>{workHoursStatus.message}</Text>
+            </View>
+          </View>
+        ) : null}
 
         {alertMsg.text ? (
           <Alert type={alertMsg.type} style={styles.alertSpacing}>
@@ -261,7 +373,13 @@ export default function StaffPunchScreen({ navigation }) {
         {!isPunchedOut ? (
           <Button
             title={
-              step === 'locating'
+              isPunchBlocked
+                ? holidayName
+                  ? 'Punch Disabled (Holiday)'
+                  : isOffDay
+                  ? `Punch Disabled (${weekOffDayName})`
+                  : 'Punch Disabled (Outside Work Hours)'
+                : step === 'locating'
                 ? 'Acquiring GPS...'
                 : step === 'saving'
                 ? 'Saving Attendance...'
@@ -270,13 +388,21 @@ export default function StaffPunchScreen({ navigation }) {
                 : 'Punch In'
             }
             onPress={handlePunch}
-            variant={isPunchedIn ? 'danger' : 'primary'}
+            variant={isPunchedIn ? 'danger' : isPunchBlocked ? 'secondary' : 'primary'}
             size="lg"
             loading={Boolean(step)}
-            disabled={Boolean(step)}
-            icon={isPunchedIn ? 'logout' : 'login'}
+            disabled={Boolean(step) || isPunchBlocked}
+            icon={
+              isOutsideWorkHours
+                ? 'clock-alert-outline'
+                : isOffDay
+                ? 'calendar-remove'
+                : isPunchedIn
+                ? 'logout'
+                : 'login'
+            }
             iconPlacement="start"
-            style={styles.bigPunchBtn}
+            style={[styles.bigPunchBtn, isPunchBlocked && styles.disabledOffDayBtn]}
           />
         ) : (
           <View style={styles.dayCompleteBox}>
@@ -413,6 +539,37 @@ const styles = StyleSheet.create({
   bigPunchBtn: {
     width: '100%',
     marginVertical: 8,
+  },
+  disabledOffDayBtn: {
+    opacity: 0.75,
+    backgroundColor: '#e2e8f0',
+  },
+  offDayBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbeb',
+    borderColor: '#fde68a',
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    width: '100%',
+    marginVertical: 10,
+  },
+  offDayTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  offDayTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: '#b45309',
+  },
+  offDaySubtitle: {
+    fontSize: typography.sizes.xs,
+    color: '#92400e',
+    marginTop: 2,
+    lineHeight: 16,
   },
   dayCompleteBox: {
     flexDirection: 'row',

@@ -62,15 +62,21 @@ export default function PunchMap({ locations, position, recenterKey }) {
     const bounds = L.latLngBounds([]);
     for (const location of locations) {
       const center = L.latLng(location.lat, location.lng);
-      L.circle(center, { radius: location.radius, ...rangeCircleStyle() }).addTo(map);
+      const circle = L.circle(center, { radius: location.radius, ...rangeCircleStyle() }).addTo(map);
+      circle.bindTooltip(`${location.radius}m allowed radius`, {
+        permanent: false,
+        direction: 'bottom',
+        offset: [0, 10],
+        className: 'punch-map__label',
+      });
       L.marker(center, { icon: OFFICE_PIN, interactive: false }).addTo(map).bindTooltip(`${location.name} · ${location.radius}m range`, {
         permanent: true,
         direction: 'top',
         offset: [0, -28],
         className: 'punch-map__label',
       });
-      // Gole ko gherne wala chaukor (vyas = radius x 2), map ke view par nirbhar nahi
-      bounds.extend(center.toBounds(location.radius * 2));
+      // Gole ko gherne wala chaukor (radius ke hisaab se poora circle cover kare)
+      bounds.extend(circle.getBounds());
     }
     officeBoundsRef.current = bounds;
     mapRef.current = map;
@@ -128,6 +134,12 @@ export default function PunchMap({ locations, position, recenterKey }) {
     <div className="punch-map">
       <div className="punch-map__frame">
         <div ref={containerRef} className="punch-map__canvas" role="application" aria-label="Map of office location and your position" />
+        {locations?.[0]?.radius && (
+          <div className="punch-map__radius-pill">
+            <span>🎯 Allowed Radius:</span>
+            <strong>{locations[0].radius}m</strong>
+          </div>
+        )}
         {moved && (
           <Button size="small" className="punch-map__recenter" icon={<AimOutlined />} onClick={recenter}>
             Recenter

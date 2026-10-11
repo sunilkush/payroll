@@ -14,10 +14,11 @@ export function nearestOffice(locations = [], position) {
   if (!position || !locations.length) return null;
   let best = null;
   for (const location of locations) {
+    const radius = Math.max(10, Math.round(Number(location.radius) || 100));
     const distance = Math.round(distanceInMeters(position, location));
-    const inside = distance <= location.radius;
+    const inside = distance <= radius;
     const better = !best || (inside && !best.inside) || (inside === best.inside && distance < best.distance);
-    if (better) best = { location, distance, inside };
+    if (better) best = { location: { ...location, radius }, distance, inside };
   }
   return best;
 }

@@ -12,6 +12,37 @@
   color: var(--color-danger);
 }
 
+.location-map__frame {
+  position: relative;
+  width: 100%;
+}
+
+.location-map__radius-pill {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full, 999px);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.location-map__radius-pill strong {
+  background: var(--color-primary, #2563eb);
+  color: #ffffff;
+  padding: 1px 7px;
+  border-radius: var(--radius-full, 999px);
+  font-weight: 700;
+}
+
 /* Mobile: thoda chhota taaki map ke upar-neeche page scroll karne ki jagah rahe. Tablet se: bada. */
 .location-map__canvas {
   width: 100%;
@@ -39,4 +70,19 @@
   .location-map__canvas {
     height: 340px;
   }
+}
+
+.location-map__circle-label.leaflet-tooltip {
+  background: var(--color-primary, #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  padding: 2px 8px !important;
+}
+
+.location-map__circle-label.leaflet-tooltip::before {
+  border-top-color: var(--color-primary, #2563eb) !important;
 }

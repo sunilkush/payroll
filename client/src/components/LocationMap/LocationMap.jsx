@@ -74,14 +74,28 @@ export default function LocationMap({ lat, lng, radius, onPick, hint }) {
 
     if (!markerRef.current) {
       const marker = L.marker(position, { draggable: true, icon: OFFICE_PIN }).addTo(map);
+      marker.on('drag', () => {
+        const point = marker.getLatLng();
+        if (circleRef.current) circleRef.current.setLatLng(point);
+      });
       marker.on('dragend', () => {
         const point = marker.getLatLng();
+        if (circleRef.current) circleRef.current.setLatLng(point);
         onPickRef.current(point.lat, point.lng);
       });
       markerRef.current = marker;
-      circleRef.current = L.circle(position, { radius: meters, ...rangeCircleStyle() }).addTo(map);
-      // Pehli baar: itna zoom ki poora gola dikhe
-      if (meters) map.fitBounds(circleRef.current.getBounds(), { maxZoom: PIN_ZOOM, padding: [24, 24] });
+      const circle = L.circle(position, { radius: meters, ...rangeCircleStyle() }).addTo(map);
+      if (meters > 0) {
+        circle.bindTooltip(`${meters}m Allowed Radius`, {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'location-map__circle-label',
+        });
+      }
+      circleRef.current = circle;
+      // Itna zoom ki poora area circle (radius) saaf dikhe
+      if (meters > 0) map.fitBounds(circle.getBounds(), { maxZoom: PIN_ZOOM, padding: [24, 24] });
       else map.setView(position, PIN_ZOOM);
       return;
     }
@@ -89,7 +103,21 @@ export default function LocationMap({ lat, lng, radius, onPick, hint }) {
     markerRef.current.setLatLng(position);
     circleRef.current.setLatLng(position);
     circleRef.current.setRadius(meters);
-    if (!map.getBounds().contains(position)) map.setView(position, Math.max(map.getZoom(), PIN_ZOOM));
+    if (meters > 0) {
+      if (circleRef.current.getTooltip()) {
+        circleRef.current.setTooltipContent(`${meters}m Allowed Radius`);
+      } else {
+        circleRef.current.bindTooltip(`${meters}m Allowed Radius`, {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'location-map__circle-label',
+        });
+      }
+      map.fitBounds(circleRef.current.getBounds(), { maxZoom: PIN_ZOOM, padding: [24, 24] });
+    } else {
+      map.setView(position, PIN_ZOOM);
+    }
   }, [lat, lng, radius]);
 
   const handleSearch = async (text) => {
@@ -126,7 +154,15 @@ export default function LocationMap({ lat, lng, radius, onPick, hint }) {
         onPressEnter={(event) => event.preventDefault()}
       />
       {searchError && <p className="location-map__error">{searchError}</p>}
-      <div ref={containerRef} className="location-map__canvas" role="application" aria-label="Office location map" />
+      <div className="location-map__frame">
+        <div ref={containerRef} className="location-map__canvas" role="application" aria-label="Office location map" />
+        {Number(radius) > 0 && (
+          <div className="location-map__radius-pill">
+            <span>🎯 Office Radius:</span>
+            <strong>{radius}m</strong>
+          </div>
+        )}
+      </div>
       <p className="location-map__hint">
         {hint ??
           'Click the map or drag the pin to set the office location. Staff can punch only inside the dashed circle (the radius above).'}{' '}

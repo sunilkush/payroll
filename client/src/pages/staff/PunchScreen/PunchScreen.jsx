@@ -71,6 +71,9 @@ export default function PunchScreen() {
     setRefreshing(true);
     setPositionError('');
     setRefreshCount((count) => count + 1);
+    getTodayApi()
+      .then((res) => setToday(res.data))
+      .catch(() => {});
   };
 
   // Map sirf un offices ka jinke coordinates mile hain (backend purana chal raha ho to nahi milte)
@@ -82,14 +85,59 @@ export default function PunchScreen() {
   if (loadError) return <Alert>{loadError}</Alert>;
   if (!today) return <Loader />;
 
-  const { attendance, locations } = today;
+  const { attendance, locations, isSunday, isWeekOff, weekOffDayName, holidayName, workTime } = today;
   const punchedIn = Boolean(attendance);
   const punchedOut = Boolean(attendance?.punchOut);
   const noLocation = locations.length === 0;
+
+  const displayWeekOffName = weekOffDayName || (isSunday ? 'Sunday' : 'Weekly Off');
+  const isOffDay = !punchedIn && (isSunday || isWeekOff || Boolean(holidayName));
+
+  const checkWorkHours = () => {
+    if (!workTime?.enabled || !workTime?.start || !workTime?.end) {
+      return { isOutside: false, message: '' };
+    }
+    const now = new Date();
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    const [sH, sM] = workTime.start.split(':').map(Number);
+    const [eH, eM] = workTime.end.split(':').map(Number);
+    const startMin = sH * 60 + sM;
+    const endMin = eH * 60 + eM;
+
+    if (currentMin < startMin) {
+      return {
+        isOutside: true,
+        message: `Office starts at ${workTime.start}. Punch-in is only allowed during working hours (${workTime.start} - ${workTime.end}).`,
+      };
+    }
+    if (currentMin > endMin) {
+      return {
+        isOutside: true,
+        message: `Office working hours are over (${workTime.start} - ${workTime.end}). Punch-in is closed for today.`,
+      };
+    }
+    return { isOutside: false, message: '' };
+  };
+
+  const workHoursStatus = checkWorkHours();
+  const outsideHours = !punchedIn && workHoursStatus.isOutside;
+  const isPunchBlocked = !punchedIn && (isOffDay || outsideHours);
+
+  const offDayReason = holidayName
+    ? `Today is a Paid Holiday (${holidayName}). Punch-in is not allowed.`
+    : isOffDay
+    ? `Today is ${displayWeekOffName} (Weekly Off). Punch-in is not allowed.`
+    : '';
+
   // Sirf dikhane ke liye; punch ho sakta hai ya nahi, ye server tay karta hai
   const nearest = position && mappable.length ? nearestOffice(mappable, position) : null;
 
   const handlePunch = async () => {
+    if (isPunchBlocked) {
+      setMessage({ type: 'error', text: offDayReason || workHoursStatus.message || 'Punch-in is not allowed at this time.' });
+      return;
+    }
+
     setMessage({ type: 'success', text: '' });
     try {
       setStep('locating');
@@ -114,8 +162,10 @@ export default function PunchScreen() {
   if (step === 'saving') buttonLabel = 'Saving...';
 
   let status = 'Not punched in today';
-  if (punchedIn) status = `Punch in: ${attendance.punchIn.locationName ?? 'Office'}`;
-  if (punchedOut) status = 'Attendance complete for today';
+  if (isOffDay) status = holidayName ? `Holiday: ${holidayName}` : `${displayWeekOffName} (Weekly Off)`;
+  else if (outsideHours) status = `Outside Hours (${workTime.start} - ${workTime.end})`;
+  else if (punchedIn) status = `Punch in: ${attendance.punchIn.locationName ?? 'Office'}`;
+  else if (punchedOut) status = 'Attendance complete for today';
 
   return (
     <section className="punch-screen">
@@ -128,6 +178,22 @@ export default function PunchScreen() {
         </p>
         <Clock />
         <p className={`punch-screen__status${punchedIn ? ' punch-screen__status--in' : ''}`}>{status}</p>
+
+        {isOffDay && (
+          <div style={{ marginBottom: 12 }}>
+            <Alert tone="warning">
+              {offDayReason}
+            </Alert>
+          </div>
+        )}
+
+        {outsideHours && !isOffDay && (
+          <div style={{ marginBottom: 12 }}>
+            <Alert tone="warning">
+              {workHoursStatus.message}
+            </Alert>
+          </div>
+        )}
 
         <Alert type={message.type}>{message.text}</Alert>
 
@@ -175,14 +241,20 @@ export default function PunchScreen() {
          {!punchedOut && (
           <Button
             block
-            type="primary"
+            type={isPunchBlocked ? 'default' : 'primary'}
             danger={punchedIn}
             className={`punch-screen__button punch-screen__button--${punchedIn ? 'out' : 'in'}`}
             loading={Boolean(step)}
-            disabled={noLocation}
+            disabled={noLocation || isPunchBlocked}
             onClick={handlePunch}
           >
-            {buttonLabel}
+            {isPunchBlocked
+              ? holidayName
+                ? 'Punch Disabled (Holiday)'
+                : isOffDay
+                ? `Punch Disabled (${displayWeekOffName})`
+                : 'Punch Disabled (Outside Working Hours)'
+              : buttonLabel}
           </Button>
         )}
         <div className="punch-screen__times">

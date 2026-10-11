@@ -232,6 +232,35 @@ export default function PunchGeofenceMap({
             border-radius: 8px !important;
             overflow: hidden;
           }
+          .office-pin-tooltip {
+            background: #0F172A !important;
+            color: #FFFFFF !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            border-radius: 6px !important;
+            padding: 3px 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+          }
+          .office-pin-tooltip::before {
+            border-top-color: #0F172A !important;
+          }
+          .geofence-tooltip {
+            background: #2563EB !important;
+            color: #FFFFFF !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            border-radius: 6px !important;
+            padding: 3px 8px !important;
+            border: none !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+            white-space: nowrap !important;
+          }
+          .geofence-tooltip::before {
+            border-bottom-color: #2563EB !important;
+          }
         </style>
       </head>
       <body>
@@ -249,7 +278,7 @@ export default function PunchGeofenceMap({
           var map = L.map('map', {
             zoomControl: false,
             attributionControl: false
-          });
+          }).setView([officeLat, officeLng], 16);
 
           // Free OpenStreetMap Standard Tiles
           L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -276,19 +305,34 @@ export default function PunchGeofenceMap({
             });
           }
 
-          // Office Pin
+          // Office Pin with Admin Set Radius Tooltip
           var officeMarker = L.marker([officeLat, officeLng], {
             icon: getOfficeIcon(isInside)
-          }).addTo(map).bindPopup('<b>' + officeName + '</b><br>Geofence: ' + officeRadius + 'm');
+          }).addTo(map);
 
-          // Office Geofence Circle
+          officeMarker.bindTooltip('<b>' + officeName + '</b><br><span>Radius: ' + officeRadius + 'm</span>', {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -36],
+            className: 'office-pin-tooltip'
+          });
+
+          // Office Geofence Circle with Radius Tooltip
           var circle = L.circle([officeLat, officeLng], {
             radius: officeRadius,
-            color: isInside ? '#10B981' : '#EF4444',
-            fillColor: isInside ? '#10B981' : '#EF4444',
-            fillOpacity: isInside ? 0.22 : 0.14,
-            weight: 2
+            color: isInside ? '#10B981' : '#2563EB',
+            fillColor: isInside ? '#10B981' : '#3B82F6',
+            fillOpacity: isInside ? 0.22 : 0.18,
+            weight: 2,
+            dashArray: '6, 6'
           }).addTo(map);
+
+          circle.bindTooltip('🎯 Geofence Area: ' + officeRadius + 'm', {
+            permanent: true,
+            direction: 'bottom',
+            offset: [0, 16],
+            className: 'geofence-tooltip'
+          });
 
           // Extra Branches
           if (Array.isArray(extraBranches)) {
@@ -301,13 +345,33 @@ export default function PunchGeofenceMap({
               });
               L.marker([b.lat, b.lng], { icon: branchIcon })
                 .addTo(map)
-                .bindPopup('<b>' + b.name + '</b>');
+                .bindPopup('<b>' + b.name + '</b><br>Geofence: ' + b.radius + 'm');
+              L.circle([b.lat, b.lng], {
+                radius: b.radius,
+                color: '#64748B',
+                fillColor: '#64748B',
+                fillOpacity: 0.12,
+                weight: 1.5,
+                dashArray: '4, 4'
+              }).addTo(map);
             });
           }
 
           // User Marker & Polyline
           var userMarker = null;
           var distanceLine = null;
+
+          function fitAll() {
+            try {
+              if (circle && typeof circle.getBounds === 'function') {
+                var bounds = circle.getBounds();
+                if (userMarker) {
+                  bounds.extend(userMarker.getLatLng());
+                }
+                map.fitBounds(bounds.pad(0.18), { maxZoom: 18, animate: true });
+              }
+            } catch (err) {}
+          }
 
           if (userLat !== null && userLng !== null) {
             userMarker = L.marker([userLat, userLng], {
@@ -319,25 +383,24 @@ export default function PunchGeofenceMap({
               weight: 2,
               dashArray: '5, 5'
             }).addTo(map);
-
-            var group = new L.featureGroup([officeMarker, userMarker]);
-            map.fitBounds(group.getBounds().pad(0.35));
-          } else {
-            map.setView([officeLat, officeLng], 16);
           }
 
+          setTimeout(function() {
+            try {
+              map.invalidateSize();
+              fitAll();
+            } catch (err) {}
+          }, 200);
+
           window.fitBoth = function() {
-            if (userMarker) {
-              var group = new L.featureGroup([officeMarker, userMarker]);
-              map.fitBounds(group.getBounds().pad(0.35), { animate: true });
-            } else {
-              map.setView([officeLat, officeLng], 16, { animate: true });
-            }
+            fitAll();
           };
 
           window.centerOnUser = function() {
             if (userMarker) {
               map.setView(userMarker.getLatLng(), 17, { animate: true });
+            } else if (circle) {
+              map.fitBounds(circle.getBounds().pad(0.2), { animate: true });
             } else {
               map.setView([officeLat, officeLng], 16, { animate: true });
             }
@@ -351,13 +414,19 @@ export default function PunchGeofenceMap({
 
             officeMarker.setLatLng([officeLat, officeLng]);
             officeMarker.setIcon(getOfficeIcon(isInside));
+            if (officeMarker.setTooltipContent) {
+              officeMarker.setTooltipContent('<b>' + officeName + '</b><br><span>Radius: ' + officeRadius + 'm</span>');
+            }
 
             circle.setLatLng([officeLat, officeLng]);
             circle.setRadius(officeRadius);
+            if (circle.setTooltipContent) {
+              circle.setTooltipContent('🎯 Geofence Area: ' + officeRadius + 'm');
+            }
             circle.setStyle({
-              color: isInside ? '#10B981' : '#EF4444',
-              fillColor: isInside ? '#10B981' : '#EF4444',
-              fillOpacity: isInside ? 0.22 : 0.14
+              color: isInside ? '#10B981' : '#2563EB',
+              fillColor: isInside ? '#10B981' : '#3B82F6',
+              fillOpacity: isInside ? 0.22 : 0.18
             });
 
             var parsedULat = parseFloat(nUserLat);
@@ -385,10 +454,9 @@ export default function PunchGeofenceMap({
                   color: isInside ? '#10B981' : '#64748B'
                 });
               }
-
-              var grp = new L.featureGroup([officeMarker, userMarker]);
-              map.fitBounds(grp.getBounds().pad(0.35), { animate: true });
             }
+
+            fitAll();
           };
         </script>
       </body>
@@ -530,7 +598,29 @@ export default function PunchGeofenceMap({
             ref={webViewRef}
             originWhitelist={['*']}
             source={{ html: leafletHtml }}
-            onLoadEnd={() => setMapLoaded(true)}
+            onLoadEnd={() => {
+              setMapLoaded(true);
+              if (webViewRef.current) {
+                const script = `
+                  if (typeof updateLivePositions === 'function') {
+                    updateLivePositions(
+                      ${userLat !== null ? userLat : 'null'},
+                      ${userLng !== null ? userLng : 'null'},
+                      ${Boolean(isInside)},
+                      ${officeLat},
+                      ${officeLng},
+                      ${officeRadius}
+                    );
+                  }
+                  true;
+                `;
+                webViewRef.current.injectJavaScript(script);
+              }
+            }}
+            onError={(e) => {
+              console.warn('WebView error:', e.nativeEvent);
+              setMapLoaded(true);
+            }}
             style={styles.map}
             javaScriptEnabled={true}
             domStorageEnabled={true}
@@ -542,6 +632,15 @@ export default function PunchGeofenceMap({
               </View>
             )}
           />
+
+          {/* Floating Admin-Set Radius Badge right on top-left of the Map */}
+          <View style={styles.radiusFloatPill}>
+            <MaterialCommunityIcons name="radar" size={14} color="#2563EB" />
+            <Text style={styles.radiusFloatLabel}>Admin Set Radius:</Text>
+            <View style={styles.radiusFloatBadge}>
+              <Text style={styles.radiusFloatBadgeText}>{officeRadius}m</Text>
+            </View>
+          </View>
 
           {/* Free OpenStreetMap Provider Badge */}
           <View style={styles.providerBadge}>
@@ -664,6 +763,39 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  radiusFloatPill: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingLeft: 8,
+    paddingRight: 4,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    ...shadows.sm,
+    zIndex: 10,
+  },
+  radiusFloatLabel: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#1E293B',
+  },
+  radiusFloatBadge: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: borderRadius.pill,
+  },
+  radiusFloatBadgeText: {
+    fontSize: 11,
+    fontWeight: typography.weights.bold,
+    color: '#FFFFFF',
   },
   providerBadgeText: {
     fontSize: 9,
