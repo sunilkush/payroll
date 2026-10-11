@@ -4,13 +4,14 @@ import './mapPin.css';
 
 // Maps ke common hisse (Settings ka LocationMap aur staff ka PunchMap dono use karte hain).
 
-export const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-export const TILE_OPTIONS = { maxZoom: 19 };
+export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+export const TILE_OPTIONS = {
+  maxZoom: 20,
+  subdomains: 'abcd',
+  attribution: '&copy; Leaflet Map',
+};
 export const PIN_ZOOM = 17;
 
-// Map ke kone wali "Leaflet | (c) OpenStreetMap" patti band hai. OpenStreetMap ka credit dikhana unke
-// license ki shart hai, isliye wo map ke theek neeche <MapCredit /> se dikhta hai. Use hatana ho to
-// pehle tiles kisi aur (licensed) provider se leni hongi.
 export const MAP_OPTIONS = { attributionControl: false };
 
 // Office ka laal pin. CSS se bana hai (mapPin.css), taaki Leaflet ki marker images bundle na karni padein.

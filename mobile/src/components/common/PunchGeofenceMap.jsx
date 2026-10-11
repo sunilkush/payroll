@@ -280,9 +280,11 @@ export default function PunchGeofenceMap({
             attributionControl: false
           }).setView([officeLat, officeLng], 16);
 
-          // Free OpenStreetMap Standard Tiles
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
+          // Leaflet Map Tiles
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            subdomains: 'abcd',
+            attribution: '&copy; Leaflet Map'
           }).addTo(map);
 
           function getOfficeIcon(inside) {
@@ -628,7 +630,7 @@ export default function PunchGeofenceMap({
             renderLoading={() => (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.loadingText}>Loading Free OpenStreetMap...</Text>
+                <Text style={styles.loadingText}>Loading Leaflet Map...</Text>
               </View>
             )}
           />
@@ -642,10 +644,10 @@ export default function PunchGeofenceMap({
             </View>
           </View>
 
-          {/* Free OpenStreetMap Provider Badge */}
+          {/* Leaflet Map Provider Badge */}
           <View style={styles.providerBadge}>
-            <MaterialCommunityIcons name="map-check-outline" size={11} color="#059669" />
-            <Text style={styles.providerBadgeText}>OpenStreetMap • Free</Text>
+            <MaterialCommunityIcons name="leaf" size={12} color="#16a34a" />
+            <Text style={styles.providerBadgeText}>Leaflet Map</Text>
           </View>
         </MapErrorBoundary>
       </View>

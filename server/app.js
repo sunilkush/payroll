@@ -41,7 +41,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         // blob: sales manager ki upload ki hui QR photo (scanner use browser mein hi padhta hai)
-        'img-src': ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org'],
+        'img-src': ["'self'", 'data:', 'blob:', 'https://*.basemaps.cartocdn.com', 'https://*.tile.openstreetmap.org'],
         'connect-src': ["'self'", 'https://nominatim.openstreetmap.org'],
         // QR scanner camera ki tasveer ek worker mein padhta hai, jo blob: se banta hai
         'worker-src': ["'self'", 'blob:'],

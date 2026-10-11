@@ -108,7 +108,7 @@ export default function LocationPickerMap({
           webViewRef.current.injectJavaScript(script);
         }
       } else {
-        setSearchError('Address not found on OpenStreetMap. Try searching a city, landmark or tap on the map.');
+        setSearchError('Address not found. Try searching a city, landmark or tap on the map.');
       }
     } catch (err) {
       setSearchError('Search failed. Please tap directly on the map or use phone GPS.');
@@ -277,9 +277,11 @@ export default function LocationPickerMap({
             attributionControl: false
           }).setView([lat, lng], 16);
 
-          // Free OpenStreetMap Tile Layer (No API Key Required)
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
+          // Leaflet Map Tiles
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            subdomains: 'abcd',
+            attribution: '&copy; Leaflet Map'
           }).addTo(map);
 
           var officeIcon = L.divIcon({
@@ -460,7 +462,7 @@ export default function LocationPickerMap({
           renderLoading={() => (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Loading Free OpenStreetMap...</Text>
+              <Text style={styles.loadingText}>Loading Leaflet Map...</Text>
             </View>
           )}
         />
@@ -491,10 +493,10 @@ export default function LocationPickerMap({
           </Text>
         </TouchableOpacity>
 
-        {/* Free Map Provider Badge */}
+        {/* Leaflet Map Provider Badge */}
         <View style={styles.providerBadge}>
-          <MaterialCommunityIcons name="map-check-outline" size={12} color="#059669" />
-          <Text style={styles.providerBadgeText}>OpenStreetMap • 100% Free</Text>
+          <MaterialCommunityIcons name="leaf" size={12} color="#16a34a" />
+          <Text style={styles.providerBadgeText}>Leaflet Map</Text>
         </View>
       </View>
 

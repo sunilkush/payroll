@@ -1,14 +1,13 @@
 import './mapPin.css';
 
-// OpenStreetMap ka credit (license ki shart). Map ke upar ki patti ki jagah map ke neeche chhoti line.
+// Leaflet Map credit
 export default function MapCredit() {
   return (
     <span className="map-credit">
-      Map data ©{' '}
-      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
-        OpenStreetMap
-      </a>{' '}
-      contributors
+      Powered by{' '}
+      <a href="https://leafletjs.com/" target="_blank" rel="noreferrer">
+        Leaflet Map
+      </a>
     </span>
   );
 }
