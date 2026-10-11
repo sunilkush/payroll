@@ -113,30 +113,208 @@
   background: var(--color-success);
 }
 
-.punch-screen__times {
+.punch-screen__status-tag-row {
+  margin-bottom: var(--space-2);
+}
+
+/* ---------- Live Timer Card ---------- */
+.punch-screen__timer-card {
+  margin: var(--space-2) 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-lg, 12px);
+  color: #f8fafc;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.punch-screen__timer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.punch-screen__timer-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs, 11px);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+}
+
+.punch-screen__pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.punch-screen__pulse-dot--active {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: timer-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.punch-screen__timer-display {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  color: #f8fafc;
+  line-height: 1.15;
+  margin: var(--space-1) 0;
+}
+
+.punch-screen__timer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid #334155;
+  padding-top: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.punch-screen__timer-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.punch-screen__timer-meta-label {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.punch-screen__timer-meta-val {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+}
+
+.punch-screen__goal-met {
+  color: #22c55e !important;
+}
+
+.punch-screen__timer-meta-divider {
+  width: 1px;
+  height: 24px;
+  background: #334155;
+}
+
+/* ---------- Metrics Grid ---------- */
+.punch-screen__metrics-grid {
   display: grid;
-  flex-shrink: 0;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
-.punch-screen__time.ant-card {
-  background: var(--color-bg);
-  box-shadow: none;
-}
-
-.punch-screen__time .ant-card-body {
+.punch-screen__metric-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
+  background: var(--color-bg, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  text-align: left;
 }
 
-.punch-screen__time .ant-statistic-title {
-  margin-bottom: 0;
-  font-size: var(--font-size-xs);
+.punch-screen__metric-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 16px;
 }
 
-.punch-screen__time .ant-statistic-content {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
+.punch-screen__metric-icon--in { background: #dcfce7; color: #16a34a; }
+.punch-screen__metric-icon--out { background: #fee2e2; color: #dc2626; }
+.punch-screen__metric-icon--break { background: #fef3c7; color: #d97706; }
+.punch-screen__metric-icon--events { background: #e0f2fe; color: #0284c7; }
+
+.punch-screen__metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.punch-screen__metric-lbl {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+}
+
+.punch-screen__metric-value {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+/* ---------- Timeline Activity ---------- */
+.punch-screen__timeline-wrap {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  text-align: left;
+}
+
+.punch-screen__timeline-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin-bottom: var(--space-2);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.punch-screen__timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.punch-screen__timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.punch-screen__timeline-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.punch-screen__timeline-badge--in { background: #dcfce7; color: #166534; }
+.punch-screen__timeline-badge--out { background: #fee2e2; color: #991b1b; }
+
+.punch-screen__timeline-time {
+  font-weight: 700;
+  color: var(--color-primary, #2563eb);
+}
+
+.punch-screen__timeline-loc {
+  color: var(--color-text-muted, #64748b);
+  margin-left: auto;
+  font-size: 11px;
 }
 
 /* Tablet se: card beech mein, thoda chauda */
@@ -146,6 +324,8 @@
     max-width: 640px;
     margin-right: auto;
     margin-left: auto;
+    height: auto;
+    min-height: 0;
   }
 
   .punch-screen__card > .ant-card-body {
@@ -160,6 +340,6 @@
 /* Desktop: top bar ooncha hai aur content ke upar ka gap bada (AppLayout.css) */
 @media (min-width: 992px) {
   .punch-screen {
-    height: calc(100dvh - var(--navbar-height-desktop) - var(--space-6) - var(--space-4));
+    height: auto;
   }
 }

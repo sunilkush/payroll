@@ -42,6 +42,10 @@ const toForm = (company) => ({
   workTimeEnabled: company.settings.workTimeEnabled,
   workStartTime: company.settings.workStartTime,
   workEndTime: company.settings.workEndTime,
+  requiredWorkMinutes: String(company.settings.requiredWorkMinutes ?? 510),
+  halfDayCutoffTime: company.settings.halfDayCutoffTime ?? '16:30',
+  halfDayMinMinutes: String(company.settings.halfDayMinMinutes ?? 255),
+  lunchBreakMinutes: String(company.settings.lunchBreakMinutes ?? 30),
   lateGraceMin: String(company.settings.lateGraceMin),
   salesEnabled: company.settings.salesEnabled,
   requireVisitPhoto: company.settings.requireVisitPhoto,
@@ -73,6 +77,10 @@ const toPayload = (form) => ({
     workTimeEnabled: form.workTimeEnabled,
     workStartTime: form.workStartTime,
     workEndTime: form.workEndTime,
+    requiredWorkMinutes: toNumber(form.requiredWorkMinutes),
+    halfDayCutoffTime: form.halfDayCutoffTime,
+    halfDayMinMinutes: toNumber(form.halfDayMinMinutes),
+    lunchBreakMinutes: toNumber(form.lunchBreakMinutes),
     lateGraceMin: toNumber(form.lateGraceMin),
     salesEnabled: form.salesEnabled,
     requireVisitPhoto: form.requireVisitPhoto,
@@ -375,6 +383,52 @@ export default function Settings() {
                 // AM / PM na chuna ho to picker AM maanta hai; start se pehle ho to dopahar ka maan lo
                 onChange={(event) => setField('workEndTime', endAfter(form.workStartTime, event.target.value))}
                 error={fieldErrors['settings.workEndTime']}
+                required
+              />
+              <FormField
+                label="Required working duration (minutes)"
+                name="requiredWorkMinutes"
+                type="number"
+                min="60"
+                max="1440"
+                value={form.requiredWorkMinutes}
+                onChange={(event) => setField('requiredWorkMinutes', event.target.value)}
+                error={fieldErrors['settings.requiredWorkMinutes']}
+                hint="Default: 510 minutes (8 hours 30 minutes net working time)."
+                required
+              />
+              <FormField
+                label="Half-day eligibility cutoff"
+                name="halfDayCutoffTime"
+                type="time"
+                value={form.halfDayCutoffTime}
+                onChange={(event) => setField('halfDayCutoffTime', event.target.value)}
+                error={fieldErrors['settings.halfDayCutoffTime']}
+                hint="Default: 16:30 (4:30 PM). If left before completing required hours."
+                required
+              />
+              <FormField
+                label="Half-day minimum duration (minutes)"
+                name="halfDayMinMinutes"
+                type="number"
+                min="0"
+                max="1440"
+                value={form.halfDayMinMinutes}
+                onChange={(event) => setField('halfDayMinMinutes', event.target.value)}
+                error={fieldErrors['settings.halfDayMinMinutes']}
+                hint="Default: 255 minutes (4 hours 15 minutes minimum work)."
+                required
+              />
+              <FormField
+                label="Lunch break (minutes)"
+                name="lunchBreakMinutes"
+                type="number"
+                min="0"
+                max="180"
+                value={form.lunchBreakMinutes}
+                onChange={(event) => setField('lunchBreakMinutes', event.target.value)}
+                error={fieldErrors['settings.lunchBreakMinutes']}
+                hint="Default: 30 minutes, excluded from working hours."
                 required
               />
               <FormField

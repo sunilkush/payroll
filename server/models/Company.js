@@ -55,6 +55,14 @@ const companySchema = new mongoose.Schema(
       workTimeEnabled: { type: Boolean, default: false },
       workStartTime: { type: String, default: '09:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
       workEndTime: { type: String, default: '18:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+      // Net required working minutes for full-day (default 8h 30m = 510 minutes)
+      requiredWorkMinutes: { type: Number, default: 510, min: 60 },
+      // Half-day cutoff time (default 16:30 = 4:30 PM)
+      halfDayCutoffTime: { type: String, default: '16:30', match: /^([01]\d|2[0-3]):[0-5]\d$/ },
+      // Minimum worked minutes required for half-day eligibility (default 255 = 4h 15m)
+      halfDayMinMinutes: { type: Number, default: 255, min: 0 },
+      // Lunch break duration in minutes (default 30, excluded from working hours)
+      lunchBreakMinutes: { type: Number, default: 30, min: 0 },
       // Start ke itne minute baad tak punch in "late" nahi ginta.
       lateGraceMin: { type: Number, default: 10, min: 0 },
       // Sales meetings module ON/OFF (client visit, QR + geofence check-in).

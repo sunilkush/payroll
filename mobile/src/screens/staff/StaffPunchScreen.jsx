@@ -39,6 +39,76 @@ function LiveClock() {
   );
 }
 
+function LiveWorkingTimer({ isWorking, baseMinutes = 0, lastInTime, requiredMinutes = 510 }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isWorking) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [isWorking]);
+
+  const openSeconds = isWorking && lastInTime
+    ? Math.max(0, Math.floor((now - new Date(lastInTime).getTime()) / 1000))
+    : 0;
+
+  const totalWorkedSeconds = baseMinutes * 60 + openSeconds;
+  const requiredSeconds = requiredMinutes * 60;
+  const remainingSeconds = Math.max(0, requiredSeconds - totalWorkedSeconds);
+
+  const pad = (n) => String(Math.floor(n)).padStart(2, '0');
+  const formatSecs = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+  };
+
+  const reqH = pad(Math.floor(requiredMinutes / 60));
+  const reqM = pad(requiredMinutes % 60);
+
+  return (
+    <View style={styles.liveTimerContainer}>
+      <View style={styles.liveTimerHeader}>
+        <View style={styles.liveIndicatorRow}>
+          {isWorking ? (
+            <View style={styles.livePulseDot} />
+          ) : (
+            <View style={[styles.livePulseDot, { backgroundColor: '#94a3b8' }]} />
+          )}
+          <Text style={styles.liveTimerTitle}>
+            {isWorking ? 'NET WORKING TIME (LIVE)' : 'ACCUMULATED WORK TIME'}
+          </Text>
+        </View>
+        <Text style={styles.liveStatusTag}>
+          {isWorking ? 'IN OFFICE' : 'ON BREAK / OUT'}
+        </Text>
+      </View>
+
+      <Text style={styles.liveTimerDisplay}>{formatSecs(totalWorkedSeconds)}</Text>
+
+      <View style={styles.liveTimerStatsRow}>
+        <View style={styles.liveStatBox}>
+          <Text style={styles.liveStatLabel}>Required Goal</Text>
+          <Text style={styles.liveStatVal}>{reqH}:{reqM}:00</Text>
+        </View>
+        <View style={styles.liveStatDivider} />
+        <View style={styles.liveStatBox}>
+          <Text style={styles.liveStatLabel}>Remaining</Text>
+          <Text
+            style={[
+              styles.liveStatVal,
+              { color: remainingSeconds === 0 ? colors.success : '#d97706' },
+            ]}
+          >
+            {remainingSeconds === 0 ? 'Goal Met!' : formatSecs(remainingSeconds)}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function StaffPunchScreen({ navigation }) {
   const [todayData, setTodayData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,26 +120,6 @@ export default function StaffPunchScreen({ navigation }) {
   const [locationError, setLocationError] = useState('');
   const [refreshingLocation, setRefreshingLocation] = useState(false);
   const [step, setStep] = useState(null); // null | 'locating' | 'saving'
-
-  // Pulse animation for radar
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.15,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [pulseAnim]);
 
   // Load today's attendance & company branches
   const fetchToday = async () => {
@@ -114,7 +164,6 @@ export default function StaffPunchScreen({ navigation }) {
           accuracy: Location.Accuracy.High,
         });
       } catch (err) {
-        // Fallback to last known position if indoor GPS fix times out
         pos = await Location.getLastKnownPositionAsync();
         if (!pos) throw err;
       }
@@ -154,45 +203,68 @@ export default function StaffPunchScreen({ navigation }) {
   }, [location, mappableLocations]);
 
   const attendance = todayData?.attendance;
-  const isPunchedIn = Boolean(attendance?.punchIn?.time);
-  const isPunchedOut = Boolean(attendance?.punchOut?.time);
+  const metrics = todayData?.metrics;
+  const workingHoursConfig = todayData?.workingHoursConfig;
+  const workTime = todayData?.workTime;
+
+  // Multi-punch parsing
+  const punches = attendance?.punches?.length
+    ? attendance.punches
+    : attendance?.punchIn
+    ? [
+        { ...attendance.punchIn, type: 'IN' },
+        ...(attendance.punchOut ? [{ ...attendance.punchOut, type: 'OUT' }] : []),
+      ]
+    : [];
+
+  const lastPunch = punches.length > 0 ? punches[punches.length - 1] : null;
+  const isCurrentlyWorking = metrics?.isCurrentlyWorking ?? (lastPunch?.type === 'IN');
+  const hasStartedDay = punches.length > 0;
+
+  // Find last IN punch for ticker
+  const lastInPunch = [...punches].reverse().find((p) => p.type === 'IN');
+
   const isSunday = Boolean(todayData?.isSunday);
   const isWeekOff = Boolean(todayData?.isWeekOff);
   const weekOffDayName = todayData?.weekOffDayName || (isSunday ? 'Sunday' : 'Weekly Off');
   const holidayName = todayData?.holidayName;
-  const workTime = todayData?.workTime;
 
-  // Real-time work hours evaluation (start se pehle ya end ke baad punch-in block)
+  // Work hours check (only applies if employee hasn't started their day yet)
   const checkWorkHours = useCallback(() => {
-    if (!workTime?.enabled || !workTime?.start || !workTime?.end) {
+    const config = workingHoursConfig || workTime;
+    if (!config?.workTimeEnabled && !config?.enabled) {
       return { isOutside: false, message: '' };
     }
+    const startStr = config?.workStartTime || config?.start;
+    const endStr = config?.workEndTime || config?.end;
+    if (!startStr || !endStr) return { isOutside: false, message: '' };
+
     const now = new Date();
     const currentMin = now.getHours() * 60 + now.getMinutes();
-    const [sH, sM] = workTime.start.split(':').map(Number);
-    const [eH, eM] = workTime.end.split(':').map(Number);
+    const [sH, sM] = startStr.split(':').map(Number);
+    const [eH, eM] = endStr.split(':').map(Number);
     const startMin = sH * 60 + sM;
     const endMin = eH * 60 + eM;
 
     if (currentMin < startMin) {
       return {
         isOutside: true,
-        message: `Office starts at ${workTime.start}. Punch-in is only allowed during working hours (${workTime.start} - ${workTime.end}).`,
+        message: `Office starts at ${startStr}. Punch-in is allowed during (${startStr} - ${endStr}).`,
       };
     }
     if (currentMin > endMin) {
       return {
         isOutside: true,
-        message: `Office working hours are over (${workTime.start} - ${workTime.end}). Punch-in is closed for today.`,
+        message: `Office working hours are over (${startStr} - ${endStr}).`,
       };
     }
     return { isOutside: false, message: '' };
-  }, [workTime]);
+  }, [workingHoursConfig, workTime]);
 
   const workHoursStatus = checkWorkHours();
-  const isOutsideWorkHours = !isPunchedIn && workHoursStatus.isOutside;
-  const isOffDay = !isPunchedIn && (isSunday || isWeekOff || Boolean(holidayName));
-  const isPunchBlocked = !isPunchedIn && (isOffDay || isOutsideWorkHours);
+  const isOutsideWorkHours = !hasStartedDay && workHoursStatus.isOutside;
+  const isOffDay = !hasStartedDay && (isSunday || isWeekOff || Boolean(holidayName));
+  const isPunchBlocked = !hasStartedDay && (isOffDay || isOutsideWorkHours);
 
   const offDayReason = holidayName
     ? `Today is a Paid Holiday (${holidayName}). Punch-in is closed.`
@@ -240,17 +312,17 @@ export default function StaffPunchScreen({ navigation }) {
         accuracy: currentPos.accuracy,
       };
 
-      const res = await (isPunchedIn ? punchOutApi(payload) : punchInApi(payload));
-
-      setTodayData((prev) => ({
-        ...prev,
-        attendance: res?.data?.attendance,
-      }));
+      const res = await (isCurrentlyWorking ? punchOutApi(payload) : punchInApi(payload));
 
       setAlertMsg({
         type: 'success',
-        text: isPunchedIn ? 'Punched out successfully!' : 'Punched in successfully! Have a great workday.',
+        text: isCurrentlyWorking
+          ? 'Punched out successfully! Break / End recorded.'
+          : 'Punched in successfully! Net work time is now tracking.',
       });
+
+      // Refetch full today data including recalculations
+      await fetchToday();
     } catch (err) {
       setAlertMsg({
         type: 'error',
@@ -268,7 +340,7 @@ export default function StaffPunchScreen({ navigation }) {
   if (loadError) {
     return (
       <ScreenWrapper>
-        <Header title="Geofence Punch" />
+        <Header title="Smart Attendance & Punch" />
         <Alert type="error">{loadError}</Alert>
         <Button title="Try Again" onPress={fetchToday} />
       </ScreenWrapper>
@@ -278,10 +350,37 @@ export default function StaffPunchScreen({ navigation }) {
   const currentDateObj = todayData?.date ? new Date(`${todayData.date}T00:00:00`) : new Date();
   const dayName = WEEKDAYS[currentDateObj.getDay()];
 
+  // Attendance status badge label
+  let statusBadgeLabel = 'Not Punched In Today';
+  let statusBadgeVariant = 'warning';
+
+  if (isOffDay) {
+    statusBadgeLabel = holidayName ? `Holiday: ${holidayName}` : `${weekOffDayName} · Weekly Off`;
+    statusBadgeVariant = 'warning';
+  } else if (metrics?.subStatus === 'COMPLETED') {
+    statusBadgeLabel = 'Full Day Present (Goal Reached)';
+    statusBadgeVariant = 'success';
+  } else if (metrics?.subStatus === 'HALF_DAY_ELIGIBLE') {
+    statusBadgeLabel = 'Half Day Eligible / Working';
+    statusBadgeVariant = 'warning';
+  } else if (metrics?.subStatus === 'HALF_DAY_FINALIZED') {
+    statusBadgeLabel = 'Half Day Recorded';
+    statusBadgeVariant = 'warning';
+  } else if (isCurrentlyWorking) {
+    statusBadgeLabel = 'Currently Punched In (Working)';
+    statusBadgeVariant = 'primary';
+  } else if (hasStartedDay) {
+    statusBadgeLabel = 'On Break (Punched Out)';
+    statusBadgeVariant = 'secondary';
+  }
+
+  const firstInTime = metrics?.firstIn || attendance?.punchIn?.time;
+  const lastOutTime = metrics?.lastOut || (isCurrentlyWorking ? null : attendance?.punchOut?.time);
+
   return (
     <ScreenWrapper contentContainerStyle={styles.container} scrollable>
       <Header
-        title="Geofence Punch"
+        title="Smart Attendance & Punch"
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
         rightIcon="refresh"
         onRightPress={() => {
@@ -290,7 +389,7 @@ export default function StaffPunchScreen({ navigation }) {
         }}
       />
 
-      {/* Main Punch Card */}
+      {/* Main Dashboard Card */}
       <Card style={styles.mainCard} elevation="md">
         <Text style={styles.dateLabel}>
           {dayName}, {formatDate(todayData?.date || new Date())}
@@ -299,26 +398,16 @@ export default function StaffPunchScreen({ navigation }) {
 
         {/* Status Badge */}
         <View style={styles.statusBadgeWrapper}>
-          {isPunchedOut ? (
-            <Badge label="Attendance Complete Today" variant="success" size="md" />
-          ) : isPunchedIn ? (
-            <Badge label="Active Punched In" variant="primary" size="md" />
-          ) : isOffDay ? (
-            <Badge
-              label={holidayName ? `Holiday: ${holidayName}` : `${weekOffDayName} · Weekly Off`}
-              variant="warning"
-              size="md"
-            />
-          ) : isOutsideWorkHours ? (
-            <Badge
-              label={`Outside Hours (${workTime.start} - ${workTime.end})`}
-              variant="warning"
-              size="md"
-            />
-          ) : (
-            <Badge label="Not Punched In Today" variant="warning" size="md" />
-          )}
+          <Badge label={statusBadgeLabel} variant={statusBadgeVariant} size="md" />
         </View>
+
+        {/* Live Working Hours Counter */}
+        <LiveWorkingTimer
+          isWorking={isCurrentlyWorking}
+          baseMinutes={metrics?.completedWorkMinutes || 0}
+          lastInTime={lastInPunch?.time}
+          requiredMinutes={metrics?.requiredWorkMinutes || workingHoursConfig?.requiredWorkMinutes || 510}
+        />
 
         {/* Off Day Banner (Sunday / Weekly Off / Holiday) */}
         {isOffDay ? (
@@ -344,7 +433,7 @@ export default function StaffPunchScreen({ navigation }) {
             />
             <View style={styles.offDayTextContainer}>
               <Text style={styles.offDayTitle}>
-                Office Hours: {workTime.start} - {workTime.end}
+                Office Working Hours: {workingHoursConfig?.workStartTime || '09:30'} - {workingHoursConfig?.workEndTime || '18:30'}
               </Text>
               <Text style={styles.offDaySubtitle}>{workHoursStatus.message}</Text>
             </View>
@@ -370,77 +459,113 @@ export default function StaffPunchScreen({ navigation }) {
         />
 
         {/* Big Action Punch Button */}
-        {!isPunchedOut ? (
-          <Button
-            title={
-              isPunchBlocked
-                ? holidayName
-                  ? 'Punch Disabled (Holiday)'
-                  : isOffDay
-                  ? `Punch Disabled (${weekOffDayName})`
-                  : 'Punch Disabled (Outside Work Hours)'
-                : step === 'locating'
-                ? 'Acquiring GPS...'
-                : step === 'saving'
-                ? 'Saving Attendance...'
-                : isPunchedIn
-                ? 'Punch Out'
-                : 'Punch In'
-            }
-            onPress={handlePunch}
-            variant={isPunchedIn ? 'danger' : isPunchBlocked ? 'secondary' : 'primary'}
-            size="lg"
-            loading={Boolean(step)}
-            disabled={Boolean(step) || isPunchBlocked}
-            icon={
-              isOutsideWorkHours
-                ? 'clock-alert-outline'
+        <Button
+          title={
+            isPunchBlocked
+              ? holidayName
+                ? 'Punch Disabled (Holiday)'
                 : isOffDay
-                ? 'calendar-remove'
-                : isPunchedIn
-                ? 'logout'
-                : 'login'
-            }
-            iconPlacement="start"
-            style={[styles.bigPunchBtn, isPunchBlocked && styles.disabledOffDayBtn]}
-          />
-        ) : (
-          <View style={styles.dayCompleteBox}>
-            <MaterialCommunityIcons name="check-decagram" size={28} color={colors.success} />
-            <Text style={styles.dayCompleteText}>Both punches recorded for today.</Text>
-          </View>
-        )}
+                ? `Punch Disabled (${weekOffDayName})`
+                : 'Punch Disabled (Outside Work Hours)'
+              : step === 'locating'
+              ? 'Acquiring GPS...'
+              : step === 'saving'
+              ? 'Saving Attendance...'
+              : isCurrentlyWorking
+              ? 'Punch Out (Break / Leave)'
+              : hasStartedDay
+              ? 'Punch In (Resume Work)'
+              : 'Punch In'
+          }
+          onPress={handlePunch}
+          variant={isCurrentlyWorking ? 'danger' : isPunchBlocked ? 'secondary' : 'primary'}
+          size="lg"
+          loading={Boolean(step)}
+          disabled={Boolean(step) || isPunchBlocked}
+          icon={
+            isOutsideWorkHours
+              ? 'clock-alert-outline'
+              : isOffDay
+              ? 'calendar-remove'
+              : isCurrentlyWorking
+              ? 'logout'
+              : 'login'
+          }
+          iconPlacement="start"
+          style={[styles.bigPunchBtn, isPunchBlocked && styles.disabledOffDayBtn]}
+        />
 
-        {/* Timestamps Row */}
-        <View style={styles.timesContainer}>
-          <View style={styles.timeCard}>
-            <View style={[styles.timeDot, { backgroundColor: colors.success }]} />
-            <Text style={styles.timeTitle}>Punch In</Text>
-            <Text style={styles.timeValue}>
-              {attendance?.punchIn?.time ? formatTime(attendance.punchIn.time) : '--:--'}
+        {/* Key Metrics Grid */}
+        <View style={styles.metricsGrid}>
+          <View style={styles.metricCard}>
+            <MaterialCommunityIcons name="login" size={20} color={colors.success} />
+            <Text style={styles.metricLabel}>First In</Text>
+            <Text style={styles.metricVal}>
+              {firstInTime ? formatTime(firstInTime) : '--:--'}
             </Text>
-            {attendance?.punchIn?.distance != null && (
-              <Text style={styles.timeLoc}>
-                {attendance.punchIn.locationName || 'Office'} ({attendance.punchIn.distance}m)
-              </Text>
-            )}
           </View>
-
-          <View style={styles.timeDivider} />
-
-          <View style={styles.timeCard}>
-            <View style={[styles.timeDot, { backgroundColor: colors.danger }]} />
-            <Text style={styles.timeTitle}>Punch Out</Text>
-            <Text style={styles.timeValue}>
-              {attendance?.punchOut?.time ? formatTime(attendance.punchOut.time) : '--:--'}
+          <View style={styles.metricCard}>
+            <MaterialCommunityIcons name="logout" size={20} color={colors.danger} />
+            <Text style={styles.metricLabel}>Last Out</Text>
+            <Text style={styles.metricVal}>
+              {lastOutTime ? formatTime(lastOutTime) : isCurrentlyWorking ? 'Working...' : '--:--'}
             </Text>
-            {attendance?.punchOut?.distance != null && (
-              <Text style={styles.timeLoc}>
-                {attendance.punchOut.locationName || 'Office'} ({attendance.punchOut.distance}m)
-              </Text>
-            )}
+          </View>
+          <View style={styles.metricCard}>
+            <MaterialCommunityIcons name="coffee" size={20} color="#d97706" />
+            <Text style={styles.metricLabel}>Breaks</Text>
+            <Text style={styles.metricVal}>
+              {metrics ? `${metrics.totalBreakMinutes || 0}m` : '0m'}
+            </Text>
+          </View>
+          <View style={styles.metricCard}>
+            <MaterialCommunityIcons name="history" size={20} color={colors.primary} />
+            <Text style={styles.metricLabel}>Punches</Text>
+            <Text style={styles.metricVal}>
+              {punches.length} {punches.length === 1 ? 'Event' : 'Events'}
+            </Text>
           </View>
         </View>
+
+        {/* Punch History Timeline */}
+        {punches.length > 0 && (
+          <View style={styles.timelineCard}>
+            <View style={styles.timelineHeader}>
+              <MaterialCommunityIcons name="format-list-bulleted" size={18} color={colors.text} />
+              <Text style={styles.timelineTitle}>Today's Punch Events ({punches.length})</Text>
+            </View>
+            {punches.map((p, idx) => {
+              const isPunchIn = p.type === 'IN';
+              return (
+                <View key={idx} style={styles.timelineItem}>
+                  <View
+                    style={[
+                      styles.timelineIconBadge,
+                      { backgroundColor: isPunchIn ? '#dcfce7' : '#fee2e2' },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name={isPunchIn ? 'login' : 'logout'}
+                      size={16}
+                      color={isPunchIn ? '#166534' : '#991b1b'}
+                    />
+                  </View>
+                  <View style={styles.timelineContent}>
+                    <View style={styles.timelineRow}>
+                      <Text style={styles.timelineType}>
+                        Punch #{idx + 1}: {isPunchIn ? 'Punch In' : 'Punch Out'}
+                      </Text>
+                      <Text style={styles.timelineTime}>{formatTime(p.time)}</Text>
+                    </View>
+                    <Text style={styles.timelineLocation}>
+                      {p.locationName || 'Office'} · {p.distance != null ? `${p.distance}m` : 'GPS Verified'}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </Card>
     </ScreenWrapper>
   );
@@ -462,83 +587,187 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   clockText: {
-    fontSize: 42,
+    fontSize: 38,
     fontWeight: typography.weights.bold,
     color: colors.text,
     letterSpacing: -1,
     marginVertical: 4,
   },
   statusBadgeWrapper: {
-    marginVertical: 12,
+    marginVertical: 8,
   },
   alertSpacing: {
     width: '100%',
     marginVertical: 8,
   },
-  radarCard: {
+  liveTimerContainer: {
     width: '100%',
-    backgroundColor: colors.bg,
+    backgroundColor: '#0f172a',
     borderRadius: borderRadius.lg,
+    padding: 16,
+    marginVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  liveTimerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  liveIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 6,
+  },
+  liveTimerTitle: {
+    fontSize: typography.sizes.xs,
+    color: '#94a3b8',
+    fontWeight: typography.weights.bold,
+    letterSpacing: 0.5,
+  },
+  liveStatusTag: {
+    fontSize: 11,
+    color: '#38bdf8',
+    fontWeight: typography.weights.semibold,
+  },
+  liveTimerDisplay: {
+    fontSize: 34,
+    fontWeight: typography.weights.bold,
+    color: '#f8fafc',
+    letterSpacing: 1,
+    fontVariant: ['tabular-nums'],
+    marginVertical: 4,
+  },
+  liveTimerStatsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: '#334155',
+    paddingTop: 10,
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  liveStatBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  liveStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#334155',
+  },
+  liveStatLabel: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginBottom: 2,
+  },
+  liveStatVal: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: '#f8fafc',
+    fontVariant: ['tabular-nums'],
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 16,
+  },
+  metricCard: {
+    width: '48%',
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    marginVertical: 16,
   },
-  radarHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  metricLabel: {
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
+    marginTop: 4,
   },
-  radarTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  radarPulseCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  radarTextInfo: {
-    flex: 1,
-  },
-  radarStatusTitle: {
+  metricVal: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.bold,
     color: colors.text,
-  },
-  radarStatusSub: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
     marginTop: 2,
   },
-  refreshLocBtn: {
-    padding: 8,
-    backgroundColor: colors.bgCard,
+  timelineCard: {
+    width: '100%',
+    backgroundColor: colors.bg,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginLeft: 8,
+    padding: 14,
+    marginTop: 10,
   },
-  gpsMetaRow: {
+  timelineHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginBottom: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  gpsMetaText: {
+  timelineTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+    marginLeft: 6,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight || '#f1f5f9',
+  },
+  timelineIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  timelineType: {
     fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+  },
+  timelineTime: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
+  timelineLocation: {
+    fontSize: 11,
     color: colors.textMuted,
+    marginTop: 2,
   },
   bigPunchBtn: {
     width: '100%',
-    marginVertical: 8,
+    marginVertical: 12,
   },
   disabledOffDayBtn: {
     opacity: 0.75,
@@ -570,65 +799,5 @@ const styles = StyleSheet.create({
     color: '#92400e',
     marginTop: 2,
     lineHeight: 16,
-  },
-  dayCompleteBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.successBg,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-    width: '100%',
-    justifyContent: 'center',
-    marginVertical: 8,
-  },
-  dayCompleteText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.success,
-    marginLeft: 10,
-  },
-  timesContainer: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: colors.bg,
-    borderRadius: borderRadius.md,
-    padding: 14,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timeCard: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 6,
-  },
-  timeTitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-  },
-  timeValue: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-    marginVertical: 2,
-  },
-  timeLoc: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  timeDivider: {
-    width: 1,
-    height: '80%',
-    backgroundColor: colors.border,
-    alignSelf: 'center',
   },
 });

@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Card, Statistic } from 'antd';
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CoffeeOutlined,
+  FieldTimeOutlined,
+  HistoryOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import { Button, Card, Col, Row, Statistic, Tag } from 'antd';
 import { getTodayApi, punchInApi, punchOutApi } from '../../../api/attendanceApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Badge from '../../../components/Badge/Badge.jsx';
@@ -11,10 +20,10 @@ import { nearestOffice } from '../../../utils/geo.js';
 import { getCurrentPosition, watchPosition } from '../../../utils/geolocation.js';
 import './PunchScreen.css';
 
-// Map wali location itni purani ho to punch ke liye nayi li jati hai
+// Map location age threshold
 const MAX_POSITION_AGE_MS = 15000;
 
-// Chalti ghadi (har second). Alag component hai taaki har second poori screen dobara na bane.
+// Current Wall Clock
 function Clock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -28,28 +37,91 @@ function Clock() {
   );
 }
 
-// Staff zyadatar phone se punch karta hai, isliye ye screen phone ke liye bani hai:
-// ek haath se chalne wala bada button, bade akshar, kam se kam cheezein.
+// Live Working Hours Counter
+function LiveWorkingTimer({ isWorking, baseMinutes = 0, lastInTime, requiredMinutes = 510 }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isWorking) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [isWorking]);
+
+  const openSeconds = isWorking && lastInTime
+    ? Math.max(0, Math.floor((now - new Date(lastInTime).getTime()) / 1000))
+    : 0;
+
+  const totalWorkedSeconds = baseMinutes * 60 + openSeconds;
+  const requiredSeconds = requiredMinutes * 60;
+  const remainingSeconds = Math.max(0, requiredSeconds - totalWorkedSeconds);
+
+  const pad = (n) => String(Math.floor(n)).padStart(2, '0');
+  const formatSecs = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+  };
+
+  const reqH = pad(Math.floor(requiredMinutes / 60));
+  const reqM = pad(requiredMinutes % 60);
+
+  return (
+    <div className="punch-screen__timer-card">
+      <div className="punch-screen__timer-header">
+        <div className="punch-screen__timer-badge">
+          <span className={`punch-screen__pulse-dot ${isWorking ? 'punch-screen__pulse-dot--active' : ''}`} />
+          <span>{isWorking ? 'LIVE NET WORKING TIME' : 'ACCUMULATED NET TIME'}</span>
+        </div>
+        <Tag color={isWorking ? 'processing' : 'default'}>
+          {isWorking ? 'CURRENTLY WORKING' : 'ON BREAK / OUT'}
+        </Tag>
+      </div>
+
+      <div className="punch-screen__timer-display">{formatSecs(totalWorkedSeconds)}</div>
+
+      <div className="punch-screen__timer-meta">
+        <div className="punch-screen__timer-meta-item">
+          <span className="punch-screen__timer-meta-label">Required Goal</span>
+          <span className="punch-screen__timer-meta-val">{reqH}:{reqM}:00</span>
+        </div>
+        <div className="punch-screen__timer-meta-divider" />
+        <div className="punch-screen__timer-meta-item">
+          <span className="punch-screen__timer-meta-label">Remaining Time</span>
+          <span className={`punch-screen__timer-meta-val ${remainingSeconds === 0 ? 'punch-screen__goal-met' : ''}`}>
+            {remainingSeconds === 0 ? 'Goal Completed!' : formatSecs(remainingSeconds)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PunchScreen() {
   const [today, setToday] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [message, setMessage] = useState({ type: 'success', text: '' });
-  // step: null | 'locating' | 'saving'
-  const [step, setStep] = useState(null);
-  // Map ke liye staff ki chalu location (button dabane par punch ke liye alag se taaza location li jati hai)
+  const [step, setStep] = useState(null); // null | 'locating' | 'saving'
   const [position, setPosition] = useState(null);
   const [positionError, setPositionError] = useState('');
   const [refreshCount, setRefreshCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  const loadTodayData = () => {
+    return getTodayApi()
+      .then((res) => {
+        setToday(res.data);
+        return res.data;
+      })
+      .catch((err) => {
+        setLoadError(err.message);
+      });
+  };
+
   useEffect(() => {
-    getTodayApi()
-      .then((res) => setToday(res.data))
-      .catch((err) => setLoadError(err.message));
+    loadTodayData();
   }, []);
 
-  // Location track karna. refreshCount badhne par (Refresh button) purana tracking band hokar naya
-  // shuru hota hai, jisse browser bilkul taaza location deta hai.
   useEffect(
     () =>
       watchPosition(
@@ -71,12 +143,9 @@ export default function PunchScreen() {
     setRefreshing(true);
     setPositionError('');
     setRefreshCount((count) => count + 1);
-    getTodayApi()
-      .then((res) => setToday(res.data))
-      .catch(() => {});
+    loadTodayData().finally(() => setRefreshing(false));
   };
 
-  // Map sirf un offices ka jinke coordinates mile hain (backend purana chal raha ho to nahi milte)
   const mappable = useMemo(
     () => (today?.locations ?? []).filter((location) => Number.isFinite(location.lat) && Number.isFinite(location.lng)),
     [today?.locations]
@@ -85,43 +154,71 @@ export default function PunchScreen() {
   if (loadError) return <Alert>{loadError}</Alert>;
   if (!today) return <Loader />;
 
-  const { attendance, locations, isSunday, isWeekOff, weekOffDayName, holidayName, workTime } = today;
-  const punchedIn = Boolean(attendance);
-  const punchedOut = Boolean(attendance?.punchOut);
-  const noLocation = locations.length === 0;
+  const {
+    attendance,
+    locations,
+    isSunday,
+    isWeekOff,
+    weekOffDayName,
+    holidayName,
+    workTime,
+    workingHoursConfig,
+    metrics,
+  } = today;
 
+  // Multi-punch parsing
+  const punches = attendance?.punches?.length
+    ? attendance.punches
+    : attendance?.punchIn
+    ? [
+        { ...attendance.punchIn, type: 'IN' },
+        ...(attendance.punchOut ? [{ ...attendance.punchOut, type: 'OUT' }] : []),
+      ]
+    : [];
+
+  const lastPunch = punches.length > 0 ? punches[punches.length - 1] : null;
+  const isCurrentlyWorking = metrics?.isCurrentlyWorking ?? (lastPunch?.type === 'IN');
+  const hasStartedDay = punches.length > 0;
+  const lastInPunch = [...punches].reverse().find((p) => p.type === 'IN');
+
+  const noLocation = locations.length === 0;
   const displayWeekOffName = weekOffDayName || (isSunday ? 'Sunday' : 'Weekly Off');
-  const isOffDay = !punchedIn && (isSunday || isWeekOff || Boolean(holidayName));
+  const isOffDay = !hasStartedDay && (isSunday || isWeekOff || Boolean(holidayName));
 
   const checkWorkHours = () => {
-    if (!workTime?.enabled || !workTime?.start || !workTime?.end) {
+    const config = workingHoursConfig || workTime;
+    if (!config?.workTimeEnabled && !config?.enabled) {
       return { isOutside: false, message: '' };
     }
+    const startStr = config?.workStartTime || config?.start;
+    const endStr = config?.workEndTime || config?.end;
+    if (!startStr || !endStr) return { isOutside: false, message: '' };
+
     const now = new Date();
     const currentMin = now.getHours() * 60 + now.getMinutes();
-    const [sH, sM] = workTime.start.split(':').map(Number);
-    const [eH, eM] = workTime.end.split(':').map(Number);
+    const [sH, sM] = startStr.split(':').map(Number);
+    const [eH, eM] = endStr.split(':').map(Number);
     const startMin = sH * 60 + sM;
     const endMin = eH * 60 + eM;
 
     if (currentMin < startMin) {
       return {
         isOutside: true,
-        message: `Office starts at ${workTime.start}. Punch-in is only allowed during working hours (${workTime.start} - ${workTime.end}).`,
+        message: `Office starts at ${startStr}. Punch-in is allowed during (${startStr} - ${endStr}).`,
       };
     }
     if (currentMin > endMin) {
       return {
         isOutside: true,
-        message: `Office working hours are over (${workTime.start} - ${workTime.end}). Punch-in is closed for today.`,
+        message: `Office working hours are over (${startStr} - ${endStr}).`,
       };
     }
     return { isOutside: false, message: '' };
   };
 
   const workHoursStatus = checkWorkHours();
-  const outsideHours = !punchedIn && workHoursStatus.isOutside;
-  const isPunchBlocked = !punchedIn && (isOffDay || outsideHours);
+  const outsideHours = !hasStartedDay && workHoursStatus.isOutside;
+  const isPunchBlocked = !hasStartedDay && (isOffDay || outsideHours);
 
   const offDayReason = holidayName
     ? `Today is a Paid Holiday (${holidayName}). Punch-in is not allowed.`
@@ -129,7 +226,6 @@ export default function PunchScreen() {
     ? `Today is ${displayWeekOffName} (Weekly Off). Punch-in is not allowed.`
     : '';
 
-  // Sirf dikhane ke liye; punch ho sakta hai ya nahi, ye server tay karta hai
   const nearest = position && mappable.length ? nearestOffice(mappable, position) : null;
 
   const handlePunch = async () => {
@@ -141,35 +237,66 @@ export default function PunchScreen() {
     setMessage({ type: 'success', text: '' });
     try {
       setStep('locating');
-      // Map pehle se location track kar raha hai. Wo taaza ho to wahi use karo (turant punch);
-      // purani ho ya mili hi na ho to browser se nayi maango.
       const fresh = position && Date.now() - position.at < MAX_POSITION_AGE_MS;
       const current = fresh ? position : await getCurrentPosition();
       setStep('saving');
       const point = { lat: current.lat, lng: current.lng, accuracy: current.accuracy };
-      const res = await (punchedIn ? punchOutApi(point) : punchInApi(point));
+
+      const res = await (isCurrentlyWorking ? punchOutApi(point) : punchInApi(point));
       setToday((prev) => ({ ...prev, attendance: res.data.attendance }));
-      setMessage({ type: 'success', text: punchedIn ? 'Punched out.' : 'Punched in.' });
+      setMessage({
+        type: 'success',
+        text: isCurrentlyWorking
+          ? 'Punched out successfully. Break / Session recorded.'
+          : 'Punched in successfully. Live net work tracking started.',
+      });
+      // Recalculate metrics
+      await loadTodayData();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setMessage({ type: 'error', text: err.errors?.[0]?.message || err.message });
     } finally {
       setStep(null);
     }
   };
 
-  let buttonLabel = punchedIn ? 'Punch Out' : 'Punch In';
-  if (step === 'locating') buttonLabel = 'Getting location...';
-  if (step === 'saving') buttonLabel = 'Saving...';
+  let buttonLabel = isCurrentlyWorking
+    ? 'Punch Out (Break / Leave)'
+    : hasStartedDay
+    ? 'Punch In (Resume Work)'
+    : 'Punch In';
 
-  let status = 'Not punched in today';
-  if (isOffDay) status = holidayName ? `Holiday: ${holidayName}` : `${displayWeekOffName} (Weekly Off)`;
-  else if (outsideHours) status = `Outside Hours (${workTime.start} - ${workTime.end})`;
-  else if (punchedIn) status = `Punch in: ${attendance.punchIn.locationName ?? 'Office'}`;
-  else if (punchedOut) status = 'Attendance complete for today';
+  if (step === 'locating') buttonLabel = 'Acquiring GPS location...';
+  if (step === 'saving') buttonLabel = 'Verifying & Saving...';
+
+  // Status computation
+  let statusText = 'Not Punched In Today';
+  let statusTone = 'default';
+
+  if (isOffDay) {
+    statusText = holidayName ? `Holiday: ${holidayName}` : `${displayWeekOffName} (Weekly Off)`;
+    statusTone = 'warning';
+  } else if (metrics?.subStatus === 'COMPLETED') {
+    statusText = 'Full Day Present (Goal Reached)';
+    statusTone = 'success';
+  } else if (metrics?.subStatus === 'HALF_DAY_ELIGIBLE') {
+    statusText = 'Half Day Eligible / Working';
+    statusTone = 'warning';
+  } else if (metrics?.subStatus === 'HALF_DAY_FINALIZED') {
+    statusText = 'Half Day Recorded';
+    statusTone = 'warning';
+  } else if (isCurrentlyWorking) {
+    statusText = `Currently Working · In: ${punches[0]?.locationName || 'Office'}`;
+    statusTone = 'processing';
+  } else if (hasStartedDay) {
+    statusText = 'On Break (Punched Out)';
+    statusTone = 'warning';
+  }
+
+  const firstInTime = metrics?.firstIn || attendance?.punchIn?.time;
+  const lastOutTime = metrics?.lastOut || (isCurrentlyWorking ? null : attendance?.punchOut?.time);
 
   return (
     <section className="punch-screen">
-      {/* Page ka naam top bar mein hai; ye heading sirf screen reader ke liye */}
       <h1 className="visually-hidden">Punch In / Out</h1>
 
       <Card className="punch-screen__card">
@@ -177,28 +304,40 @@ export default function PunchScreen() {
           {WEEKDAYS[new Date(`${today.date}T00:00:00`).getDay()]}, {formatDate(today.date)}
         </p>
         <Clock />
-        <p className={`punch-screen__status${punchedIn ? ' punch-screen__status--in' : ''}`}>{status}</p>
+
+        <div className="punch-screen__status-tag-row">
+          <Badge tone={statusTone === 'processing' ? 'success' : statusTone}>
+            {statusText}
+          </Badge>
+        </div>
+
+        {/* Live Working Hours Display */}
+        <LiveWorkingTimer
+          isWorking={isCurrentlyWorking}
+          baseMinutes={metrics?.completedWorkMinutes || 0}
+          lastInTime={lastInPunch?.time}
+          requiredMinutes={metrics?.requiredWorkMinutes || workingHoursConfig?.requiredWorkMinutes || 510}
+        />
 
         {isOffDay && (
           <div style={{ marginBottom: 12 }}>
-            <Alert tone="warning">
-              {offDayReason}
-            </Alert>
+            <Alert tone="warning">{offDayReason}</Alert>
           </div>
         )}
 
         {outsideHours && !isOffDay && (
           <div style={{ marginBottom: 12 }}>
-            <Alert tone="warning">
-              {workHoursStatus.message}
-            </Alert>
+            <Alert tone="warning">{workHoursStatus.message}</Alert>
           </div>
         )}
 
-        <Alert type={message.type}>{message.text}</Alert>
+        {message.text && (
+          <div style={{ marginBottom: 12 }}>
+            <Alert type={message.type}>{message.text}</Alert>
+          </div>
+        )}
 
-        
-
+        {/* Map area */}
         {noLocation ? (
           <p className="punch-screen__hint">No office location is set. Please contact your admin.</p>
         ) : !mappable.length ? (
@@ -212,18 +351,17 @@ export default function PunchScreen() {
               {nearest ? (
                 <>
                   <Badge tone={nearest.inside ? 'success' : 'danger'}>
-                    {nearest.inside ? 'Inside range' : 'Outside range'}
+                    {nearest.inside ? 'Inside radius' : 'Outside radius'}
                   </Badge>
                   <span>
-                    {nearest.distance}m from {nearest.location.name} (range {nearest.location.radius}m)
+                    {nearest.distance}m from {nearest.location.name} (allowed: {nearest.location.radius}m)
                   </span>
                 </>
               ) : (
-                <span>{positionError || 'Finding your location...'}</span>
+                <span>{positionError || 'Finding your GPS coordinates...'}</span>
               )}
             </p>
             <div className="punch-screen__refresh">
-              {/* GPS kitni sahi hai; staff ko samajh aaye ki bahar kyun dikha raha hai */}
               {position && !positionError && <span>GPS accuracy ±{Math.round(position.accuracy)}m</span>}
               <Button
                 size="small"
@@ -238,33 +376,102 @@ export default function PunchScreen() {
             <PunchMap locations={mappable} position={position} recenterKey={refreshCount} />
           </div>
         )}
-         {!punchedOut && (
-          <Button
-            block
-            type={isPunchBlocked ? 'default' : 'primary'}
-            danger={punchedIn}
-            className={`punch-screen__button punch-screen__button--${punchedIn ? 'out' : 'in'}`}
-            loading={Boolean(step)}
-            disabled={noLocation || isPunchBlocked}
-            onClick={handlePunch}
-          >
-            {isPunchBlocked
-              ? holidayName
-                ? 'Punch Disabled (Holiday)'
-                : isOffDay
-                ? `Punch Disabled (${displayWeekOffName})`
-                : 'Punch Disabled (Outside Working Hours)'
-              : buttonLabel}
-          </Button>
-        )}
-        <div className="punch-screen__times">
-          <Card size="small" variant="borderless" className="punch-screen__time">
-            <Statistic title="Punch In" value={formatTime(attendance?.punchIn?.time)} />
-          </Card>
-          <Card size="small" variant="borderless" className="punch-screen__time">
-            <Statistic title="Punch Out" value={formatTime(attendance?.punchOut?.time)} />
-          </Card>
+
+        {/* Action Punch Button */}
+        <Button
+          block
+          type={isPunchBlocked ? 'default' : 'primary'}
+          danger={isCurrentlyWorking}
+          className={`punch-screen__button punch-screen__button--${isCurrentlyWorking ? 'out' : 'in'}`}
+          loading={Boolean(step)}
+          disabled={noLocation || isPunchBlocked}
+          onClick={handlePunch}
+          icon={isCurrentlyWorking ? <LogoutOutlined /> : <LoginOutlined />}
+        >
+          {isPunchBlocked
+            ? holidayName
+              ? 'Punch Disabled (Holiday)'
+              : isOffDay
+              ? `Punch Disabled (${displayWeekOffName})`
+              : 'Punch Disabled (Outside Working Hours)'
+            : buttonLabel}
+        </Button>
+
+        {/* Metrics Overview Grid */}
+        <div className="punch-screen__metrics-grid">
+          <div className="punch-screen__metric-box">
+            <div className="punch-screen__metric-icon punch-screen__metric-icon--in">
+              <LoginOutlined />
+            </div>
+            <div className="punch-screen__metric-info">
+              <span className="punch-screen__metric-lbl">First In</span>
+              <span className="punch-screen__metric-value">
+                {firstInTime ? formatTime(firstInTime) : '--:--'}
+              </span>
+            </div>
+          </div>
+
+          <div className="punch-screen__metric-box">
+            <div className="punch-screen__metric-icon punch-screen__metric-icon--out">
+              <LogoutOutlined />
+            </div>
+            <div className="punch-screen__metric-info">
+              <span className="punch-screen__metric-lbl">Last Out</span>
+              <span className="punch-screen__metric-value">
+                {lastOutTime ? formatTime(lastOutTime) : isCurrentlyWorking ? 'Working...' : '--:--'}
+              </span>
+            </div>
+          </div>
+
+          <div className="punch-screen__metric-box">
+            <div className="punch-screen__metric-icon punch-screen__metric-icon--break">
+              <CoffeeOutlined />
+            </div>
+            <div className="punch-screen__metric-info">
+              <span className="punch-screen__metric-lbl">Breaks Taken</span>
+              <span className="punch-screen__metric-value">
+                {metrics ? `${metrics.totalBreakMinutes || 0}m` : '0m'}
+              </span>
+            </div>
+          </div>
+
+          <div className="punch-screen__metric-box">
+            <div className="punch-screen__metric-icon punch-screen__metric-icon--events">
+              <HistoryOutlined />
+            </div>
+            <div className="punch-screen__metric-info">
+              <span className="punch-screen__metric-lbl">Total Punches</span>
+              <span className="punch-screen__metric-value">
+                {punches.length} {punches.length === 1 ? 'event' : 'events'}
+              </span>
+            </div>
+          </div>
         </div>
+
+        {/* Today's Punch History Timeline */}
+        {punches.length > 0 && (
+          <div className="punch-screen__timeline-wrap">
+            <div className="punch-screen__timeline-title">
+              <HistoryOutlined /> Today's Punch Activity
+            </div>
+            <div className="punch-screen__timeline-list">
+              {punches.map((p, idx) => {
+                const isIn = p.type === 'IN';
+                return (
+                  <div key={idx} className="punch-screen__timeline-row">
+                    <span className={`punch-screen__timeline-badge punch-screen__timeline-badge--${isIn ? 'in' : 'out'}`}>
+                      {isIn ? 'PUNCH IN' : 'PUNCH OUT'}
+                    </span>
+                    <span className="punch-screen__timeline-time">{formatTime(p.time)}</span>
+                    <span className="punch-screen__timeline-loc">
+                      {p.locationName || 'Office'} · {p.distance != null ? `${p.distance}m` : 'GPS OK'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </Card>
     </section>
   );

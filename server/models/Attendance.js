@@ -4,6 +4,7 @@ import { tenantPlugin } from './plugins/tenantPlugin.js';
 
 const punchSchema = new mongoose.Schema(
   {
+    type: { type: String, enum: ['IN', 'OUT'] },
     time: { type: Date, required: true },
     // Location sirf asli (GPS) punch par hoti hai; correction request se bane punch par nahi.
     lat: { type: Number },
@@ -17,7 +18,7 @@ const punchSchema = new mongoose.Schema(
     // Time admin ne punch correction request manzoor karke badla hai.
     corrected: { type: Boolean },
   },
-  { _id: false }
+  { _id: true }
 );
 
 const attendanceSchema = new mongoose.Schema(
@@ -25,8 +26,14 @@ const attendanceSchema = new mongoose.Schema(
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     date: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ }, // app timezone ki date
+    // Multiple punch events auditable array (har in aur out alag se permanent record hota hai)
+    punches: { type: [punchSchema], default: [] },
+    // First in (hamesha din ka pehla valid punch in; backward compatibility)
     punchIn: { type: punchSchema, required: true },
+    // Last out (din ka aakhri valid punch out; agar abhi kaam par hai to null)
     punchOut: { type: punchSchema },
+    // Total net working minutes (breaks exclude karke sum)
+    netWorkMinutes: { type: Number, default: 0 },
     status: { type: String, enum: Object.values(ATTENDANCE_STATUS), default: ATTENDANCE_STATUS.PRESENT },
     missedPunchOut: { type: Boolean, default: false },
   },
