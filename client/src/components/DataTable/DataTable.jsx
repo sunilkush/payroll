@@ -13,7 +13,18 @@ import './DataTable.css';
 //   pageSize    ek page par kitni rows (us se kam hon to pagination chhup jata hai)
 //
 // List pages (Staff, Companies...) is ki jagah components/Table use karte hain, jo phone par cards banata hai.
-export default function DataTable({ columns, rows, rowKey, searchText, searchPlaceholder = 'Search', pageSize = 8, empty = 'No records found.' }) {
+export default function DataTable({
+  columns,
+  rows,
+  rowKey,
+  searchText,
+  searchPlaceholder = 'Search',
+  pageSize = 8,
+  empty = 'No records found.',
+  size = 'middle',
+  className = '',
+  extraHeader = null,
+}) {
   const [query, setQuery] = useState('');
 
   const visible = useMemo(() => {
@@ -23,20 +34,25 @@ export default function DataTable({ columns, rows, rowKey, searchText, searchPla
   }, [rows, query, searchText]);
 
   return (
-    <div className="data-table">
-      {searchText && (
-        <Input
-          className="data-table__search"
-          placeholder={searchPlaceholder}
-          aria-label={searchPlaceholder}
-          prefix={<SearchOutlined className="data-table__search-icon" />}
-          allowClear
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
+    <div className={`data-table ${className}`.trim()}>
+      {(searchText || extraHeader) && (
+        <div className="data-table__toolbar">
+          {searchText && (
+            <Input
+              className="data-table__search"
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              prefix={<SearchOutlined className="data-table__search-icon" />}
+              allowClear
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          )}
+          {extraHeader && <div className="data-table__extra">{extraHeader}</div>}
+        </div>
       )}
       <Table
-        size="middle"
+        size={size}
         columns={columns}
         dataSource={visible}
         rowKey={rowKey}

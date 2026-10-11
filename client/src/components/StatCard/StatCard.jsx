@@ -14,7 +14,7 @@ import './StatCard.css';
 //   series         [{ value }] ho to neeche sparkline
 //   to             ho to poora card us page ka link
 //   loading        data aa raha hai
-export default function StatCard({ title, value, icon, tone = 'primary', delta, hint, series, to, loading = false }) {
+export default function StatCard({ title, value, icon, tone = 'primary', delta, hint, series, to, loading = false, className = '' }) {
   const change = delta?.value;
   const hasDelta = change !== null && change !== undefined;
   let direction = 'flat';
@@ -23,7 +23,7 @@ export default function StatCard({ title, value, icon, tone = 'primary', delta, 
   const mood = delta?.neutral || direction === 'flat' ? 'neutral' : direction === 'up' ? 'good' : 'bad';
 
   return (
-    <Card className="stat-card" hoverable={Boolean(to)}>
+    <Card className={`stat-card ${className}`.trim()} hoverable={Boolean(to)}>
       <div className="stat-card__head">
         <span className="stat-card__title">{title}</span>
         {icon && <span className={`stat-card__icon stat-card__icon--${tone}`}>{icon}</span>}
@@ -56,6 +56,6 @@ export default function StatCard({ title, value, icon, tone = 'primary', delta, 
 }
 
 // KPI cards ki line: phone par ek column, tablet par 2, badi screen par 4
-export function StatGrid({ children }) {
-  return <div className="stat-grid">{children}</div>;
+export function StatGrid({ children, className = '' }) {
+  return <div className={`stat-grid ${className}`.trim()}>{children}</div>;
 }

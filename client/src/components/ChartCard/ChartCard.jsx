@@ -5,9 +5,9 @@ import './ChartCard.css';
 // Dashboard ka ek panel: heading, chhoti line, daayein filter (extra), aur andar chart / table / list.
 //   loading  andar skeleton dikhta hai
 //   empty    text ho to chart ki jagah khali state (jaise "Payroll abhi nahi bani")
-export default function ChartCard({ title, subtitle, extra, loading = false, empty, children }) {
+export default function ChartCard({ title, subtitle, extra, loading = false, empty, children, className = '' }) {
   return (
-    <Card className="chart-card">
+    <Card className={`chart-card ${className}`.trim()}>
       <header className="chart-card__header">
         <div className="chart-card__heading">
           <h2 className="chart-card__title">{title}</h2>

@@ -177,7 +177,7 @@ export default function AdminHomeScreen({ navigation }) {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
-      {/* 1. Header with Greeting & Avatar matching Screen 1 */}
+      {/* 1. Header with Greeting & Avatar */}
       <View style={styles.topBar}>
         <View style={styles.greetingContainer}>
           <Text style={styles.roleSubtext}>HR Admin</Text>
@@ -190,7 +190,7 @@ export default function AdminHomeScreen({ navigation }) {
             onPress={() => setNotifVisible(true)}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="bell-outline" size={24} color={colors.text} />
+            <MaterialCommunityIcons name="bell-outline" size={20} color={colors.text} />
             {pendingLeavesCount > 0 && <View style={styles.notifDot} />}
           </TouchableOpacity>
 
@@ -198,7 +198,7 @@ export default function AdminHomeScreen({ navigation }) {
             onPress={() => navigation.navigate('AdminProfile')}
             activeOpacity={0.8}
           >
-            <Avatar name={user?.name || 'HR'} size={38} />
+            <Avatar name={user?.name || 'HR'} size={36} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -206,35 +206,12 @@ export default function AdminHomeScreen({ navigation }) {
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="logout" size={20} color={colors.error} />
+            <MaterialCommunityIcons name="logout" size={18} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 2. Top Stats Grid matching Screen 1 */}
-      <View style={styles.statsGrid}>
-        {/* Total Employees */}
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('AdminStaff')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.statLabel}>Total Employees</Text>
-          <Text style={styles.statNumberBlue}>{totalEmployeesCount}</Text>
-        </TouchableOpacity>
-
-        {/* Active Staff */}
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('AdminAttendance')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.statLabel}>Active Staff</Text>
-          <Text style={styles.statNumberBlue}>{activeStaffCount}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Today's Attendance Pulse Card */}
+      {/* 2. Today's Workforce Attendance Pulse (Compact 4-Pill Matrix) */}
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => navigation.navigate('AdminAttendance')}
@@ -243,15 +220,28 @@ export default function AdminHomeScreen({ navigation }) {
           <View style={styles.pulseHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={styles.livePulseDot} />
-              <Text style={styles.pulseTitle}>Today's Workforce Attendance</Text>
+              <Text style={styles.pulseTitle}>Today's Attendance</Text>
             </View>
-            <Text style={styles.pulseDateText}>{formatDate(new Date())}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Text style={styles.pulseDateText}>{formatDate(new Date())}</Text>
+              <MaterialCommunityIcons name="chevron-right" size={14} color={colors.textSecondary} />
+            </View>
           </View>
 
           <View style={styles.pulseMetricsRow}>
             <View style={styles.pulseMetricItem}>
+              <View style={[styles.pulseIconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <MaterialCommunityIcons name="account-group" size={14} color={colors.primary} />
+              </View>
+              <Text style={styles.pulseNumberBlue}>{totalEmployeesCount}</Text>
+              <Text style={styles.pulseLabel}>Staff</Text>
+            </View>
+
+            <View style={styles.pulseDivider} />
+
+            <View style={styles.pulseMetricItem}>
               <View style={[styles.pulseIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                <MaterialCommunityIcons name="account-check" size={16} color="#16A34A" />
+                <MaterialCommunityIcons name="account-check" size={14} color="#16A34A" />
               </View>
               <Text style={styles.pulseNumberGreen}>
                 {todaySummary?.presentCount ?? activeStaffCount}
@@ -263,7 +253,7 @@ export default function AdminHomeScreen({ navigation }) {
 
             <View style={styles.pulseMetricItem}>
               <View style={[styles.pulseIconCircle, { backgroundColor: '#FEF3C7' }]}>
-                <MaterialCommunityIcons name="account-clock" size={16} color="#D97706" />
+                <MaterialCommunityIcons name="account-clock" size={14} color="#D97706" />
               </View>
               <Text style={styles.pulseNumberAmber}>
                 {todaySummary?.leaveCount ?? 0}
@@ -275,7 +265,7 @@ export default function AdminHomeScreen({ navigation }) {
 
             <View style={styles.pulseMetricItem}>
               <View style={[styles.pulseIconCircle, { backgroundColor: '#FEE2E2' }]}>
-                <MaterialCommunityIcons name="account-alert" size={16} color="#DC2626" />
+                <MaterialCommunityIcons name="account-alert" size={14} color="#DC2626" />
               </View>
               <Text style={styles.pulseNumberRed}>
                 {todaySummary?.notMarked ?? Math.max(0, totalEmployeesCount - activeStaffCount)}
@@ -286,38 +276,7 @@ export default function AdminHomeScreen({ navigation }) {
         </Card>
       </TouchableOpacity>
 
-      {/* 3. Financial Stats Grid (Dynamic) */}
-      <View style={styles.statsGrid}>
-        {/* Total Gross */}
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('AdminPayroll')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.statCardHeader}>
-            <Text style={styles.statLabel}>Total Gross</Text>
-            <MaterialCommunityIcons name="wallet-plus-outline" size={16} color={colors.textSecondary} />
-          </View>
-          <Text style={styles.statNumberDark}>{formatCurrency(activeGross)}</Text>
-          <Text style={styles.statPeriodSub}>{activePeriodLabel}</Text>
-        </TouchableOpacity>
-
-        {/* Total Deductions */}
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('AdminPayroll')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.statCardHeader}>
-            <Text style={styles.statLabel}>Total Deductions</Text>
-            <MaterialCommunityIcons name="calculator-variant-outline" size={16} color={colors.danger} />
-          </View>
-          <Text style={styles.statNumberDark}>{formatCurrency(activeDeductions)}</Text>
-          <Text style={styles.statPeriodSub}>PF, ESI & others</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 4. Net Payroll Card (Dynamic Full Width with Period & Delta) */}
+      {/* 3. Net Payroll & Financial Summary (Compact All-in-One Card) */}
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => navigation.navigate('AdminPayroll')}
@@ -325,7 +284,7 @@ export default function AdminHomeScreen({ navigation }) {
         <Card style={styles.netPayrollCard} elevation="xs">
           <View style={styles.netPayrollTopRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <MaterialCommunityIcons name="wallet" size={18} color={colors.primary} />
+              <MaterialCommunityIcons name="wallet" size={16} color={colors.primary} />
               <Text style={styles.netPayrollTitle}>Net Payroll • {activePeriodLabel}</Text>
             </View>
             <Badge label={activeStatus} variant={activeStatusVariant} size="sm" />
@@ -337,29 +296,35 @@ export default function AdminHomeScreen({ navigation }) {
               <View style={[styles.changeBadge, changePercent >= 0 ? styles.changeUp : styles.changeDown]}>
                 <MaterialCommunityIcons
                   name={changePercent >= 0 ? 'arrow-top-right' : 'arrow-bottom-right'}
-                  size={14}
+                  size={12}
                   color={changePercent >= 0 ? '#166534' : '#991B1B'}
                 />
                 <Text style={[styles.changeText, { color: changePercent >= 0 ? '#166534' : '#991B1B' }]}>
-                  {Math.abs(changePercent)}% vs prev mo
+                  {Math.abs(changePercent)}%
                 </Text>
               </View>
             )}
           </View>
 
           <View style={styles.netPayrollFooter}>
-            <Text style={styles.netPayrollHint}>
-              {activePayrollItem?.staffCount ? `${activePayrollItem.staffCount} staff processed` : 'Tap to manage & process payroll'}
-            </Text>
+            <View style={styles.netPayrollSubStats}>
+              <Text style={styles.netPayrollSubLabel}>
+                Gross: <Text style={styles.netPayrollSubVal}>{formatCurrency(activeGross)}</Text>
+              </Text>
+              <Text style={styles.netPayrollSubDot}>•</Text>
+              <Text style={styles.netPayrollSubLabel}>
+                Deduct: <Text style={styles.netPayrollSubVal}>{formatCurrency(activeDeductions)}</Text>
+              </Text>
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
               <Text style={styles.viewPayrollLink}>Payroll Hub</Text>
-              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.primary} />
+              <MaterialCommunityIcons name="chevron-right" size={14} color={colors.primary} />
             </View>
           </View>
         </Card>
       </TouchableOpacity>
 
-      {/* Operations Hub (All Action Icons Prominently Visible) */}
+      {/* 4. Operations & Services Hub (Compact 4-Column Grid) */}
       <View style={styles.hubSection}>
         <Text style={styles.sectionTitle}>Operations & Services</Text>
         <View style={styles.hubGrid}>
@@ -383,7 +348,7 @@ export default function AdminHomeScreen({ navigation }) {
               activeOpacity={0.7}
             >
               <View style={[styles.hubIconWrap, { backgroundColor: item.bg }]}>
-                <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
+                <MaterialCommunityIcons name={item.icon} size={20} color={item.color} />
               </View>
               <Text style={styles.hubLabel} numberOfLines={1}>{item.label}</Text>
             </TouchableOpacity>
@@ -633,37 +598,37 @@ export default function AdminHomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 36,
+    paddingBottom: 24,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 4,
+    marginBottom: 12,
+    marginTop: 2,
   },
   greetingContainer: {
     flex: 1,
   },
   roleSubtext: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
   greetingText: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
-    marginTop: 2,
+    marginTop: 1,
   },
   topRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   bellBtn: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.pill,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -674,16 +639,16 @@ const styles = StyleSheet.create({
   },
   notifDot: {
     position: 'absolute',
-    top: 9,
-    right: 9,
-    width: 8,
-    height: 8,
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
     borderRadius: 4,
     backgroundColor: '#DC2626',
   },
   avatarBtn: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.pill,
     backgroundColor: '#2563EB',
     alignItems: 'center',
@@ -692,11 +657,11 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#FFFFFF',
     fontWeight: typography.weights.bold,
-    fontSize: 15,
+    fontSize: 13,
   },
   logoutTopBtn: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.pill,
     backgroundColor: '#FEE2E2',
     borderWidth: 1,
@@ -708,16 +673,16 @@ const styles = StyleSheet.create({
   // 2-column metrics cards
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 8,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 14,
+    padding: 10,
     justifyContent: 'center',
     ...shadows.xs,
   },
@@ -725,35 +690,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
   statNumberBlue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
   statNumberDark: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   statPeriodSub: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textMuted,
-    marginTop: 3,
+    marginTop: 2,
   },
 
   // Today Attendance Pulse
   attendancePulseCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: borderRadius.md,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     ...shadows.xs,
@@ -762,24 +727,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    paddingBottom: 8,
+    marginBottom: 8,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   livePulseDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
     backgroundColor: '#16A34A',
   },
   pulseTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   pulseDateText: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
   },
   pulseMetricsRow: {
@@ -792,46 +757,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pulseIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   pulseNumberGreen: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: colors.success,
   },
   pulseNumberAmber: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: colors.warning,
   },
   pulseNumberRed: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
     color: colors.error,
   },
   pulseLabel: {
-    fontSize: typography.sizes.caption,
+    fontSize: 10,
     color: colors.textSecondary,
     marginTop: 1,
   },
   pulseDivider: {
     width: 1,
-    height: 32,
+    height: 24,
     backgroundColor: colors.border,
   },
 
   // Full-width Net Payroll Card
   netPayrollCard: {
-    padding: spacing.cardPadding,
-    borderRadius: radius.card,
+    padding: 10,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: 8,
     backgroundColor: colors.card,
     ...shadows.xs,
   },
@@ -839,10 +804,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   netPayrollTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
   },
@@ -850,19 +815,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   netPayrollAmount: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: borderRadius.pill,
   },
   changeUp: {
@@ -872,7 +837,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorContainer,
   },
   changeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: typography.weights.bold,
   },
   netPayrollFooter: {
@@ -881,47 +846,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 10,
+    paddingTop: 8,
+  },
+  netPayrollSubStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  netPayrollSubLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  netPayrollSubVal: {
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  netPayrollSubDot: {
+    fontSize: 9,
+    color: colors.textMuted,
   },
   netPayrollHint: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
   },
   viewPayrollLink: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
 
   // Operations Hub
   hubSection: {
-    marginBottom: 22,
+    marginBottom: 12,
   },
   hubGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 10,
+    gap: 6,
+    marginTop: 6,
   },
   hubTile: {
-    width: '18%',
-    minWidth: 62,
+    width: '23%',
+    minWidth: 54,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   hubIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.card,
+    width: 38,
+    height: 38,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 3,
     borderWidth: 1,
     borderColor: colors.border,
   },
   hubLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: typography.weights.medium,
     color: colors.text,
     textAlign: 'center',
@@ -929,11 +911,11 @@ const styles = StyleSheet.create({
 
   // Bar Chart Card
   chartCard: {
-    padding: spacing.cardPadding,
-    borderRadius: radius.card,
+    padding: 10,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: 8,
     backgroundColor: colors.card,
     ...shadows.xs,
   },
@@ -941,51 +923,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   chartTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   chartSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
   },
   runPayrollBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: radius.pill,
     backgroundColor: colors.primaryLight,
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
   runPayrollText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
   chartLegendRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 12,
+    gap: 12,
+    marginBottom: 8,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   legendDot: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     borderRadius: 2,
   },
   legendText: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
@@ -993,19 +975,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    height: 135,
-    paddingTop: 8,
-    paddingHorizontal: 6,
+    height: 100,
+    paddingTop: 4,
+    paddingHorizontal: 4,
     backgroundColor: colors.background,
     borderRadius: radius.control,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   barCol: {
     alignItems: 'center',
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: 2,
     borderRadius: radius.control,
   },
   barColSelected: {
@@ -1013,19 +995,19 @@ const styles = StyleSheet.create({
   },
   barTrackWrap: {
     width: '100%',
-    height: 90,
+    height: 64,
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   barTrack: {
-    width: 22,
-    borderRadius: 6,
+    width: 18,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   barTrackEmpty: {
     backgroundColor: colors.border,
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
   },
   barTrackSelected: {
     borderWidth: 1.5,
@@ -1045,9 +1027,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.outline,
   },
   barLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
-    marginTop: 6,
+    marginTop: 4,
     fontWeight: typography.weights.medium,
   },
   barLabelSelected: {
@@ -1059,64 +1041,64 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.primary,
-    marginTop: 2,
+    marginTop: 1,
   },
   selectedMonthCard: {
     backgroundColor: colors.background,
-    borderRadius: radius.card,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
+    padding: 8,
   },
   selectedMonthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    paddingBottom: 8,
+    marginBottom: 6,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   selectedMonthTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   selectedMonthPeriod: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
     marginTop: 1,
   },
   monthMetricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   monthMetricCol: {
     width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.sm,
-    padding: 8,
+    padding: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   monthMetricLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   monthMetricValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   monthMetricValuePrimary: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
   monthMetricValueAmber: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: typography.weights.bold,
     color: '#D97706',
   },
@@ -1124,17 +1106,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   noDataText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     flex: 1,
     marginLeft: 6,
   },
   quickGenBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: borderRadius.sm,
     backgroundColor: colors.primary,
   },
@@ -1146,25 +1128,25 @@ const styles = StyleSheet.create({
 
   // Pending Leaves Card
   pendingLeavesCard: {
-    padding: 16,
-    borderRadius: borderRadius.lg,
+    padding: 10,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   pendingHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   pendingTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.primary,
     fontWeight: typography.weights.semibold,
   },
@@ -1172,7 +1154,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
@@ -1180,67 +1162,67 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   leaveReqName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: typography.weights.semibold,
     color: '#0F172A',
   },
   leaveReqSub: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
   },
 
   // Activity stream
   sectionHeaderRow: {
-    marginBottom: 10,
+    marginBottom: 6,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   activityCard: {
-    padding: 16,
-    borderRadius: borderRadius.lg,
+    padding: 10,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   emptyFeed: {
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 12,
   },
   emptyFeedText: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 6,
+    marginTop: 4,
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   activityBorder: {
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   activityIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: borderRadius.md,
+    width: 26,
+    height: 26,
+    borderRadius: borderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   activityInfo: {
     flex: 1,
   },
   activityText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: typography.weights.medium,
     color: '#0F172A',
   },
   activityDetail: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     marginTop: 1,
   },

@@ -2,8 +2,22 @@
   min-width: 0;
 }
 
-.data-table__search {
+.data-table__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
+}
+
+.data-table__search {
+  margin-bottom: 0;
+}
+
+.data-table__extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .data-table__search-icon {
@@ -37,6 +51,12 @@
 }
 
 @media (min-width: 768px) {
+  .data-table__toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   .data-table__search {
     max-width: 280px;
   }
