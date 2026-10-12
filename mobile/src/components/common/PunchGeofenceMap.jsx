@@ -280,8 +280,8 @@ export default function PunchGeofenceMap({
             attributionControl: false
           }).setView([officeLat, officeLng], 16);
 
-          // Leaflet Map Tiles
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // Leaflet Map Tiles
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_4hvk_1_66bbc4fc51414267309c9089', {
             maxZoom: 20,
             subdomains: 'abcd',
             attribution: '&copy; Leaflet Map'

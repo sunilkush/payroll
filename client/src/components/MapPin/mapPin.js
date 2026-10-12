@@ -4,7 +4,7 @@ import './mapPin.css';
 
 // Maps ke common hisse (Settings ka LocationMap aur staff ka PunchMap dono use karte hain).
 
-export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_4hvk_1_66bbc4fc51414267309c9089';
 export const TILE_OPTIONS = {
   maxZoom: 20,
   subdomains: 'abcd',
