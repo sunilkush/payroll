@@ -216,7 +216,7 @@ export default function AdminHomeScreen({ navigation }) {
         activeOpacity={0.85}
         onPress={() => navigation.navigate('AdminAttendance')}
       >
-        <Card style={styles.attendancePulseCard} elevation="xs">
+        <Card style={styles.attendancePulseCard} elevation="sm">
           <View style={styles.pulseHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={styles.livePulseDot} />
@@ -224,7 +224,7 @@ export default function AdminHomeScreen({ navigation }) {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
               <Text style={styles.pulseDateText}>{formatDate(new Date())}</Text>
-              <MaterialCommunityIcons name="chevron-right" size={14} color={colors.textSecondary} />
+              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textSecondary} />
             </View>
           </View>
 
@@ -281,7 +281,7 @@ export default function AdminHomeScreen({ navigation }) {
         activeOpacity={0.85}
         onPress={() => navigation.navigate('AdminPayroll')}
       >
-        <Card style={styles.netPayrollCard} elevation="xs">
+        <Card style={styles.netPayrollCard} elevation="sm">
           <View style={styles.netPayrollTopRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <MaterialCommunityIcons name="wallet" size={16} color={colors.primary} />
@@ -318,7 +318,7 @@ export default function AdminHomeScreen({ navigation }) {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
               <Text style={styles.viewPayrollLink}>Payroll Hub</Text>
-              <MaterialCommunityIcons name="chevron-right" size={14} color={colors.primary} />
+              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.primary} />
             </View>
           </View>
         </Card>
@@ -339,7 +339,7 @@ export default function AdminHomeScreen({ navigation }) {
             { label: 'Billing', icon: 'receipt', route: 'AdminBilling', color: '#EA580C', bg: '#FFEDD5' },
             { label: 'Meetings', icon: 'video-account', route: 'AdminMeetings', color: '#2563EB', bg: '#DBEAFE' },
             { label: 'Settings', icon: 'cog-outline', route: 'AdminSettings', color: '#475569', bg: '#F1F5F9' },
-            { label: 'Profile', icon: 'account-cog-outline', route: 'AdminProfile', color: '#0284C7', bg: '#E0F2FE' },
+          
           ].map((item) => (
             <TouchableOpacity
               key={item.label}
@@ -357,7 +357,7 @@ export default function AdminHomeScreen({ navigation }) {
       </View>
 
       {/* 5. Dynamic Payroll Overview 6 Months Bar Chart */}
-      <Card style={styles.chartCard} elevation="xs">
+      <Card style={styles.chartCard} elevation="sm">
         <View style={styles.chartHeaderRow}>
           <View>
             <Text style={styles.chartTitle}>Payroll Overview</Text>
@@ -467,7 +467,7 @@ export default function AdminHomeScreen({ navigation }) {
                     : 'success'
                   : 'default'
               }
-              size="sm"
+              size="md"
             />
           </View>
 
@@ -532,7 +532,7 @@ export default function AdminHomeScreen({ navigation }) {
               </View>
               <Button
                 title="Review"
-                size="sm"
+                size="md"
                 variant="outline"
                 onPress={() => navigation.navigate('AdminLeaves')}
               />
@@ -611,12 +611,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   roleSubtext: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
   greetingText: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
     marginTop: 1,
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
@@ -739,12 +739,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#16A34A',
   },
   pulseTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   pulseDateText: {
-    fontSize: 10,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   pulseMetricsRow: {
@@ -764,6 +764,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 3,
   },
+    pulseNumberBlue: {
+    fontSize: 16,
+    fontWeight: typography.weights.bold,
+    color: colors.primary,
+  },
   pulseNumberGreen: {
     fontSize: 16,
     fontWeight: typography.weights.bold,
@@ -780,7 +785,7 @@ const styles = StyleSheet.create({
     color: colors.error,
   },
   pulseLabel: {
-    fontSize: 10,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -807,7 +812,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   netPayrollTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
   },
@@ -825,7 +830,7 @@ const styles = StyleSheet.create({
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: borderRadius.pill,
@@ -854,7 +859,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   netPayrollSubLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   netPayrollSubVal: {
@@ -862,15 +867,15 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   netPayrollSubDot: {
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textMuted,
   },
   netPayrollHint: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   viewPayrollLink: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
@@ -883,18 +888,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 10,
     marginTop: 6,
   },
   hubTile: {
-    width: '23%',
+    width: '15%',
     minWidth: 54,
     alignItems: 'center',
     marginBottom: 6,
   },
   hubIconWrap: {
-    width: 38,
-    height: 38,
+    width: 50,
+    height: 50,
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -903,7 +908,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   hubLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: typography.weights.medium,
     color: colors.text,
     textAlign: 'center',
@@ -915,9 +920,11 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 8,
+    marginBottom: 20,
+    marginTop: 10,
     backgroundColor: colors.card,
     ...shadows.xs,
+    
   },
   chartHeaderRow: {
     flexDirection: 'row',
@@ -926,19 +933,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   chartTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
   chartSubtitle: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 1,
   },
   runPayrollBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -947,7 +954,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
   },
   runPayrollText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.primary,
   },
@@ -959,7 +966,7 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   legendDot: {
     width: 6,
@@ -967,7 +974,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   legendText: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
@@ -976,11 +983,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     height: 100,
-    paddingTop: 4,
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
+    paddingVertical:6,
     backgroundColor: colors.background,
     borderRadius: radius.control,
-    borderWidth: 1,
+    borderWidth: 0,
     borderColor: colors.border,
     marginBottom: 8,
   },
@@ -1060,12 +1067,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   selectedMonthTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   selectedMonthPeriod: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -1109,19 +1116,19 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   noDataText: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textSecondary,
     flex: 1,
     marginLeft: 6,
   },
   quickGenBtn: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 5,
     borderRadius: borderRadius.sm,
     backgroundColor: colors.primary,
   },
   quickGenBtnText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: '#FFFFFF',
   },
@@ -1167,7 +1174,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   leaveReqSub: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -1177,7 +1184,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: typography.weights.bold,
     color: '#0F172A',
   },
@@ -1222,7 +1229,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   activityDetail: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 1,
   },

@@ -24,7 +24,7 @@ export const getDefaultApiUrl = () => {
   if (hostUri) {
     const ip = hostUri.split(':')[0];
     if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
-      return `http://${ip}:5000/api/v1`;
+      return `https://payroll-hjsa.onrender.com/api/v1`;
     }
   }
 
