@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AimOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import L from 'leaflet';
-import MapCredit from '../MapPin/MapCredit.jsx';
+
 import { MAP_OPTIONS, OFFICE_PIN, PIN_ZOOM, rangeCircleStyle, TILE_OPTIONS, TILE_URL, YOU_DOT } from '../MapPin/mapPin.js';
 import './PunchMap.css';
 
@@ -158,7 +158,7 @@ export default function PunchMap({ locations, position, recenterKey }) {
           <span className="punch-map__key punch-map__key--you" aria-hidden="true" /> You
         </li>
       </ul>
-      <MapCredit />
+      
     </div>
   );
 }
