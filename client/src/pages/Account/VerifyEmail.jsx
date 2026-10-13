@@ -8,7 +8,7 @@ import Button from '../../components/Button/Button.jsx';
 import Loader from '../../components/Loader/Loader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLogout } from '../../context/useLogout.js';
-import { ROLE_HOME } from '../../utils/roles.js';
+import { homeAfterSignup } from '../../utils/chosenPlan.js';
 import AuthBrand, { AuthFoot } from '../Login/AuthBrand.jsx';
 import '../Login/Login.css';
 import './Account.css';
@@ -27,7 +27,7 @@ export default function VerifyEmail() {
 
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.emailVerified) return <Navigate to={ROLE_HOME[user.role]} replace />;
+  if (user.emailVerified) return <Navigate to={homeAfterSignup(user)} replace />;
 
   const submit = async (value) => {
     setError('');
@@ -36,7 +36,7 @@ export default function VerifyEmail() {
     try {
       await verifyEmailApi(value);
       await refresh();
-      navigate(ROLE_HOME[user.role], { replace: true });
+      navigate(homeAfterSignup(user), { replace: true });
     } catch (err) {
       setError(err.errors?.[0]?.message || err.message);
       setCode('');

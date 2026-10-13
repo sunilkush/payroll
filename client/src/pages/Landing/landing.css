@@ -372,19 +372,189 @@
 
 .hero__screen {
   position: relative;
-  /* Chhoti screen par dashboard poora dikhe: andar hi daayein-baayein scroll */
-  overflow-x: auto;
   border-radius: var(--radius-lg);
   box-shadow: var(--landing-shadow-lg);
 }
 
-.hero__float {
+.hero__float,
+.hero__phone {
   display: none;
 }
 
-/* ---------- Mock screen (app ki nakal) ---------- */
+/* ---------- Phone (mobile app ki nakal) ---------- */
+.phone {
+  flex: none;
+  width: 190px;
+  padding: 6px;
+  background: var(--color-navy);
+  border-radius: 28px;
+  box-shadow: var(--landing-shadow-lg);
+}
+
+.phone__screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 372px;
+  padding: 22px 8px 36px;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.35;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border-radius: 22px;
+}
+
+.phone__notch {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 46px;
+  height: 6px;
+  background: var(--color-navy);
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.phone__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.phone__subtitle {
+  margin: -4px 0 0;
+  color: var(--landing-muted);
+}
+
+.phone__muted {
+  color: var(--landing-muted);
+}
+
+.phone__heading {
+  font-weight: 600;
+}
+
+.phone__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.phone__stat,
+.phone__card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px;
+  background: var(--color-surface);
+  border: 1px solid var(--landing-line);
+  border-radius: var(--radius-sm);
+}
+
+.phone__stat-value {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.phone__row {
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phone__row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.phone__button {
+  padding: 6px;
+  font-weight: 600;
+  color: var(--color-text-inverse);
+  text-align: center;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+.phone__button--danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.phone__button--outline {
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border-color: var(--landing-line);
+}
+
+.phone__actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.phone__tabs {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 7px 4px;
+  font-size: 8px;
+  color: var(--landing-muted);
+  background: var(--color-surface);
+  border-top: 1px solid var(--landing-line);
+}
+
+.phone__tab--active {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* ---------- Mobile app section ---------- */
+.app {
+  display: grid;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.app__copy .section-head__text {
+  margin-bottom: var(--space-6);
+}
+
+.app__stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.app__soon {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--landing-muted);
+}
+
+/* Chhoti screen par phones ek line mein, daayein-baayein scroll (page khud scroll nahi hota) */
+.app__phones {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  min-width: 0;
+  padding: var(--space-4) var(--space-1) var(--space-6);
+  overflow-x: auto;
+}
+
+/* ---------- App screen (asli screenshot, browser jaise frame mein) ---------- */
 .mock {
-  min-width: 620px;
+  min-width: 0;
+  margin: 0;
   overflow: hidden;
   font-size: 11px;
   line-height: 1.4;
@@ -394,8 +564,11 @@
   border-radius: var(--radius-lg);
 }
 
-.mock--compact {
-  min-width: 0;
+/* App ka asli screenshot: frame ki poori chaudai, anupaat wahi */
+.mock__image {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .mock__bar {
@@ -423,98 +596,6 @@
   border-radius: 999px;
 }
 
-.mock__body {
-  display: flex;
-}
-
-.mock__side {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 2px;
-  width: 132px;
-  padding: var(--space-3) var(--space-2);
-  border-right: 1px solid var(--landing-line);
-}
-
-.mock__brand {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: var(--space-2);
-  padding: 0 var(--space-2);
-  font-weight: var(--font-weight-bold);
-}
-
-.mock__logo {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  font-size: 10px;
-  color: var(--color-text-inverse);
-  background: var(--color-primary);
-  border-radius: 5px;
-}
-
-.mock__nav {
-  padding: 6px var(--space-2);
-  color: var(--color-text-secondary);
-  border-radius: 6px;
-}
-
-.mock__nav--active {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-}
-
-.mock__main {
-  flex: 1;
-  min-width: 0;
-  padding: var(--space-3) var(--space-4) var(--space-4);
-  background: var(--color-bg);
-}
-
-.mock__title {
-  margin-bottom: var(--space-3);
-  font-size: 13px;
-  font-weight: var(--font-weight-bold);
-}
-
-.mock__tiles {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.mock--compact .mock__tiles {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.mock__tile,
-.mock__panel {
-  background: var(--color-surface);
-  border: 1px solid var(--landing-line);
-  border-radius: 10px;
-}
-
-.mock__tile {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-2) var(--space-3);
-}
-
-.mock__tile-label {
-  color: var(--landing-muted);
-}
-
-.mock__tile-value {
-  font-size: 16px;
-  font-weight: var(--font-weight-bold);
-}
-
 .mock__tone--success {
   color: var(--color-success);
 }
@@ -525,75 +606,6 @@
 
 .mock__tone--danger {
   color: var(--color-danger);
-}
-
-.mock__panels {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.mock--compact .mock__panels {
-  grid-template-columns: 1fr;
-}
-
-.mock__panel {
-  min-width: 0;
-  padding: var(--space-3);
-}
-
-.mock__panel-title {
-  margin-bottom: var(--space-2);
-  font-weight: var(--font-weight-bold);
-}
-
-.mock__chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  height: 96px;
-  padding-top: var(--space-1);
-  border-bottom: 1px solid var(--landing-line);
-}
-
-.mock__chart-bar {
-  flex: 1;
-  background: linear-gradient(var(--color-primary), var(--color-accent-light));
-  border-radius: 4px 4px 0 0;
-}
-
-.mock__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 6px 0;
-  border-top: 1px solid var(--landing-line);
-}
-
-.mock__row:first-of-type {
-  border-top: 0;
-}
-
-.mock__row-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.mock__row-title {
-  overflow: hidden;
-  font-weight: var(--font-weight-medium);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mock__row-meta {
-  overflow: hidden;
-  color: var(--landing-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .mock__chip {
@@ -1348,10 +1360,20 @@
     left: -40px;
   }
 
+  /* Daayein neeche phone hai, isliye ye card daayein upar */
   .hero__float--two {
-    right: -32px;
-    bottom: -28px;
+    top: -28px;
+    right: 190px;
     animation-delay: -2s;
+  }
+
+  .hero__phone {
+    position: absolute;
+    right: -28px;
+    bottom: -56px;
+    display: block;
+    animation: landing-float 6s ease-in-out infinite;
+    animation-delay: -3s;
   }
 
   .hero__float--three {
@@ -1362,6 +1384,20 @@
 
   .feature-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+
+  .app__phones {
+    justify-content: center;
+    overflow: visible;
+  }
+
+  /* Beech wala phone thoda upar: teeno ek seedh mein na lagein */
+  .app__phones .phone:nth-child(2) {
+    margin-top: calc(var(--space-8) * -1);
   }
 
   .why {

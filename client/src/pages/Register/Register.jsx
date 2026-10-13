@@ -9,25 +9,31 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { Divider } from 'antd';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import Alert from '../../components/Alert/Alert.jsx';
 import Button from '../../components/Button/Button.jsx';
 import FormField from '../../components/FormField/FormField.jsx';
 import Loader from '../../components/Loader/Loader.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { toFieldErrors } from '../../utils/formErrors.js';
-import { ROLE_HOME } from '../../utils/roles.js';
+import { homeAfterSignup, saveChosenPlan } from '../../utils/chosenPlan.js';
+import { usePlans } from '../../utils/usePlans.js';
 import AuthBrand, { AuthFoot, AuthTop } from '../Login/AuthBrand.jsx';
 import '../Login/Login.css';
 import './Register.css';
 
 const EMPTY_FORM = { companyName: '', name: '', email: '', phone: '', password: '' };
 
-// Free account: company + uska pehla admin. Ban jate hi user login ho kar admin dashboard par pahunchta hai,
-// jahan pehla kaam (office location, staff) dikhaya jata hai. Layout wahi hai jo Login ka.
+// Naya account: company + uska pehla admin, free trial ke saath. Layout wahi hai jo Login ka.
+// Landing page se plan chun kar aaye hon (?plan=PROFESSIONAL) to trial usi plan par chalta hai aur account bante hi
+// Plan & Billing khulta hai (wahi plan chuna hua); warna Free par, aur admin dashboard par.
 export default function Register() {
   const { user, loading, register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { data: catalog } = usePlans();
+  // Sirf wahi plan maante hain jo server ke plans mein hai aur jiska daam tay hai (online bikta hai).
+  const chosen = catalog?.plans.find((plan) => plan.code === searchParams.get('plan') && plan.monthlyPrice) ?? null;
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
@@ -35,7 +41,7 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <Loader />;
-  if (user) return <Navigate to={ROLE_HOME[user.role]} replace />;
+  if (user) return <Navigate to={homeAfterSignup(user)} replace />;
 
   const handleChange = (event) => {
     setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
@@ -47,8 +53,9 @@ export default function Register() {
     setFieldErrors({});
     setSubmitting(true);
     try {
-      const created = await register(form);
-      navigate(ROLE_HOME[created.role], { replace: true });
+      if (chosen) saveChosenPlan(chosen.code);
+      const created = await register({ ...form, ...(chosen && { plan: chosen.code }) });
+      navigate(homeAfterSignup(created), { replace: true });
     } catch (err) {
       const errors = toFieldErrors(err);
       setFieldErrors(errors);
@@ -80,8 +87,16 @@ export default function Register() {
           <span className="login__form-icon" aria-hidden="true">
             <RocketOutlined />
           </span>
-          <h1 className="login__title">Create your free account</h1>
-          <p className="login__subtitle">Free for up to 10 staff. No credit card required.</p>
+          <h1 className="login__title">{chosen ? `Start with ${chosen.name}` : 'Create your free account'}</h1>
+          <p className="login__subtitle">
+            {catalog ? `Free for ${catalog.billing.trialDays} days. ` : ''}No credit card required.
+          </p>
+          {chosen && (
+            <Alert type="info">
+              You chose {chosen.name}: ₹{chosen.monthlyPrice.toLocaleString('en-IN')} / month. Your free trial includes everything in
+              this plan; you can pay now or any time before the trial ends.
+            </Alert>
+          )}
 
           <Alert>{error}</Alert>
 

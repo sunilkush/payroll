@@ -2,9 +2,11 @@ import { env } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import app from './app.js';
 import { startJobs } from './jobs/index.js';
+import { refreshPlans } from './services/planService.js';
 
 async function start() {
   await connectDB();
+  await refreshPlans({ force: true }); // packages (Super Admin ke tay kiye hue) memory mein
   startJobs();
   const server = app.listen(env.port, () => {
     // Hosting (Render) par asli URL env.clientUrl hai; apne computer par localhost

@@ -26,6 +26,8 @@ const companySchema = new mongoose.Schema(
     planRequest: {
       plan: { type: String, enum: Object.values(COMPANY_PLANS) },
       note: { type: String, trim: true },
+      // Request ke waqt ka hisaab (dekho subscriptionService.quoteFor): Super Admin ko itna payment lena hai.
+      amount: { monthlyPrice: Number, months: Number, subtotal: Number, gstPercent: Number, gst: Number, total: Number },
       status: { type: String, enum: Object.values(PLAN_REQUEST_STATUS) },
       requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       requestedAt: { type: Date },
@@ -34,6 +36,15 @@ const companySchema = new mongoose.Schema(
     },
     // Company ne website se khud account banaya (Super Admin ne nahi).
     selfRegistered: { type: Boolean, default: false },
+    // GST invoice ke liye kharidne wale ki jaankari (admin payment ke waqt bharta hai)
+    billing: { gstin: { type: String, trim: true, uppercase: true }, state: { type: String, trim: true } },
+    // Free trial aur paid period (dekho services/subscriptionService.js). Dono khali = koi rok nahi.
+    subscription: {
+      trialEndsAt: { type: Date },
+      paidUntil: { type: Date },
+      // Khatam hone se kitne din pehle wale reminders ja chuke: [15, 7, 1]
+      remindersSent: { type: [Number], default: undefined },
+    },
     locations: { type: [locationSchema], default: [] },
     holidays: { type: [holidaySchema], default: [] },
     settings: {

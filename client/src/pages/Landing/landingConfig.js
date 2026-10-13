@@ -31,6 +31,7 @@ export const LINKS = {
 export const NAV = [
   { href: '#features', label: 'Features' },
   { href: '#product', label: 'Product' },
+  { href: '#app', label: 'Mobile App' },
   { href: '#pricing', label: 'Pricing' },
   { href: '#why', label: 'Why Us' },
   { href: '#faq', label: 'FAQ' },
@@ -64,7 +65,6 @@ export const SHOWCASE_TABS = [
   { key: 'leave', label: 'Leave' },
   { key: 'payroll', label: 'Payroll' },
   { key: 'sales', label: 'Sales Visits' },
-  { key: 'reports', label: 'Reports' },
 ];
 
 export const BENEFITS = [
@@ -77,52 +77,17 @@ export const BENEFITS = [
   'Grows from five staff to several companies',
 ];
 
-// ---------- Pricing ----------
-// Pricing sirf yahin hai. Baad mein backend ke subscription plans se jodna ho to yahi shape rakho:
-//   monthlyPrice / yearlyPrice  rupaye; null = "Custom" (sales se baat)
-//   yearlyPrice                 poore saal ka kul (12 mahine), 20% chhoot ke saath
-export const YEARLY_DISCOUNT_PERCENT = 20;
-const yearly = (monthly) => Math.round(monthly * 12 * (1 - YEARLY_DISCOUNT_PERCENT / 100));
-
-export const PLANS = [
-  {
-    id: 'free',
-    name: 'Free',
-    subtitle: 'For small teams getting started',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    features: ['Up to 10 staff', 'Staff management', 'Geofenced attendance', 'Attendance calendar', 'Basic dashboard', 'Email support'],
-    cta: { label: 'Start Free', href: LINKS.signup },
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    subtitle: 'For small offices and shops',
-    monthlyPrice: 999,
-    yearlyPrice: yearly(999),
-    features: ['Up to 50 staff', 'Everything in Free', 'Leave management (CL / EL)', 'Punch corrections', 'Payroll with salary slips', 'Attendance reports', 'Email support'],
-    cta: { label: 'Start Starter', href: LINKS.signup },
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    subtitle: 'For growing companies',
-    monthlyPrice: 2499,
-    yearlyPrice: yearly(2499),
-    popular: true,
-    features: ['Up to 250 staff', 'Everything in Starter', 'PF & ESI calculation', 'Working hours and late tracking', 'Sales meetings with QR check-in', 'Visit photos and follow-ups', 'Excel exports', 'Priority support'],
-    cta: { label: 'Start Professional', href: LINKS.signup },
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    subtitle: 'For large teams and multiple companies',
-    monthlyPrice: null,
-    yearlyPrice: null,
-    features: ['Unlimited staff', 'Everything in Professional', 'Multi-company management', 'Multiple admins', 'Dedicated support', 'Custom reports', 'Custom branding', 'Onboarding help'],
-    cta: { label: 'Contact Sales', href: LINKS.contact },
-  },
+// Mobile app (mobile/ folder) jo sach mein karta hai, wahi baatein.
+export const APP_POINTS = [
+  'Punch in and out with GPS, only inside the office range',
+  'No network? The punch is saved and sent when you are back online',
+  'Apply for leave and see your balance',
+  'Download salary slips as PDF',
+  'Admins approve leave and punch corrections on the go',
+  'Instant notifications, and fingerprint or face lock',
 ];
+
+// Pricing yahan nahi hai: packages aur daam server se aate hain (Super Admin badalta hai; dekho utils/usePlans.js).
 
 export const STEPS = [
   { title: 'Create Your Company', text: 'Your company and its admin account are set up in minutes.' },

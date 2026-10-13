@@ -32,6 +32,9 @@ export const createCompanySchema = Joi.object({
 export const updateCompanySchema = Joi.object({
   ...companyFields,
   plan: Joi.string().valid(...Object.values(COMPANY_PLANS)).label('Plan'),
+  // Free trial / paid period ki aakhri tarikh (ISO date). Dene par company par subscription ki rok lagu ho jati hai.
+  trialEndsAt: Joi.date().iso().label('Trial end date'),
+  paidUntil: Joi.date().iso().label('Paid until date'),
 }).min(1);
 
 export const companyStatusSchema = Joi.object({ isActive: Joi.boolean().required() });

@@ -35,14 +35,17 @@ if (env.forceHttps) app.use(httpsRedirect);
 
 // Security headers; HTTPS par HSTS bhi bhejta hai. Content-Security-Policy mein sirf wahi bahar ki
 // jagahein khuli hain jo Settings ke office-location map ko chahiye: OpenStreetMap ki map tiles
-// (images) aur uski place search. Baaki do cheezein (blob:) meeting ke QR scanner ke liye hain.
+// (images) aur uski place search, aur Razorpay (online payment). Baaki do cheezein (blob:) meeting ke QR scanner ke liye hain.
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         // blob: sales manager ki upload ki hui QR photo (scanner use browser mein hi padhta hai)
-        'img-src': ["'self'", 'data:', 'blob:', 'https://*.basemaps.cartocdn.com', 'https://*.tile.openstreetmap.org'],
-        'connect-src': ["'self'", 'https://nominatim.openstreetmap.org'],
+        'img-src': ["'self'", 'data:', 'blob:', 'https://*.basemaps.cartocdn.com', 'https://*.tile.openstreetmap.org', 'https://*.razorpay.com'],
+        'connect-src': ["'self'", 'https://nominatim.openstreetmap.org', 'https://*.razorpay.com'],
+        // Plan & Billing ka online payment: Razorpay Checkout ka script aur uski payment wali khidki (iframe)
+        'script-src': ["'self'", 'https://checkout.razorpay.com'],
+        'frame-src': ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
         // QR scanner camera ki tasveer ek worker mein padhta hai, jo blob: se banta hai
         'worker-src': ["'self'", 'blob:'],
       },
@@ -52,7 +55,15 @@ app.use(
 app.use(cors({ origin: env.clientUrls }));
 // Gzip/deflate: JS, CSS, JSON ~60-80% chhote ho jaate hain, page tez khulta hai.
 app.use(compression());
-app.use(express.json({ limit: '1mb' }));
+// rawBody: Razorpay ke webhook ka signature kachche body par banta hai, isliye us route par use bhi rakhte hain.
+app.use(
+  express.json({
+    limit: '1mb',
+    verify(req, res, buffer) {
+      if (req.originalUrl.startsWith('/api/v1/webhooks/')) req.rawBody = buffer;
+    },
+  })
+);
 if (env.nodeEnv === 'development') app.use(morgan('dev'));
 
 app.use('/api/v1', routes);

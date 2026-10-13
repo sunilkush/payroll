@@ -1,10 +1,29 @@
 import * as accountService from '../services/accountService.js';
 import * as authService from '../services/authService.js';
+import * as sessionService from '../services/sessionService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const login = asyncHandler(async (req, res) => {
   const data = await authService.login(req.body);
   res.json({ success: true, data });
+});
+
+// ---------- Mobile app: refresh token, logout, push token ----------
+
+export const refresh = asyncHandler(async (req, res) => {
+  const data = await authService.refresh(req.body.refreshToken);
+  res.json({ success: true, data });
+});
+
+// Access token expire ho chuka ho tab bhi logout ho sake, isliye yahan login nahi maanga jata.
+export const logout = asyncHandler(async (req, res) => {
+  await sessionService.endSession(req.body.refreshToken);
+  res.json({ success: true, message: 'Logged out.' });
+});
+
+export const savePushToken = asyncHandler(async (req, res) => {
+  await sessionService.savePushToken(req.user, req.body);
+  res.json({ success: true, message: 'Notifications are on for this device.' });
 });
 
 export const register = asyncHandler(async (req, res) => {

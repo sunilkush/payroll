@@ -4,6 +4,7 @@ import { Faq, FinalCta, Footer } from './Closing.jsx';
 import { FeatureGrid, ProductShowcase, WhyChooseUs } from './Features.jsx';
 import Hero, { TrustSection } from './Hero.jsx';
 import LandingLink from './LandingLink.jsx';
+import { MobileAppSection } from './MobileApp.jsx';
 import Navbar from './Navbar.jsx';
 import { PricingSection } from './Pricing.jsx';
 import { HowItWorks, Stats, Testimonials } from './Proof.jsx';
@@ -36,6 +37,7 @@ export default function Landing() {
         <TrustSection />
         <FeatureGrid />
         <ProductShowcase />
+        <MobileAppSection />
         <WhyChooseUs />
         <PricingSection />
         <HowItWorks />

@@ -1,10 +1,11 @@
 import { Company } from '../models/Company.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
-import { PLAN_STAFF_LIMIT, ROLES } from '../utils/constants.js';
+import { ROLES } from '../utils/constants.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { creditUser } from './leaveService.js';
+import { planStaffLimit } from './planService.js';
 
 // Yahan companyId kahin nahi likha: tenant middleware + tenantPlugin har query ko
 // apne aap current company tak limit karte hain aur naye staff par companyId lagate hain.
@@ -55,8 +56,8 @@ export async function listStaff({ search, status, salesManager, page, limit }) {
 
 // Plan mein jitne active staff ki ijazat hai usse zyada na hon. (Band kiye hue staff nahi ginte.)
 async function assertStaffSlot(company) {
-  const limit = PLAN_STAFF_LIMIT[company.plan];
-  if (limit === null || limit === undefined) return;
+  const limit = planStaffLimit(company.plan);
+  if (limit === null) return;
   if ((await User.countDocuments({ role: ROLES.STAFF, isActive: true })) >= limit) {
     throw new ApiError(403, `Your plan allows up to ${limit} active staff. Upgrade your plan to add more.`);
   }

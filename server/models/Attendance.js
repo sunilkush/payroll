@@ -15,6 +15,9 @@ const punchSchema = new mongoose.Schema(
     // Fake GPS poori tarah nahi rok sakte, isliye IP/device ka log rakhte hain.
     ip: { type: String },
     userAgent: { type: String },
+    // Mobile app ka offline punch: time phone ka hai (network na hone par), server tak syncedAt par pahuncha.
+    offline: { type: Boolean },
+    syncedAt: { type: Date },
     // Time admin ne punch correction request manzoor karke badla hai.
     corrected: { type: Boolean },
   },

@@ -1,23 +1,24 @@
-import { useState } from 'react';
 import { CheckOutlined } from '@ant-design/icons';
-import { Segmented } from 'antd';
+import { planBullets, usePlans } from '../../utils/usePlans.js';
 import { SectionHead } from './Features.jsx';
 import LandingLink from './LandingLink.jsx';
 import Reveal from './Reveal.jsx';
-import { PLANS, YEARLY_DISCOUNT_PERCENT } from './landingConfig.js';
+import { LINKS } from './landingConfig.js';
 
 const rupees = (amount) => `₹${amount.toLocaleString('en-IN')}`;
+// Beech wale paid plan par "Most Popular" (plans chhote se bade aate hain).
+const POPULAR = 'PROFESSIONAL';
 
-// Ek plan ka card. Daam aur bachat PLANS (landingConfig.js) se hi nikalte hain, yahan kuch likha hua nahi hai.
-export function PricingCard({ plan, yearly }) {
-  const custom = plan.monthlyPrice === null;
-  // Saal wale mein bhi "per month" dikhate hain (saal ka kul / 12), neeche saal ka kul aur bachat.
-  const perMonth = custom ? null : yearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice;
-  const saving = custom ? 0 : plan.monthlyPrice * 12 - plan.yearlyPrice;
+// Ek plan ka card. Naam, daam, staff ki hadd aur features server se aate hain (Super Admin badalta hai);
+// yahan koi rakam likhi hui nahi hai.
+export function PricingCard({ plan, billing, featureLabels }) {
+  const free = plan.code === 'FREE';
+  const custom = !free && !plan.monthlyPrice;
+  const popular = plan.code === POPULAR;
 
   return (
-    <article className={`plan${plan.popular ? ' plan--popular' : ''}`} aria-label={`${plan.name} plan`}>
-      {plan.popular && <span className="plan__badge">Most Popular</span>}
+    <article className={`plan${popular ? ' plan--popular' : ''}`} aria-label={`${plan.name} plan`}>
+      {popular && <span className="plan__badge">Most Popular</span>}
       <h3 className="plan__name">{plan.name}</h3>
       <p className="plan__subtitle">{plan.subtitle}</p>
 
@@ -26,26 +27,27 @@ export function PricingCard({ plan, yearly }) {
           <span className="plan__amount">Custom</span>
         ) : (
           <>
-            {/* key: toggle par daam halke se badle */}
-            <span className="plan__amount" key={perMonth}>
-              {rupees(perMonth)}
-            </span>
+            <span className="plan__amount">{rupees(free ? 0 : plan.monthlyPrice)}</span>
             <span className="plan__period"> / month</span>
           </>
         )}
       </p>
       <p className="plan__billing">
         {custom && 'Tailored to your team'}
-        {!custom && plan.monthlyPrice === 0 && 'Free forever'}
-        {!custom && plan.monthlyPrice > 0 && (yearly ? `${rupees(plan.yearlyPrice)} billed yearly · save ${rupees(saving)}` : 'Billed monthly')}
+        {free && `Free for ${billing.trialDays} days`}
+        {!custom && !free && `${billing.trialDays}-day free trial, then billed for ${billing.months} months + ${billing.gstPercent}% GST`}
       </p>
 
-      <LandingLink href={plan.cta.href} className={`landing-btn landing-btn--block ${plan.popular ? 'landing-btn--primary' : 'landing-btn--outline'}`}>
-        {plan.cta.label}
+      <LandingLink
+        // Chuna hua plan register page tak saath jata hai (trial usi plan par shuru hota hai).
+        href={custom ? LINKS.contact : free ? LINKS.signup : `${LINKS.signup}?plan=${plan.code}`}
+        className={`landing-btn landing-btn--block ${popular ? 'landing-btn--primary' : 'landing-btn--outline'}`}
+      >
+        {custom ? 'Contact Sales' : free ? 'Start Free' : `Start ${plan.name}`}
       </LandingLink>
 
       <ul className="plan__features">
-        {plan.features.map((feature) => (
+        {planBullets(plan, featureLabels).map((feature) => (
           <li key={feature}>
             <CheckOutlined className="plan__check" /> {feature}
           </li>
@@ -56,8 +58,7 @@ export function PricingCard({ plan, yearly }) {
 }
 
 export function PricingSection() {
-  const [billing, setBilling] = useState('monthly');
-  const yearly = billing === 'yearly';
+  const { data, error } = usePlans();
 
   return (
     <section className="landing-section landing-section--tint" id="pricing" aria-labelledby="pricing-title">
@@ -69,29 +70,23 @@ export function PricingSection() {
           text="Start small, upgrade when you grow. No unnecessary complexity."
         />
 
-        <Reveal className="pricing__toggle">
-          <Segmented
-            size="large"
-            aria-label="Billing period"
-            value={billing}
-            onChange={setBilling}
-            options={[
-              { value: 'monthly', label: 'Monthly' },
-              { value: 'yearly', label: 'Yearly' },
-            ]}
-          />
-          <span className={`pricing__save${yearly ? ' pricing__save--on' : ''}`}>Save up to {YEARLY_DISCOUNT_PERCENT}%</span>
-        </Reveal>
+        {data && (
+          <div className="pricing__grid">
+            {data.plans.map((plan, index) => (
+              <Reveal key={plan.code} delay={index * 60} className="pricing__cell">
+                <PricingCard plan={plan} billing={data.billing} featureLabels={data.featureLabels} />
+              </Reveal>
+            ))}
+          </div>
+        )}
+        {/* Server tak pahunch na ho to khali jagah ki jagah seedha raasta */}
+        {error && (
+          <p className="pricing__notes">
+            Prices could not be loaded right now. <LandingLink href={LINKS.contact}>Contact us</LandingLink> for pricing.
+          </p>
+        )}
 
-        <div className="pricing__grid">
-          {PLANS.map((plan, index) => (
-            <Reveal key={plan.id} delay={index * 60} className="pricing__cell">
-              <PricingCard plan={plan} yearly={yearly} />
-            </Reveal>
-          ))}
-        </div>
-
-        <p className="pricing__notes">No credit card required • Cancel anytime • Secure payments</p>
+        <p className="pricing__notes">No credit card required to start • Secure payments</p>
       </div>
     </section>
   );

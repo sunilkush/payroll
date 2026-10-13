@@ -15,5 +15,12 @@ process.env.FORCE_HTTPS = 'false';
 // Responsive (browser) check isse 'true' karke chalata hai taaki server client/dist bhi serve kare.
 process.env.SERVE_CLIENT ??= 'false';
 process.env.TRUST_PROXY = '0';
+// Online payment: nakli keys. Tests mein Razorpay tak koi request nahi jati (razorpayService ka memory mode).
+process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+process.env.RAZORPAY_KEY_SECRET = 'test-razorpay-secret';
+process.env.RAZORPAY_WEBHOOK_SECRET = 'test-webhook-secret';
+process.env.GST_SELLER_NAME = 'PayRoster Test Pvt Ltd';
+process.env.GST_SELLER_GSTIN = '06ABCDE1234F1Z5';
+process.env.GST_SELLER_STATE = 'Haryana';
 // Tests ki uploads asli folder mein na jayein
 process.env.UPLOAD_DIR = path.join(os.tmpdir(), 'payroll_test_uploads');

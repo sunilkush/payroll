@@ -9,13 +9,17 @@ import { env } from '../../config/env.js';
 import mongoose from 'mongoose';
 import { Attendance } from '../../models/Attendance.js';
 import { Client } from '../../models/Client.js';
+import { Company } from '../../models/Company.js';
+import { DeviceSession } from '../../models/DeviceSession.js';
 import { LeaveBalance } from '../../models/LeaveBalance.js';
 import { Meeting } from '../../models/Meeting.js';
 import { User } from '../../models/User.js';
 import { markMissedPunchOuts } from '../../services/attendanceService.js';
 import { outbox } from '../../services/mailService.js';
 import { markMissedMeetings } from '../../services/meetingService.js';
+import { pushOutbox, pushToAdmins, sendPush } from '../../services/pushService.js';
 import { hashToken, meetingToken } from '../../services/qrService.js';
+import { sendSubscriptionReminders } from '../../services/subscriptionService.js';
 import { addDays, daysOfMonth, todayStr, weekdayOf, zonedTime } from '../../utils/dateUtil.js';
 import { runWithTenant } from '../../utils/tenantContext.js';
 
@@ -2318,14 +2322,21 @@ describe('plans: features ki rok aur upgrade request', () => {
   test('billing: plan, usage aur upgrade request (sirf admin, sirf bada plan, ek hi pending)', async () => {
     let res = await call('GET', '/billing', P.free);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.data, { plan: 'FREE', staffLimit: 10, activeStaff: 0, features: [], request: null });
+    const { subscription, quotes, onlinePayment, billing: buyer, canChoose, ...billing } = res.body.data;
+    assert.deepEqual(canChoose, { FREE: false, STARTER: true, PROFESSIONAL: true, ENTERPRISE: true }, 'trial mein koi bhi paid plan');
+    assert.deepEqual([onlinePayment, buyer], [true, {}]);
+    assert.deepEqual(billing, { plan: 'FREE', staffLimit: 10, activeStaff: 0, features: [], request: null });
+    assert.equal(subscription.status, 'TRIAL');
+    // Daam mahine ka, payment ek saal ki + 18% GST
+    assert.deepEqual(quotes.STARTER, { monthlyPrice: 999, months: 12, subtotal: 11988, gstPercent: 18, gst: 2157.84, total: 14145.84 });
+    assert.deepEqual([quotes.FREE, quotes.ENTERPRISE], [null, null]);
     assert.equal((await call('GET', '/billing', A.staff)).status, 403);
     assert.equal((await call('GET', '/billing', superAdmin)).status, 403);
 
     const ask = (plan, note, token = P.free) => call('POST', '/billing/upgrade-request', token, { plan, note });
     assert.equal((await ask('GOLD')).status, 400);
     assert.equal((await ask('FREE')).status, 400, 'wahi plan');
-    assert.equal((await ask('STARTER', undefined, P.starter)).status, 400, 'Starter se Starter nahi');
+    assert.equal((await ask('FREE', undefined, P.starter)).status, 400, 'chhota plan nahi');
     res = await ask('PROFESSIONAL', 'Sales team ke liye chahiye');
     assert.equal(res.status, 201);
     assert.equal(res.body.data.request.status, 'PENDING');
@@ -2385,5 +2396,498 @@ describe('plans: features ki rok aur upgrade request', () => {
     assert.equal((await call('GET', '/clients', P.free)).status, 403);
     assert.equal((await call('GET', `/payroll?month=${month}`, P.free)).status, 403);
     assert.equal((await call('GET', '/leaves/balance', A.staff)).status, 200, 'doosri company par asar nahi');
+  });
+});
+
+describe('mobile app: refresh token aur push token', () => {
+  const post = (path, body, token) => api.call(path, { method: 'POST', body, token });
+  // Ravi ka password upar password reset wale test mein badal chuka hai.
+  const RAVI_PASSWORD = 'NayaPass@123';
+  const mobileLogin = (deviceId, email = 'ravi@alpha.test') =>
+    post('/auth/login', { email, password: email === 'ravi@alpha.test' ? RAVI_PASSWORD : 'Password@1', deviceId, platform: 'android' });
+  const PUSH = 'ExponentPushToken[ravi-phone-1]';
+  let refreshToken;
+
+  test('app config bina login ke milta hai (force update ke liye)', async () => {
+    const res = await api.call('/app/config');
+    assert.equal(res.status, 200);
+    assert.deepEqual(Object.keys(res.body.data).sort(), ['androidUrl', 'iosUrl', 'latestVersion', 'minVersion']);
+  });
+
+  test('web login (deviceId nahi) ko refresh token nahi milta', async () => {
+    const res = await post('/auth/login', { email: 'ravi@alpha.test', password: RAVI_PASSWORD });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.refreshToken, undefined);
+  });
+
+  test('mobile login -> refresh token; refresh par naya token aur purana band', async () => {
+    const login = await mobileLogin('device-ravi-1');
+    assert.equal(login.status, 200);
+    const first = login.body.data.refreshToken;
+    assert.ok(first);
+    assert.equal(await DeviceSession.countDocuments({ refreshHash: first }), 0, 'database mein token nahi, sirf hash');
+
+    const res = await post('/auth/refresh', { refreshToken: first });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.user.email, 'ravi@alpha.test');
+    assert.equal(res.body.data.company.name, 'Alpha Pvt Ltd');
+    refreshToken = res.body.data.refreshToken;
+    assert.notEqual(refreshToken, first);
+    assert.equal((await api.call('/auth/me', { token: res.body.data.token })).status, 200);
+
+    assert.equal((await post('/auth/refresh', { refreshToken: first })).status, 401, 'purana token dobara nahi chalta');
+    assert.equal((await post('/auth/refresh', { refreshToken: 'x'.repeat(40) })).status, 401);
+    assert.equal((await post('/auth/refresh', {})).status, 400);
+  });
+
+  test('usi phone se dobara login: ek hi session rehta hai', async () => {
+    const login = await mobileLogin('device-ravi-1');
+    assert.equal((await post('/auth/refresh', { refreshToken })).status, 401, 'pichhla refresh token band');
+    refreshToken = login.body.data.refreshToken;
+    assert.equal(await DeviceSession.countDocuments({ userId: A.staffId }), 1);
+  });
+
+  test('push token: save hota hai, galat format / anjaan device par nahi', async () => {
+    const put = (body) => api.call('/auth/push-token', { method: 'PUT', token: A.staff, body });
+    assert.equal((await put({ deviceId: 'device-ravi-1', pushToken: 'kuch-bhi' })).status, 400);
+    assert.equal((await put({ deviceId: 'device-anjaan', pushToken: PUSH })).status, 404);
+    assert.equal((await api.call('/auth/push-token', { method: 'PUT', body: { deviceId: 'device-ravi-1', pushToken: PUSH } })).status, 401);
+    assert.equal((await put({ deviceId: 'device-ravi-1', pushToken: PUSH })).status, 200);
+  });
+
+  test('push sirf sahi user ke phone par jati hai; admins wali sirf apni company ke admin ko', async () => {
+    const adminLogin = await mobileLogin('device-admin-a', 'admin@alpha.test');
+    const ADMIN_PUSH = 'ExponentPushToken[alpha-admin-phone]';
+    await api.call('/auth/push-token', { method: 'PUT', token: adminLogin.body.data.token, body: { deviceId: 'device-admin-a', pushToken: ADMIN_PUSH } });
+
+    pushOutbox.length = 0;
+    await sendPush([A.staffId], { title: 'Leave approved', body: 'ok' });
+    assert.deepEqual(pushOutbox.map((message) => message.to), [PUSH]);
+
+    pushOutbox.length = 0;
+    await runWithTenant(new mongoose.Types.ObjectId(A.id), () => pushToAdmins({ title: 'New leave request', body: 'ok' }));
+    assert.deepEqual(pushOutbox.map((message) => message.to), [ADMIN_PUSH]);
+    pushOutbox.length = 0;
+    await runWithTenant(new mongoose.Types.ObjectId(B.id), () => pushToAdmins({ title: 'New leave request', body: 'ok' }));
+    assert.equal(pushOutbox.length, 0, 'doosri company ke admin ka koi phone nahi');
+  });
+
+  test('usi phone par doosra user login kare to push token uska ho jata hai', async () => {
+    const other = await mobileLogin('device-ravi-1', 'mohan@alpha.test');
+    await api.call('/auth/push-token', { method: 'PUT', token: other.body.data.token, body: { deviceId: 'device-ravi-1', pushToken: PUSH } });
+    pushOutbox.length = 0;
+    await sendPush([A.staffId], { title: 'x', body: 'y' });
+    assert.equal(pushOutbox.length, 0, 'pehle user ko ab is phone par nahi jati');
+  });
+
+  test('logout: refresh token band; dobara logout bhi 200', async () => {
+    assert.equal((await post('/auth/logout', { refreshToken })).status, 200);
+    assert.equal((await post('/auth/refresh', { refreshToken })).status, 401);
+    assert.equal((await post('/auth/logout', { refreshToken })).status, 200);
+  });
+
+  test('deactivate hua user refresh nahi kar sakta aur session hat jata hai', async () => {
+    const login = await mobileLogin('device-ravi-2');
+    await User.updateOne({ _id: A.staffId }, { $set: { isActive: false } });
+    assert.equal((await post('/auth/refresh', { refreshToken: login.body.data.refreshToken })).status, 403);
+    assert.equal(await DeviceSession.countDocuments({ userId: A.staffId }), 0);
+    await User.updateOne({ _id: A.staffId }, { $set: { isActive: true } });
+  });
+});
+
+// Aaj payment ho to expiry tak kitne din: aaj se 12 mahine (365, ya leap saal aaye to 366).
+const inOneYear = new Date();
+inOneYear.setUTCMonth(inOneYear.getUTCMonth() + 12);
+const YEAR_DAYS = Math.round((inOneYear - Date.now()) / (24 * 60 * 60 * 1000));
+
+describe('subscription: free trial, khatam hone par rok, plan lene par wapas chalu', () => {
+  const call = (method, path, token, body) => api.call(path, { method, token, body });
+  const DAY = 24 * 60 * 60 * 1000;
+  const STAFF = { email: 'staff@trial.test', password: 'Password@1' };
+  const staffLogin = () => api.call('/auth/login', { method: 'POST', body: STAFF });
+  const subscriptionOfAdmin = async () => (await call('GET', '/auth/me', S.admin)).body.data.company.subscription;
+  const setDates = (dates) => Company.updateOne({ _id: S.companyId }, { $set: dates });
+  const S = {};
+
+  test('khud register ki hui company: 30 din ka trial; purani companies par koi rok nahi', async () => {
+    const OWNER = { companyName: 'Trial Co', name: 'Kiran Rao', email: 'owner@trial.test', password: 'Password@1' };
+    assert.equal((await api.call('/auth/register', { method: 'POST', body: OWNER })).status, 201);
+    await User.updateOne({ email: OWNER.email }, { $set: { emailVerified: true } });
+    S.admin = await api.login(OWNER.email);
+    const me = (await call('GET', '/auth/me', S.admin)).body.data.company;
+    S.companyId = me._id;
+    assert.equal(me.subscription.status, 'TRIAL');
+    assert.equal(me.subscription.daysLeft, 30);
+    assert.equal((await call('GET', '/auth/me', A.admin)).body.data.company.subscription.status, 'NONE');
+
+    const res = await call('POST', '/staff', S.admin, staffBody({ ...STAFF, employeeCode: 'T1' }));
+    assert.equal(res.status, 201);
+    S.staff = (await staffLogin()).body.data.token;
+    assert.ok(S.staff);
+  });
+
+  test('trial khatam: staff login nahi kar sakta ("contact your admin"), chalu session bhi band', async () => {
+    await setDates({ 'subscription.trialEndsAt': new Date(Date.now() - DAY) });
+
+    const login = await staffLogin();
+    assert.equal(login.status, 403);
+    assert.match(login.body.message, /contact your admin/);
+    assert.equal(login.body.errors[0].field, 'subscription');
+    assert.equal((await call('GET', '/attendance/today', S.staff)).status, 403);
+  });
+
+  test('trial khatam: admin login hota hai par sirf Plan & Billing khulta hai', async () => {
+    S.admin = await api.login('owner@trial.test');
+    assert.ok(S.admin);
+    assert.deepEqual(await subscriptionOfAdmin(), { status: 'EXPIRED', endsAt: (await subscriptionOfAdmin()).endsAt, daysLeft: 0 });
+
+    for (const path of ['/staff', '/dashboard', '/settings', `/attendance/report?month=${month}`]) {
+      const res = await call('GET', path, S.admin);
+      assert.equal(res.status, 402, path);
+      assert.equal(res.body.errors[0].field, 'subscription');
+    }
+    const billing = await call('GET', '/billing', S.admin);
+    assert.equal(billing.status, 200);
+    assert.equal(billing.body.data.subscription.status, 'EXPIRED');
+    assert.equal((await call('GET', '/staff', A.admin)).status, 200, 'doosri company par asar nahi');
+  });
+
+  test('plan manzoor hote hi: ek saal ka paid period, admin aur staff dono wapas chalu', async () => {
+    const asked = await call('POST', '/billing/upgrade-request', S.admin, { plan: 'STARTER' });
+    assert.equal(asked.status, 201);
+    assert.equal(asked.body.data.request.amount.total, 14145.84, 'request mein saal ka payment (GST ke saath) likha hai');
+    const res = await call('PATCH', `/companies/${S.companyId}/plan-request`, superAdmin, { action: 'approve' });
+    assert.equal(res.status, 200);
+
+    const subscription = await subscriptionOfAdmin();
+    assert.equal(subscription.status, 'ACTIVE');
+    assert.equal(subscription.daysLeft, YEAR_DAYS, 'manzoor hone ke din se ek saal');
+    assert.equal((await call('GET', '/staff', S.admin)).status, 200);
+    assert.equal((await staffLogin()).status, 200);
+    assert.equal((await call('GET', '/attendance/today', S.staff)).status, 200, 'purana session bhi chal pada');
+  });
+
+  test('renew: expiry phir us din se ek saal (bache hue din nahi judte)', async () => {
+    assert.equal((await call('POST', '/billing/upgrade-request', S.admin, { plan: 'FREE' })).status, 400);
+    assert.equal((await call('POST', '/billing/upgrade-request', S.admin, { plan: 'STARTER' })).status, 201);
+    await call('PATCH', `/companies/${S.companyId}/plan-request`, superAdmin, { action: 'approve' });
+    assert.equal((await subscriptionOfAdmin()).daysLeft, YEAR_DAYS, 'bache hue din nahi judte: phir us din se ek saal');
+    assert.equal((await call('POST', '/billing/upgrade-request', A.admin, { plan: 'ENTERPRISE' })).status, 400, 'bina subscription wali company renew nahi karti');
+  });
+
+  test('paid period khatam -> phir rok; Super Admin haath se date badha sakta hai', async () => {
+    await setDates({ 'subscription.paidUntil': new Date(Date.now() - DAY) });
+    assert.equal((await subscriptionOfAdmin()).status, 'EXPIRED');
+    assert.equal((await staffLogin()).status, 403);
+
+    const res = await call('PUT', `/companies/${S.companyId}`, superAdmin, { paidUntil: new Date(Date.now() + 10 * DAY).toISOString() });
+    assert.equal(res.status, 200);
+    const subscription = await subscriptionOfAdmin();
+    assert.deepEqual([subscription.status, subscription.daysLeft], ['ACTIVE', 10]);
+    assert.equal((await staffLogin()).status, 200);
+    assert.equal((await call('PUT', `/companies/${S.companyId}`, superAdmin, { paidUntil: 'kal' })).status, 400);
+  });
+
+  test('reminder: 7 din bache hon to admin ko ek hi baar email + push', async () => {
+    await setDates({ 'subscription.paidUntil': new Date(Date.now() + 6.5 * DAY), 'subscription.remindersSent': [] });
+    const mailsBefore = outbox.length;
+    assert.equal(await sendSubscriptionReminders(), 1);
+    const mail = outbox.at(-1);
+    assert.equal(outbox.length, mailsBefore + 1);
+    assert.equal(mail.to, 'owner@trial.test');
+    assert.match(mail.subject, /7 days left on your subscription/);
+    assert.equal(await sendSubscriptionReminders(), 0, 'dobara nahi jata');
+
+    await setDates({ 'subscription.paidUntil': new Date(Date.now() + 0.5 * DAY) });
+    assert.equal(await sendSubscriptionReminders(), 1, '1 din wala alag se jata hai');
+    assert.match(outbox.at(-1).subject, /1 day left/);
+  });
+});
+
+describe('offline punch (mobile app baad mein bhejta hai, phone ke time ke saath)', () => {
+  const O = {};
+  const punch = (type, clientTime) =>
+    api.call(`/attendance/punch-${type}`, { method: 'POST', token: O.staff, body: { ...INSIDE, ...(clientTime && { clientTime }) } });
+  const ago = (ms) => new Date(Date.now() - ms).toISOString();
+
+  test('setup: Trial Co ka office aur staff', async () => {
+    O.admin = await api.login('owner@trial.test');
+    const res = await api.call('/settings', { method: 'PUT', token: O.admin, body: { locations: [{ name: 'Office', ...OFFICE, radius: 100 }] } });
+    assert.equal(res.status, 200);
+    O.staff = await api.login('staff@trial.test');
+    assert.ok(O.staff);
+  });
+
+  test('galat time: kal ka, aage ka ya bekaar -> 400, kuch save nahi hota', async () => {
+    assert.equal((await punch('in', ago(26 * 60 * 60 * 1000))).status, 400);
+    assert.equal((await punch('in', new Date(Date.now() + 60 * 60 * 1000).toISOString())).status, 400);
+    assert.equal((await punch('in', 'abhi')).status, 400);
+    assert.equal((await api.call('/attendance/today', { token: O.staff })).body.data.attendance, null);
+  });
+
+  test('offline punch in: phone ka time lagta hai aur offline ka nishaan', async () => {
+    O.inTime = ago(3000);
+    const res = await punch('in', O.inTime);
+    assert.equal(res.status, 201);
+    const { punchIn } = res.body.data.attendance;
+    assert.equal(punchIn.time, O.inTime);
+    assert.equal(punchIn.offline, true);
+    assert.ok(punchIn.syncedAt);
+    assert.equal(punchIn.locationName, 'Office', 'geofence us waqt ki location par check hua');
+  });
+
+  test('offline punch out: pehle wale punch se purana -> 409; baad ka -> chal jata hai', async () => {
+    assert.equal((await punch('out', ago(60 * 1000))).status, 409);
+    const res = await punch('out', ago(1000));
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.attendance.punchOut.offline, true);
+  });
+
+  test('seedha (online) punch par offline ka nishaan nahi', async () => {
+    const res = await punch('in');
+    assert.equal(res.status, 201);
+    assert.equal(res.body.data.attendance.punches.at(-1).offline, undefined);
+  });
+});
+
+describe('online payment (Razorpay) + GST invoice', () => {
+  const R = {};
+  const call = (method, path, token, body) => api.call(path, { method, token, body });
+  const hmac = (secret, text) => crypto.createHmac('sha256', secret).update(text).digest('hex');
+  const paymentSignature = (orderId, paymentId) => hmac('test-razorpay-secret', `${orderId}|${paymentId}`);
+  const checkout = (body, token = R.admin) => call('POST', '/billing/checkout', token, body);
+  // Webhook ka signature kachche body par banta hai, isliye body ko khud string banakar bhejte hain.
+  const webhook = (event, signature) => {
+    const body = JSON.stringify(event);
+    return fetch(`${api.origin}/api/v1/webhooks/razorpay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-razorpay-signature': signature ?? hmac('test-webhook-secret', body) },
+      body,
+    });
+  };
+  const captured = (orderId, paymentId) => ({ event: 'payment.captured', payload: { payment: { entity: { id: paymentId, order_id: orderId } } } });
+  const me = async () => (await call('GET', '/auth/me', R.admin)).body.data.company;
+
+  test('setup + checkout ki jaanch: state zaroori, GSTIN sahi, sirf bikne wala plan', async () => {
+    R.admin = await api.login('owner@trial.test');
+    R.companyId = (await me())._id;
+    assert.equal((await call('GET', '/billing', R.admin)).body.data.onlinePayment, true);
+
+    assert.equal((await checkout({ plan: 'PROFESSIONAL' })).status, 400, 'state nahi');
+    assert.equal((await checkout({ plan: 'PROFESSIONAL', state: 'Haryana', gstin: 'GALAT' })).status, 400);
+    assert.equal((await checkout({ plan: 'FREE', state: 'Haryana' })).status, 400, 'chhota plan');
+    assert.equal((await checkout({ plan: 'ENTERPRISE', state: 'Haryana' })).status, 400, 'custom daam online nahi bikta');
+    assert.equal((await checkout({ plan: 'PROFESSIONAL', state: 'Haryana' }, A.staff)).status, 403);
+  });
+
+  test('checkout: saal ka total (GST ke saath) paise mein; payment se pehle plan nahi badalta', async () => {
+    const res = await checkout({ plan: 'PROFESSIONAL', state: 'Haryana', gstin: '06aaaaa0000a1z5' });
+    assert.equal(res.status, 201);
+    R.orderId = res.body.data.orderId;
+    assert.equal(res.body.data.amount, 3538584, '2499 x 12 + 18% = 35385.84');
+    assert.equal(res.body.data.keyId, 'rzp_test_key');
+    assert.equal(JSON.stringify(res.body).includes('test-razorpay-secret'), false, 'secret kabhi bahar nahi jata');
+    assert.equal((await me()).plan, 'STARTER');
+    assert.equal((await call('GET', '/billing', R.admin)).body.data.billing.gstin, '06AAAAA0000A1Z5', 'agli baar ke liye yaad');
+  });
+
+  test('verify: galat signature / doosri company -> nahi; sahi -> plan chalu, ek saal aage', async () => {
+    const body = { orderId: R.orderId, paymentId: 'pay_test_1', signature: paymentSignature(R.orderId, 'pay_test_1') };
+    assert.equal((await call('POST', '/billing/verify', R.admin, { ...body, signature: 'a'.repeat(64) })).status, 400);
+    assert.equal((await call('POST', '/billing/verify', A.admin, body)).status, 404, 'doosri company ka order');
+    assert.equal((await me()).plan, 'STARTER');
+
+    const res = await call('POST', '/billing/verify', R.admin, body);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.payment.status, 'PAID');
+    const company = await me();
+    assert.equal(company.plan, 'PROFESSIONAL');
+    assert.equal(company.subscription.status, 'ACTIVE');
+    assert.equal(company.subscription.daysLeft, YEAR_DAYS, 'payment ke din se ek saal');
+
+    assert.equal((await call('POST', '/billing/verify', R.admin, body)).status, 200, 'dobara bhejne par bhi theek');
+    assert.equal((await call('GET', '/billing/invoices', R.admin)).body.data.items.length, 1, 'par payment dobara nahi ginti');
+  });
+
+  test('invoice: usi state mein CGST + SGST, lagataar number, PDF; doosri company nahi dekh sakti', async () => {
+    const { items } = (await call('GET', '/billing/invoices', R.admin)).body.data;
+    assert.equal(items.length, 1);
+    const [invoice] = items;
+    assert.match(invoice.number, /^PR\/\d{4}-\d{2}\/0001$/);
+    assert.deepEqual([invoice.taxable, invoice.cgst, invoice.sgst, invoice.igst, invoice.total], [29988, 2698.92, 2698.92, 0, 35385.84]);
+    assert.equal(invoice.seller.gstin, '06ABCDE1234F1Z5');
+    assert.equal(invoice.buyer.gstin, '06AAAAA0000A1Z5');
+    assert.equal(invoice.buyer.name, 'Trial Co');
+    assert.equal(invoice.razorpayPaymentId, 'pay_test_1');
+
+    const pdf = await api.raw(`/billing/invoices/${invoice._id}/pdf`, { token: R.admin });
+    assert.equal(pdf.status, 200);
+    assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+    assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 4).toString(), '%PDF');
+    assert.equal((await api.raw(`/billing/invoices/${invoice._id}/pdf`, { token: A.admin })).status, 404);
+    assert.equal((await call('GET', '/billing/invoices', A.admin)).body.data.items.length, 0);
+  });
+
+  test('webhook: galat signature nahi; sahi par payment pakki (renew), doosre state mein IGST', async () => {
+    await Company.updateOne({ _id: R.companyId }, { $set: { 'subscription.paidUntil': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) } });
+    const res = await checkout({ plan: 'PROFESSIONAL', state: 'Delhi' });
+    assert.equal(res.status, 201);
+    const event = captured(res.body.data.orderId, 'pay_test_2');
+
+    assert.equal((await webhook(event, 'b'.repeat(64))).status, 400);
+    assert.equal((await me()).subscription.daysLeft, 5);
+    assert.equal((await webhook(event)).status, 200);
+    assert.equal((await me()).subscription.daysLeft, YEAR_DAYS, 'bache hue 5 din nahi judte');
+    assert.equal((await webhook(event)).status, 200, 'Razorpay dobara bheje to bhi 200');
+    assert.equal((await webhook(captured('order_kisi_aur_ka', 'pay_x'))).status, 200, 'anjaan order par chup');
+
+    const { items } = (await call('GET', '/billing/invoices', R.admin)).body.data;
+    assert.equal(items.length, 2);
+    const latest = items.find((item) => item.razorpayPaymentId === 'pay_test_2');
+    assert.match(latest.number, /\/0002$/);
+    assert.deepEqual([latest.cgst, latest.sgst, latest.igst], [0, 0, 5397.84]);
+    assert.equal(latest.buyer.gstin, undefined);
+  });
+
+  test('payment.failed webhook: order FAILED, plan par asar nahi; Super Admin ko payments dikhti hain', async () => {
+    const res = await checkout({ plan: 'PROFESSIONAL', state: 'Delhi' });
+    const failed = { event: 'payment.failed', payload: { payment: { entity: { id: 'pay_test_3', order_id: res.body.data.orderId, error_description: 'Bank declined' } } } };
+    assert.equal((await webhook(failed)).status, 200);
+
+    const detail = (await call('GET', `/companies/${R.companyId}`, superAdmin)).body.data;
+    assert.equal(detail.subscription.status, 'ACTIVE');
+    assert.deepEqual(detail.payments.map((payment) => payment.status), ['FAILED', 'PAID', 'PAID']);
+    assert.equal(detail.payments[0].failureReason, 'Bank declined');
+  });
+});
+
+describe('packages: Super Admin badalta hai (daam, staff ki hadd, features, billing ke niyam)', () => {
+  const G = {};
+  const call = (method, path, token, body) => api.call(path, { method, token, body });
+  const save = (body, token = superAdmin) => call('PUT', '/global-settings', token, body);
+  const planFrom = (res, code) => res.body.data.plans.find((plan) => plan.code === code);
+
+  test('plans bina login ke milte hain, shuruaati values ke saath', async () => {
+    const res = await api.call('/plans');
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data.plans.map((plan) => plan.code), ['FREE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE']);
+    const starter = planFrom(res, 'STARTER');
+    assert.deepEqual([starter.name, starter.monthlyPrice, starter.staffLimit], ['Starter', 999, 50]);
+    assert.deepEqual(starter.features, ['leave', 'corrections', 'payroll']);
+    assert.equal(planFrom(res, 'ENTERPRISE').monthlyPrice, null);
+    assert.deepEqual(res.body.data.billing, { months: 12, gstPercent: 18, trialDays: 30 });
+  });
+
+  test('sirf Super Admin badal sakta hai; galat values nahi chalti', async () => {
+    G.admin = await api.login('amit@gupta-traders.test');
+    assert.equal((await save({ plans: { STARTER: { monthlyPrice: 1 } } }, G.admin)).status, 403);
+    assert.equal((await save({ plans: { FREE: { monthlyPrice: 100 } } })).status, 400, 'Free ka daam nahi badalta');
+    assert.equal((await save({ plans: { STARTER: { features: ['udaan'] } } })).status, 400);
+    assert.equal((await save({ plans: { GOLD: { name: 'Gold' } } })).status, 400, 'naya code nahi');
+    assert.equal((await save({ billing: { gstPercent: 150 } })).status, 400);
+  });
+
+  test('badlav turant lagu: naam, daam + GST ka hisaab, staff ki hadd, features', async () => {
+    // Pehle Starter company mein leave ON (abhi plan mein hai)
+    assert.equal((await call('PUT', '/settings', G.admin, { settings: { leaveEnabled: true } })).status, 200);
+
+    const res = await save({
+      billing: { months: 6, gstPercent: 12, trialDays: 14 },
+      plans: { STARTER: { name: 'Basic', monthlyPrice: 1500, staffLimit: 1, features: ['corrections'] } },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.settings.plans.STARTER.name, 'Basic');
+    assert.equal(res.body.data.settings.plans.PROFESSIONAL.monthlyPrice, 2499, 'baaki plans waise hi');
+
+    const starter = planFrom(await api.call('/plans'), 'STARTER');
+    assert.deepEqual([starter.name, starter.monthlyPrice, starter.staffLimit, starter.features], ['Basic', 1500, 1, ['corrections']]);
+
+    const billing = (await call('GET', '/billing', G.admin)).body.data;
+    assert.deepEqual(billing.quotes.STARTER, { monthlyPrice: 1500, months: 6, subtotal: 9000, gstPercent: 12, gst: 1080, total: 10080 });
+    assert.equal(billing.staffLimit, 1);
+
+    const me = (await call('GET', '/auth/me', G.admin)).body.data.company;
+    assert.deepEqual([me.features, me.payrollEnabled, me.correctionsEnabled, me.leaveEnabled], [['corrections'], false, true, false]);
+    assert.equal((await call('GET', '/punch-corrections', G.admin)).status, 200);
+    const payroll = await call('GET', `/payroll?month=${month}`, G.admin);
+    assert.equal(payroll.status, 403);
+    assert.match(payroll.body.message, /Payroll is available on the Professional plan/, 'ab sabse chhota plan Professional hai');
+    assert.equal((await call('PUT', '/settings', G.admin, { settings: { leaveEnabled: true } })).status, 403, 'hata hua feature ON nahi hota');
+  });
+
+  test('staff ki nayi hadd aur naye trial ke din lagu hote hain', async () => {
+    const active = (await call('GET', '/billing', G.admin)).body.data.activeStaff;
+    const add = (n) => call('POST', '/staff', G.admin, staffBody({ email: `limit${n}@gupta-traders.test`, employeeCode: `L${n}` }));
+    if (active === 0) assert.equal((await add(1)).status, 201);
+    const blocked = await add(2);
+    assert.equal(blocked.status, 403);
+    assert.match(blocked.body.message, /up to 1 active staff/);
+
+    const owner = { companyName: 'Chaudah Din Co', name: 'Meena Shah', email: 'owner@chaudah.test', password: 'Password@1' };
+    const res = await api.call('/auth/register', { method: 'POST', body: owner });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.data.company.subscription.daysLeft, 14);
+  });
+
+  test('daam hata do (Custom) to plan online nahi bikta; hadd hata do to unlimited', async () => {
+    assert.equal((await save({ plans: { PROFESSIONAL: { monthlyPrice: null, staffLimit: null } } })).status, 200);
+    const pro = planFrom(await api.call('/plans'), 'PROFESSIONAL');
+    assert.deepEqual([pro.monthlyPrice, pro.staffLimit], [null, null]);
+    assert.equal((await call('GET', '/billing', G.admin)).body.data.quotes.PROFESSIONAL, null);
+    assert.equal((await call('POST', '/billing/checkout', G.admin, { plan: 'PROFESSIONAL', state: 'Delhi' })).status, 400);
+  });
+});
+
+describe('landing page par chuna hua plan: trial usi plan par, phir koi bhi paid plan kharid sakte hain', () => {
+  const call = (method, path, token, body) => api.call(path, { method, token, body });
+  const signUp = async (email, plan) => {
+    const res = await api.call('/auth/register', {
+      method: 'POST',
+      body: { companyName: `${email} Co`, name: 'Naya Malik', email, password: 'Password@1', ...(plan && { plan }) },
+    });
+    await User.updateOne({ email }, { $set: { emailVerified: true } });
+    return res;
+  };
+  const C = {};
+
+  test('setup: Professional ka daam wapas (pichhle test ne Custom kar diya tha), Enterprise Custom hi', async () => {
+    const res = await call('PUT', '/global-settings', superAdmin, { plans: { PROFESSIONAL: { monthlyPrice: 2499 } } });
+    assert.equal(res.status, 200);
+  });
+
+  test('plan ke saath register: trial usi plan par, uske features khule', async () => {
+    const res = await signUp('pro@chosen.test', 'PROFESSIONAL');
+    assert.equal(res.status, 201);
+    const { company } = res.body.data;
+    assert.equal(company.plan, 'PROFESSIONAL');
+    assert.equal(company.subscription.status, 'TRIAL');
+    assert.equal(company.payrollEnabled, true);
+    C.admin = await api.login('pro@chosen.test');
+    C.companyId = company._id;
+    assert.equal((await call('GET', `/payroll?month=${month}`, C.admin)).status, 200);
+  });
+
+  test('plan na ho, galat ho ya Custom daam wala ho: Free par', async () => {
+    assert.equal((await signUp('none@chosen.test')).body.data.company.plan, 'FREE');
+    assert.equal((await signUp('custom@chosen.test', 'ENTERPRISE')).body.data.company.plan, 'FREE', 'Custom plan online shuru nahi hota');
+    assert.equal((await signUp('bad@chosen.test', 'GOLD')).status, 400);
+  });
+
+  test('jisne kabhi payment nahi ki wo trial ke plan se chhota plan bhi le sakta hai; payment ke baad nahi', async () => {
+    const billing = (await call('GET', '/billing', C.admin)).body.data;
+    assert.deepEqual(billing.canChoose, { FREE: false, STARTER: true, PROFESSIONAL: true, ENTERPRISE: true });
+
+    assert.equal((await call('POST', '/billing/upgrade-request', C.admin, { plan: 'STARTER' })).status, 201);
+    await call('PATCH', `/companies/${C.companyId}/plan-request`, superAdmin, { action: 'approve' });
+    const after = (await call('GET', '/billing', C.admin)).body.data;
+    assert.equal(after.plan, 'STARTER');
+    assert.equal(after.subscription.status, 'ACTIVE');
+    assert.deepEqual(after.canChoose, { FREE: false, STARTER: true, PROFESSIONAL: true, ENTERPRISE: true }, 'ab renew ya bada plan');
+
+    // Ab Professional par jao: uske baad chhota (Starter) nahi milta.
+    await call('POST', '/billing/upgrade-request', C.admin, { plan: 'PROFESSIONAL' });
+    await call('PATCH', `/companies/${C.companyId}/plan-request`, superAdmin, { action: 'approve' });
+    assert.equal((await call('GET', '/billing', C.admin)).body.data.canChoose.STARTER, false);
+    assert.equal((await call('POST', '/billing/upgrade-request', C.admin, { plan: 'STARTER' })).status, 400);
   });
 });

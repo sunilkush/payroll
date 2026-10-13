@@ -34,9 +34,38 @@ function verifyLocation(company, { lat, lng, accuracy }) {
   return geo;
 }
 
-const buildPunch = (position, geo, meta, type) => ({
+// ---------- Offline punch (mobile app) ----------
+// Network na ho to app punch ko phone mein rakh leta hai aur baad mein bhejta hai, us waqt ke GPS aur
+// time (position.clientTime) ke saath. Phone ki ghadi par poora bharosa nahi kar sakte, isliye:
+//   - punch par offline: true ka nishaan lagta hai (admin dekh sakta hai),
+//   - time aaj ka hi hona chahiye (server ke din ke hisaab se), aage ka nahi,
+//   - aur pehle se darj punch ke baad ka. Baaki sab rules (geofence, working hours) wahi hain.
+
+const CLOCK_TOLERANCE_MS = 2 * 60 * 1000; // phone ki ghadi itni aage ho to chalta hai
+
+// Punch ka time: seedha punch par abhi ka, offline punch par phone ka bheja hua (jaanch ke baad).
+function resolvePunchTime(clientTime, date) {
+  if (!clientTime) return new Date();
+  if (clientTime.getTime() > Date.now() + CLOCK_TOLERANCE_MS) {
+    throw new ApiError(400, 'This offline punch has a time in the future. Check the date and time on your phone.');
+  }
+  if (toDateStr(clientTime) !== date) {
+    throw new ApiError(400, 'This offline punch is from another day and can no longer be saved. Ask your admin for a punch correction.');
+  }
+  return clientTime;
+}
+
+function assertAfterLastPunch(record, at) {
+  const last = record.punches?.length ? record.punches[record.punches.length - 1] : record.punchOut ?? record.punchIn;
+  if (at <= last.time) {
+    throw new ApiError(409, 'This offline punch is older than a punch that is already recorded, so it was not saved.');
+  }
+}
+
+const buildPunch = (position, geo, meta, type, at) => ({
   type,
-  time: new Date(),
+  time: at,
+  ...(position.clientTime && { offline: true, syncedAt: new Date() }),
   lat: position.lat,
   lng: position.lng,
   accuracy: position.accuracy,
@@ -251,6 +280,7 @@ export async function punchIn(user, position, meta) {
   const date = todayStr();
   const weekday = weekdayOf(date);
   const weekOffDays = company.settings?.weekOffDays ?? [0];
+  const at = resolvePunchTime(position.clientTime, date);
 
   // 1. Location verification
   let geo;
@@ -281,7 +311,7 @@ export async function punchIn(user, position, meta) {
 
     // Working hours check (agar company ne work time enable kiya ho)
     if (company.settings?.workTimeEnabled && company.settings?.workStartTime && company.settings?.workEndTime) {
-      const nowMin = minutesOfDay(new Date());
+      const nowMin = minutesOfDay(at);
       const startMin = timeToMinutes(company.settings.workStartTime);
       const endMin = timeToMinutes(company.settings.workEndTime);
 
@@ -298,7 +328,7 @@ export async function punchIn(user, position, meta) {
     }
   }
 
-  const punchEvent = buildPunch(position, geo, meta, 'IN');
+  const punchEvent = buildPunch(position, geo, meta, 'IN', at);
   let record = await Attendance.findOne({ userId: user._id, date });
 
   if (record) {
@@ -314,6 +344,7 @@ export async function punchIn(user, position, meta) {
       await recordAudit({ user, position, meta, type: 'IN', date, status: 'REJECTED', reason });
       throw new ApiError(409, reason);
     }
+    if (position.clientTime) assertAfterLastPunch(record, at);
 
     if (!record.punches || record.punches.length === 0) {
       record.punches = [{ ...record.punchIn.toObject(), type: 'IN' }];
@@ -396,6 +427,8 @@ export async function punchOut(user, position, meta) {
     await recordAudit({ user, position, meta, type: 'OUT', date, status: 'REJECTED', reason });
     throw new ApiError(409, reason);
   }
+  const at = resolvePunchTime(position.clientTime, date);
+  if (position.clientTime) assertAfterLastPunch(record, at);
 
   let geo;
   try {
@@ -405,7 +438,7 @@ export async function punchOut(user, position, meta) {
     throw err;
   }
 
-  const punchEvent = buildPunch(position, geo, meta, 'OUT');
+  const punchEvent = buildPunch(position, geo, meta, 'OUT', at);
 
   if (!record.punches || record.punches.length === 0) {
     record.punches = [{ ...record.punchIn.toObject(), type: 'IN' }];

@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { mailEnabled, sendMail } from './mailService.js';
+import { endAllSessions } from './sessionService.js';
 
 // Account ki do cheezein jo email se chalti hain: email verification (6 ank ka code) aur password reset (link).
 // Code / token database mein kabhi seedhe nahi rakhe jate, sirf unka hash.
@@ -96,4 +97,5 @@ export async function resetPassword(token, password) {
   user.emailVerified = true;
   user.emailCode = undefined;
   await user.save(); // save() se password hash hota hai
+  await endAllSessions(user._id); // mobile app ke refresh tokens bhi band
 }

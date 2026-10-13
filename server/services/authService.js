@@ -2,8 +2,11 @@ import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
 import { ApiError } from '../utils/ApiError.js';
 import { env } from '../config/env.js';
-import { COMPANY_PLANS, PLAN_FEATURES, PLAN_STAFF_LIMIT, ROLES } from '../utils/constants.js';
+import { COMPANY_PLANS, ROLES } from '../utils/constants.js';
 import { sendVerificationCode, verificationRequired } from './accountService.js';
+import { planFeatures, planOf, planStaffLimit, refreshPlans } from './planService.js';
+import { endSession, rotateSession, startSession } from './sessionService.js';
+import { SUBSCRIPTION_STATUS, subscriptionOf, trialEnd } from './subscriptionService.js';
 import { signAccessToken, verifyAccessToken } from './tokenService.js';
 
 // User aur uski company active honi chahiye. Company ki chhoti summary lautata hai
@@ -13,42 +16,74 @@ async function assertCanAccess(user) {
   if (user.role === ROLES.SUPER_ADMIN) return null;
 
   const company = await Company.findById(user.companyId).select(
-    'name isActive plan settings.leaveEnabled settings.salesEnabled settings.requireVisitPhoto'
+    'name isActive plan subscription settings.leaveEnabled settings.salesEnabled settings.requireVisitPhoto'
   );
   if (!company) throw new ApiError(403, 'Company not found.');
   if (!company.isActive) throw new ApiError(403, 'Your company is blocked. Please contact support.');
+
+  // Free trial / subscription khatam: staff ka account band rehta hai jab tak admin plan na le le.
+  // Admin login kar sakta hai, par sirf Plan & Billing khulta hai (requireSubscription middleware).
+  const subscription = subscriptionOf(company);
+  // Plan ke features / hadd Super Admin badal sakta hai: memory wali copy purani ho to taaza kar lo.
+  await refreshPlans();
+  const features = planFeatures(company.plan);
+  if (subscription.status === SUBSCRIPTION_STATUS.EXPIRED && user.role === ROLES.STAFF) {
+    // Login page field error ka message dikhata hai, isliye dono jagah poora vaakya.
+    const message = "Your company's subscription has ended, so your account is on hold. Please contact your admin.";
+    throw new ApiError(403, message, [{ field: 'subscription', message }]);
+  }
 
   return {
     _id: company._id,
     name: company.name,
     plan: company.plan,
-    staffLimit: PLAN_STAFF_LIMIT[company.plan], // null = koi hadd nahi
+    subscription, // { status: NONE | TRIAL | ACTIVE | EXPIRED, endsAt, daysLeft }
+    staffLimit: planStaffLimit(company.plan), // null = koi hadd nahi
     // Plan mein jo features hain (menu aur settings inhi se dikhte / band hote hain)
-    features: PLAN_FEATURES[company.plan],
-    payrollEnabled: PLAN_FEATURES[company.plan].includes('payroll'),
-    correctionsEnabled: PLAN_FEATURES[company.plan].includes('corrections'),
+    features,
+    payrollEnabled: features.includes('payroll'),
+    correctionsEnabled: features.includes('corrections'),
     leaveEnabled: company.settings.leaveEnabled,
     salesEnabled: company.settings.salesEnabled,
     requireVisitPhoto: company.settings.requireVisitPhoto,
   };
 }
 
-export async function login({ email, password }) {
+// Mobile app login ke saath deviceId bhejta hai: tab refresh token bhi milta hai (web ko nahi milta).
+export async function login({ email, password, deviceId, platform }) {
   const user = await User.findOne({ email }).select('+password');
   // User na mile ya password galat ho, dono mein same message (email enumeration se bachne ke liye).
   if (!user || !(await user.comparePassword(password))) {
     throw new ApiError(401, 'Incorrect email or password.');
   }
   const company = await assertCanAccess(user);
+  const refreshToken = deviceId ? await startSession(user, { deviceId, platform }) : undefined;
 
-  return { user, company, token: signAccessToken(user) };
+  return { user, company, token: signAccessToken(user), refreshToken };
+}
+
+// Mobile app: purane refresh token ke badle naya access token + naya refresh token.
+// User ya company band ho chuki ho to us phone ka session bhi khatam.
+export async function refresh(oldRefreshToken) {
+  const { session, refreshToken } = await rotateSession(oldRefreshToken);
+  const user = await User.findById(session.userId);
+  try {
+    if (!user) throw new ApiError(401, 'Your session is invalid. Please log in again.');
+    const company = await assertCanAccess(user);
+    return { user, company, token: signAccessToken(user), refreshToken };
+  } catch (err) {
+    await endSession(refreshToken);
+    throw err;
+  }
 }
 
 const fieldError = (status, field, message) => new ApiError(status, message, [{ field, message }]);
 
-// Website se free account: nayi company (FREE plan) + uska admin, aur seedha login.
+// Website se free account: nayi company (free trial ke saath) + uska admin, aur seedha login.
+// plan: landing page par chuna hua plan. Trial usi plan par chalta hai, taaki user wahi features aazma sake jo wo
+// kharidne wala hai. Sirf wahi plan chalta hai jiska daam tay hai (online bikta hai); warna Free.
 // Email poore system mein ek hi baar; company ka naam bhi (case ka fark nahi padta).
-export async function register({ companyName, name, email, phone, password }) {
+export async function register({ companyName, name, email, phone, password, plan }) {
   if (!env.allowRegistration) {
     throw new ApiError(403, 'New registrations are closed right now. Please contact us to get an account.');
   }
@@ -56,9 +91,17 @@ export async function register({ companyName, name, email, phone, password }) {
     throw fieldError(409, 'email', 'An account with this email already exists. Try logging in.');
   }
 
+  await refreshPlans();
+  const trialPlan = planOf(plan)?.monthlyPrice ? plan : COMPANY_PLANS.FREE;
+
   let company;
   try {
-    company = await Company.create({ name: companyName, plan: COMPANY_PLANS.FREE, selfRegistered: true });
+    company = await Company.create({
+      name: companyName,
+      plan: trialPlan,
+      selfRegistered: true,
+      subscription: { trialEndsAt: trialEnd() }, // free trial aaj se shuru
+    });
   } catch (err) {
     if (err.code === 11000) throw fieldError(409, 'companyName', 'A company with this name is already registered.');
     throw err;

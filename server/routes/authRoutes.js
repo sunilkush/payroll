@@ -7,6 +7,8 @@ import { validate } from '../middlewares/validate.js';
 import {
   forgotPasswordSchema,
   loginSchema,
+  pushTokenSchema,
+  refreshSchema,
   registerSchema,
   resetPasswordSchema,
   verifyEmailSchema,
@@ -34,6 +36,19 @@ const registerLimiter = rateLimit({
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);
 router.post('/register', registerLimiter, validate(registerSchema), authController.register);
 router.get('/me', auth, authController.me);
+
+// Mobile app: refresh token se naya access token, logout, aur phone ka push token.
+// Login se alag aur badi hadd: ek office ke saare phone ek hi IP se subah refresh karte hain.
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+});
+router.post('/refresh', refreshLimiter, validate(refreshSchema), authController.refresh);
+router.post('/logout', validate(refreshSchema), authController.logout);
+router.put('/push-token', auth, validate(pushTokenSchema), authController.savePushToken);
 
 // Email verification: login ke baad, 6 ank ka code. Code ka andaza lagana dheema rahe.
 const codeLimiter = rateLimit({

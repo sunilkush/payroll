@@ -1,9 +1,10 @@
 import { Company } from '../models/Company.js';
 import { ApiError } from '../utils/ApiError.js';
-import { FEATURE_LABEL, FEATURE_MIN_PLAN, PLAN_FEATURES, PLAN_LABEL, SETTING_FEATURE } from '../utils/constants.js';
+import { SETTING_FEATURE } from '../utils/constants.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { creditCompany } from './leaveService.js';
 import { refreshQrExpiry } from './meetingService.js';
+import { featureLockedMessage, planFeatures } from './planService.js';
 
 // Admin ki apni company ki settings. Company ka _id hi tenant id hai.
 
@@ -26,8 +27,8 @@ export async function updateSettings({ locations, holidays, settings }) {
 
   // Jo feature plan mein nahi hai use ON nahi kar sakte (OFF karna hamesha chalta hai).
   for (const [key, feature] of Object.entries(SETTING_FEATURE)) {
-    if (settings?.[key] === true && !PLAN_FEATURES[before.plan].includes(feature)) {
-      const message = `${FEATURE_LABEL[feature]} is available on the ${PLAN_LABEL[FEATURE_MIN_PLAN[feature]]} plan and above. Upgrade your plan to use it.`;
+    if (settings?.[key] === true && !planFeatures(before.plan).includes(feature)) {
+      const message = featureLockedMessage(feature);
       throw new ApiError(403, message, [{ field: `settings.${key}`, message }]);
     }
   }

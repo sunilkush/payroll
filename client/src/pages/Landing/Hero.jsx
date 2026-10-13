@@ -1,14 +1,15 @@
 import { ArrowRightOutlined, CheckCircleFilled, EnvironmentOutlined, TeamOutlined, WalletOutlined } from '@ant-design/icons';
 import LandingLink from './LandingLink.jsx';
 import MockScreen from './MockScreen.jsx';
+import PhoneMock from './PhoneMock.jsx';
 import Reveal from './Reveal.jsx';
 import { LINKS, TRUST } from './landingConfig.js';
 
-// Dashboard ke aas-paas tairte chhote cards (namoone ke ank)
+// Dashboard ke aas-paas tairte chhote cards: wahi ank jo neeche ke screenshot (demo company) mein dikhte hain
 const FLOATS = [
-  { className: 'hero__float--one', icon: <EnvironmentOutlined />, value: '94%', label: 'Present today' },
-  { className: 'hero__float--two', icon: <WalletOutlined />, value: '₹8.4L', label: 'Payroll this month' },
-  { className: 'hero__float--three', icon: <TeamOutlined />, value: '48', label: 'Active staff' },
+  { className: 'hero__float--one', icon: <EnvironmentOutlined />, value: '90%', label: 'Present today' },
+  { className: 'hero__float--two', icon: <WalletOutlined />, value: '₹2.56L', label: 'Payroll this month' },
+  { className: 'hero__float--three', icon: <TeamOutlined />, value: '10', label: 'Active staff' },
 ];
 
 export default function Hero() {
@@ -22,7 +23,7 @@ export default function Hero() {
           <h1 className="hero__title">Run Your Entire Workforce From One Powerful Platform</h1>
           <p className="hero__text">
             Track attendance with location, approve leave, run payroll with PF and ESI, and verify field visits — all
-            from one simple system your staff can use on their phones.
+            from one simple system, with a mobile app for your staff and admins.
           </p>
           <div className="hero__actions">
             <LandingLink href={LINKS.signup} className="landing-btn landing-btn--primary landing-btn--lg">
@@ -38,7 +39,11 @@ export default function Hero() {
         <div className="hero__visual">
           <div className="hero__glow" aria-hidden="true" />
           <div className="hero__screen">
-            <MockScreen variant="dashboard" />
+            <MockScreen variant="dashboard" eager />
+          </div>
+          {/* Dashboard ke saath mobile app: dono ek hi product hain (badi screen par hi dikhta hai) */}
+          <div className="hero__phone">
+            <PhoneMock variant="punch" />
           </div>
           {FLOATS.map((item) => (
             <div key={item.label} className={`hero__float ${item.className}`} aria-hidden="true">

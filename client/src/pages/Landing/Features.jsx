@@ -70,7 +70,7 @@ export function ProductShowcase() {
           <div className="showcase__panel" key={active}>
             <MockScreen variant={active} />
           </div>
-          <p className="showcase__note">Screens show sample data.</p>
+          <p className="showcase__note">Real screens from the app, shown with sample data.</p>
         </Reveal>
       </div>
     </section>
@@ -82,7 +82,7 @@ export function WhyChooseUs() {
     <section className="landing-section" id="why" aria-labelledby="why-title">
       <div className="landing-container why">
         <Reveal className="why__visual">
-          <MockScreen variant="attendance" compact />
+          <MockScreen variant="attendance" />
         </Reveal>
         <Reveal className="why__copy" delay={80}>
           <p className="section-head__eyebrow">Why PayRoster</p>

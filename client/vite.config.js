@@ -27,6 +27,8 @@ const pwa = VitePWA({
   },
   workbox: {
     globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+    // Landing page ke bade screenshot app ke offline cache mein nahi: login hue user ko inki zaroorat nahi.
+    globIgnores: ['**/landing-*.png'],
     maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
     // Page refresh / seedha URL par index.html; /api ko service worker kabhi nahi chhuta
     navigateFallback: '/index.html',

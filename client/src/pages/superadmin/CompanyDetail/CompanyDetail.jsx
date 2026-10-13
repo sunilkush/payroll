@@ -22,20 +22,21 @@ import UserCell from '../../../components/UserCell/UserCell.jsx';
 import { toFieldErrors } from '../../../utils/formErrors.js';
 import { formatDate } from '../../../utils/format.js';
 import { useFeedback } from '../../../utils/useFeedback.js';
+import { planOptions, usePlans } from '../../../utils/usePlans.js';
 import './CompanyDetail.css';
 
 const BACK = { to: '/superadmin/companies', label: 'Companies' };
-// Plan = kitne active staff (server ke PLAN_STAFF_LIMIT jaisa hi)
-const PLAN_OPTIONS = [
-  { value: 'FREE', label: 'Free (up to 10 staff)' },
-  { value: 'STARTER', label: 'Starter (up to 50 staff)' },
-  { value: 'PROFESSIONAL', label: 'Professional (up to 250 staff)' },
-  { value: 'ENTERPRISE', label: 'Enterprise (unlimited staff)' },
-];
+// Subscription ki aakhri tarikh <-> date field ('YYYY-MM-DD', India ke din ke hisaab se)
+const toDateInput = (date) => (date ? new Date(date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : '');
+// Us din ke aakhir tak chalta hai.
+const endOfDay = (dateInput) => `${dateInput}T23:59:59+05:30`;
+
+const SUBSCRIPTION_LABEL = { TRIAL: 'Trial till', ACTIVE: 'Paid till', EXPIRED: 'Expired' };
 const ADMIN_COLUMNS = ['Name', 'Email', 'Phone', 'Status', 'Added', 'Actions'];
 
 export default function CompanyDetail() {
   const { id } = useParams();
+  const plans = usePlans();
 
   const [data, setData] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -44,7 +45,7 @@ export default function CompanyDetail() {
   const notify = ({ type, text }) => text && toast[type](text);
   const [busy, setBusy] = useState(false);
 
-  const [details, setDetails] = useState({ name: '', address: '', plan: 'ENTERPRISE' });
+  const [details, setDetails] = useState({ name: '', address: '', plan: 'ENTERPRISE', validTill: '' });
   const [detailErrors, setDetailErrors] = useState({});
 
   // modal: null | { type: 'add' } | { type: 'reset', admin }
@@ -57,7 +58,12 @@ export default function CompanyDetail() {
     try {
       const res = await getCompanyApi(id);
       setData(res.data);
-      setDetails({ name: res.data.company.name, address: res.data.company.address, plan: res.data.company.plan });
+      setDetails({
+        name: res.data.company.name,
+        address: res.data.company.address,
+        plan: res.data.company.plan,
+        validTill: toDateInput(res.data.subscription.endsAt),
+      });
       setLoadError('');
     } catch (err) {
       setLoadError(err.message);
@@ -99,7 +105,9 @@ export default function CompanyDetail() {
   }
   if (!data) return <Loader />;
 
-  const { company, admins, staffCount } = data;
+  const { company, admins, staffCount, subscription, payments } = data;
+  // Plans ke naam aur staff ki hadd server se (Super Admin unhe Global Settings mein badalta hai)
+  const PLAN_OPTIONS = planOptions(plans.data?.plans ?? []);
 
   // Admin ki upgrade request: manzoor karte hi plan badal jata hai.
   const handlePlanRequest = async (action) => {
@@ -122,7 +130,10 @@ export default function CompanyDetail() {
     setBusy(true);
     setDetailErrors({});
     try {
-      await updateCompanyApi(id, details);
+      // Tarikh badli ho tabhi bhejte hain: bhejte hi company par us din tak ka paid period lag jata hai.
+      const { validTill, ...rest } = details;
+      const dateChanged = validTill && validTill !== toDateInput(subscription.endsAt);
+      await updateCompanyApi(id, { ...rest, ...(dateChanged && { paidUntil: endOfDay(validTill) }) });
       await load();
       notify({ type: 'success', text: 'Company details saved.' });
     } catch (err) {
@@ -188,7 +199,11 @@ export default function CompanyDetail() {
     }
   };
 
-  const unchanged = details.name === company.name && details.address === company.address && details.plan === company.plan;
+  const unchanged =
+    details.name === company.name &&
+    details.address === company.address &&
+    details.plan === company.plan &&
+    (!details.validTill || details.validTill === toDateInput(subscription.endsAt));
 
   return (
     <section className="company-detail">
@@ -203,6 +218,8 @@ export default function CompanyDetail() {
         <Alert type="warning">
           <strong>Upgrade requested:</strong> {PLAN_OPTIONS.find((option) => option.value === company.planRequest.plan)?.label} ·{' '}
           {formatDate(company.planRequest.requestedAt)}
+          {company.planRequest.amount?.total &&
+            ` · collect ₹${company.planRequest.amount.total.toLocaleString('en-IN')} (1 year, incl. ${company.planRequest.amount.gstPercent}% GST)`}
           {company.planRequest.note && ` · "${company.planRequest.note}"`}{' '}
           <Button size="sm" disabled={busy} onClick={() => handlePlanRequest('approve')}>
             Approve
@@ -224,8 +241,33 @@ export default function CompanyDetail() {
             value: `${company.settings.pfEnabled ? 'ON' : 'OFF'} / ${company.settings.esiEnabled ? 'ON' : 'OFF'}`,
           },
           { label: 'Created', value: formatDate(company.createdAt) },
+          // NONE: is company par trial / expiry ki koi rok nahi (Super Admin ki banayi ya purani company)
+          {
+            label: 'Subscription',
+            value: subscription.status === 'NONE' ? 'No expiry' : `${SUBSCRIPTION_LABEL[subscription.status]} · ${formatDate(subscription.endsAt)}`,
+          },
         ]}
       />
+
+      {payments.length > 0 && (
+        <div className="company-detail__card">
+          <h2 className="company-detail__section-title">Online Payments</h2>
+          <ul className="company-detail__payments">
+            {payments.map((payment) => (
+              <li key={payment._id}>
+                <span>
+                  {formatDate(payment.paidAt ?? payment.createdAt)} · {PLAN_OPTIONS.find((option) => option.value === payment.plan)?.label.split(' (')[0]}
+                </span>
+                <span>₹{payment.amount.total.toLocaleString('en-IN')}</span>
+                <span>
+                  {payment.status}
+                  {payment.failureReason && ` (${payment.failureReason})`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <form className="company-detail__card" onSubmit={handleDetailsSubmit} noValidate>
         <h2 className="company-detail__section-title">Company Details</h2>
@@ -253,6 +295,19 @@ export default function CompanyDetail() {
           onChange={handleDetailsChange}
           error={detailErrors.plan}
           hint={company.selfRegistered ? 'This company signed up on its own (free registration).' : 'Sets how many active staff the company can have.'}
+        />
+        <FormField
+          label="Subscription valid till"
+          name="validTill"
+          type="date"
+          value={details.validTill}
+          onChange={handleDetailsChange}
+          error={detailErrors.paidUntil}
+          hint={
+            subscription.status === 'NONE'
+              ? 'No expiry right now. Set a date to put this company on a paid period: after that day staff cannot log in until it is renewed.'
+              : 'The company and its staff can use the app till the end of this day. Move it forward to extend, or back to end it early.'
+          }
         />
         <div className="company-detail__actions">
           <Button type="submit" disabled={busy || unchanged}>

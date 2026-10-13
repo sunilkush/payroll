@@ -15,7 +15,6 @@ import {
   MEETING_OPEN_STATUSES,
   MEETING_STATUS,
   PAYROLL_STATUS,
-  PLAN_LABEL,
   PLAN_REQUEST_STATUS,
   ROLES,
 } from '../utils/constants.js';
@@ -33,6 +32,7 @@ import {
 } from '../utils/dateUtil.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { getMonthly } from './attendanceService.js';
+import { planLabel } from './planService.js';
 
 // Dashboards ke liye sirf padhne wala data: KPI (pichhle period se tulna ke saath), charts ke
 // series, aaj ki list, aane wali cheezein aur notifications. Yahan kuch likha / badla nahi jata.
@@ -471,7 +471,7 @@ export async function getNotifications(user) {
       add(
         'plan-request',
         approved ? 'success' : 'danger',
-        approved ? `Your plan is now ${PLAN_LABEL[request.plan]}` : 'Your upgrade request was not approved',
+        approved ? `Your plan is now ${planLabel(request.plan)}` : 'Your upgrade request was not approved',
         request.decisionNote || (approved ? 'The new features are ready to use.' : 'Contact us for details.'),
         '/admin/billing'
       );

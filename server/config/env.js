@@ -17,6 +17,23 @@ const toInt = (value, fallback) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
+const toNumber = (value, fallback) => {
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+// Plan ka daam: number ho to wahi; 'custom' ho to null (tay daam nahi); set hi na ho to fallback.
+const toPrice = (value, fallback) => {
+  if (value === undefined || value === '') return fallback;
+  return value.trim().toLowerCase() === 'custom' ? null : toNumber(value, fallback);
+};
+
+// Staff ki hadd: number, ya 'unlimited' (null); set hi na ho to fallback.
+const toLimit = (value, fallback) => {
+  if (value === undefined || value === '') return fallback;
+  return value.trim().toLowerCase() === 'unlimited' ? null : toInt(value, fallback);
+};
+
 // 'true'/'false' string -> boolean; set na ho to fallback
 const toBool = (value, fallback) => (value === undefined || value === '' ? fallback : value === 'true');
 
@@ -70,6 +87,8 @@ export const env = {
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+  // Mobile app ka refresh token itne din chalta hai (har refresh par ginti phir shuru hoti hai).
+  refreshTokenDays: toInt(process.env.REFRESH_TOKEN_DAYS, 30),
   // Upload hui files (visit photo, attachments) yahan rehti hain. Backup mein ise bhi shamil karo.
   uploadDir: process.env.UPLOAD_DIR ? path.resolve(serverRoot, process.env.UPLOAD_DIR) : path.join(serverRoot, 'uploads'),
   // Sales meeting ke QR token isi se bante hain. Na diya ho to JWT_SECRET se nikalta hai
@@ -105,6 +124,59 @@ export const env = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
     from: process.env.MAIL_FROM || `PayRoster <no-reply@${hostOf(clientUrls[0])}>`,
+  },
+  // Khud register karne wali company ka free trial kitne din ka.
+  trialDays: toInt(process.env.TRIAL_DAYS, 30),
+  // Trial / subscription khatam hone se kitne din pehle admin ko yaad dilana hai (bade se chhota).
+  reminderDays: (process.env.SUBSCRIPTION_REMINDER_DAYS || '15,7,1')
+    .split(',')
+    .map((days) => Number.parseInt(days, 10))
+    .filter((days) => days > 0)
+    .sort((a, b) => b - a),
+  // Plan mein kitne active staff ho sakte hain. 'unlimited' = koi hadd nahi (null).
+  planStaffLimit: {
+    FREE: toLimit(process.env.PLAN_STAFF_LIMIT_FREE, 10),
+    STARTER: toLimit(process.env.PLAN_STAFF_LIMIT_STARTER, 50),
+    PROFESSIONAL: toLimit(process.env.PLAN_STAFF_LIMIT_PROFESSIONAL, 250),
+    ENTERPRISE: toLimit(process.env.PLAN_STAFF_LIMIT_ENTERPRISE, null),
+  },
+  // Plan ka daam aur payment ka hisaab (sab .env se, code mein koi rakam nahi):
+  //   prices   rupaye / mahina, GST alag. Khali = "Custom" (online nahi bikta, sales se baat). Free hamesha 0.
+  //   months   payment ek saath itne mahino ki hoti hai (daam mahine ka dikhta hai)
+  //   gstPercent  subtotal par GST
+  billing: {
+    prices: {
+      FREE: 0,
+      STARTER: toPrice(process.env.PLAN_PRICE_STARTER, 999),
+      PROFESSIONAL: toPrice(process.env.PLAN_PRICE_PROFESSIONAL, 2499),
+      ENTERPRISE: toPrice(process.env.PLAN_PRICE_ENTERPRISE, null),
+    },
+    months: toInt(process.env.BILLING_MONTHS, 12),
+    gstPercent: toNumber(process.env.GST_PERCENT, 18),
+  },
+  // Razorpay se online payment. Key na ho to online payment band rehta hai aur purana tareeka chalta hai
+  // (admin request bhejta hai, Super Admin manzoor karta hai).
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID || '',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+  },
+  // GST invoice par bechne wale (aap) ki jaankari. state se tay hota hai CGST+SGST lagega ya IGST.
+  gst: {
+    sellerName: process.env.GST_SELLER_NAME || 'PayRoster',
+    sellerAddress: process.env.GST_SELLER_ADDRESS || '',
+    gstin: process.env.GST_SELLER_GSTIN || '',
+    state: process.env.GST_SELLER_STATE || '',
+    sac: process.env.GST_SAC || '998314',
+    invoicePrefix: process.env.INVOICE_PREFIX || 'PR',
+  },
+  // Mobile app ka version control. minVersion se purana app khulta hi nahi ("update karo" screen);
+  // khali ho to koi rok nahi. Store URLs us screen ke Update button ke liye.
+  mobileApp: {
+    minVersion: process.env.MOBILE_MIN_VERSION || '',
+    latestVersion: process.env.MOBILE_LATEST_VERSION || '',
+    androidUrl: process.env.MOBILE_ANDROID_URL || '',
+    iosUrl: process.env.MOBILE_IOS_URL || '',
   },
   superAdmin: {
     name: process.env.SUPER_ADMIN_NAME || 'Super Admin',

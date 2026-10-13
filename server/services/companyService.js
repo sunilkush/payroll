@@ -4,6 +4,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { PLAN_REQUEST_STATUS, ROLES } from '../utils/constants.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { planChange } from './billingService.js';
+import { listPayments } from './paymentService.js';
+import { subscriptionOf } from './subscriptionService.js';
 
 // Ye service sirf Super Admin routes se chalti hai (cross-company), isliye yahan
 // tenant context nahi hota aur User queries mein companyId khud dena padta hai.
@@ -99,12 +101,19 @@ export async function getCompany(id) {
     User.find({ companyId: company._id, role: ROLES.ADMIN }).sort({ createdAt: 1 }),
     User.countDocuments({ companyId: company._id, role: ROLES.STAFF }),
   ]);
-  return { company, admins, staffCount };
+  // Subscription ka haal aur online payments ka itihaas (Super Admin ke company page ke liye)
+  const payments = await listPayments(company._id);
+  return { company, admins, staffCount, subscription: subscriptionOf(company), payments };
 }
 
-export async function updateCompany(id, { plan, ...data }) {
+// trialEndsAt / paidUntil: Super Admin haath se trial ya paid period badha (ya ghata) sakta hai.
+export async function updateCompany(id, { plan, trialEndsAt, paidUntil, ...data }) {
   // Plan badle to jo settings naye plan mein nahi aati wo band ho jati hain.
   const changes = { ...data, ...(plan && planChange(plan)) };
+  if (trialEndsAt) changes['subscription.trialEndsAt'] = trialEndsAt;
+  if (paidUntil) changes['subscription.paidUntil'] = paidUntil;
+  // Date aage badhi to agle period ke reminders phir se jayein.
+  if (trialEndsAt || paidUntil) changes['subscription.remindersSent'] = [];
   const company = await Company.findByIdAndUpdate(id, { $set: changes }, { new: true, runValidators: true });
   if (!company) throw new ApiError(404, 'Company not found.');
   return company;
