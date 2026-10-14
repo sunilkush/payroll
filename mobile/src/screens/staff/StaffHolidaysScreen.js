@@ -26,6 +26,7 @@ export default function StaffHolidaysScreen({ navigation }) {
     setState((previous) => ({ ...previous, error: '' }));
     try {
       const { data } = await getHolidaysApi(year);
+      console.log('holidays', data);
       const today = todayStr();
       setState({ data: { ...data, holidays: data.holidays.map((item) => ({ ...item, past: item.date < today })) }, error: '' });
     } catch (err) {
