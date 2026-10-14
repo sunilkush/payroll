@@ -1,6 +1,7 @@
 import { Company } from '../models/Company.js';
+import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
-import { SETTING_FEATURE } from '../utils/constants.js';
+import { ROLES, SETTING_FEATURE } from '../utils/constants.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { creditCompany } from './leaveService.js';
 import { refreshQrExpiry } from './meetingService.js';
@@ -12,6 +13,40 @@ export async function getSettings() {
   const company = await Company.findById(getTenantId());
   if (!company) throw new ApiError(404, 'Company not found.');
   return company;
+}
+
+// Holidays ki branchIds aur staff ki branchId company ki locations ke _id hote hain. Is liye:
+//   - holiday mein wahi branch chal sakti hai jo locations mein hai
+//   - jo location kisi holiday ya staff ke kaam aa rahi hai use hataya nahi ja sakta (pehle unhe badlo)
+// Nayi location (bina _id) ka id save ke baad banta hai, to us par usi request mein holiday nahi lag sakti.
+async function assertBranchReferences(before, { locations, holidays }) {
+  const finalLocations = locations ?? before.locations;
+  const known = new Map(finalLocations.filter((location) => location._id).map((location) => [String(location._id), location.name]));
+  const finalHolidays = holidays ?? before.holidays;
+
+  if (locations) {
+    const removed = before.locations.filter((location) => !known.has(String(location._id)));
+    for (const location of removed) {
+      const id = String(location._id);
+      const holiday = finalHolidays.find((item) => (item.branchIds ?? []).some((branchId) => String(branchId) === id));
+      if (holiday) {
+        throw new ApiError(409, `"${location.name}" is used by the holiday "${holiday.name}" (${holiday.date}). Change that holiday first.`);
+      }
+      const staffCount = await User.countDocuments({ role: ROLES.STAFF, branchId: location._id });
+      if (staffCount) {
+        throw new ApiError(409, `${staffCount} staff ${staffCount === 1 ? 'is' : 'are'} assigned to "${location.name}". Move them to another branch first.`);
+      }
+    }
+  }
+
+  if (holidays) {
+    holidays.forEach((holiday, index) => {
+      if ((holiday.branchIds ?? []).some((branchId) => !known.has(String(branchId)))) {
+        const message = 'Choose branches from your office locations.';
+        throw new ApiError(400, message, [{ field: `holidays.${index}.branchIds`, message }]);
+      }
+    });
+  }
 }
 
 export async function updateSettings({ locations, holidays, settings }) {
@@ -32,6 +67,8 @@ export async function updateSettings({ locations, holidays, settings }) {
       throw new ApiError(403, message, [{ field: `settings.${key}`, message }]);
     }
   }
+
+  await assertBranchReferences(before, { locations, holidays });
 
   // Working time: start aur end mein se ek hi badla ho to bhi doosre (purane) ke saath jaancho.
   const workStart = settings?.workStartTime ?? before.settings.workStartTime;

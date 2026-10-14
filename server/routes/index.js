@@ -17,6 +17,7 @@ import clientRoutes from './clientRoutes.js';
 import companyRoutes from './companyRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import globalSettingsRoutes from './globalSettingsRoutes.js';
+import holidayRoutes from './holidayRoutes.js';
 import leaveRoutes from './leaveRoutes.js';
 import meetingRoutes from './meetingRoutes.js';
 import payrollRoutes from './payrollRoutes.js';
@@ -52,6 +53,8 @@ router.use('/billing', auth, tenant, authorize(ROLES.ADMIN), billingRoutes);
 // Sales meetings: company mein module ON ho tabhi (requireSales). Clients sirf admin sambhalta hai.
 router.use('/clients', auth, tenant, requireSubscription, authorize(ROLES.ADMIN), requireSales, clientRoutes);
 router.use('/meetings', auth, tenant, requireSubscription, requireSales, meetingRoutes);
+// Saal ki holidays (staff ko apni branch wali, admin ko saari). Badalna /settings se.
+router.use('/holidays', auth, tenant, requireSubscription, authorize(ROLES.ADMIN, ROLES.STAFF), holidayRoutes);
 // Teeno roles ke dashboards (sirf padhne wala data). Super Admin ke liye tenant scope khali rehta hai.
 router.use('/dashboard', auth, tenant, requireSubscription, dashboardRoutes);
 

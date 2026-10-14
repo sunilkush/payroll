@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getSettingsApi } from '../../../api/settingsApi.js';
 import { createStaffApi, getStaffApi, updateStaffApi } from '../../../api/staffApi.js';
 import Alert from '../../../components/Alert/Alert.jsx';
 import Button from '../../../components/Button/Button.jsx';
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
   pfApplicable: false,
   esiApplicable: false,
   isSalesManager: false,
+  branchId: '',
   uan: '',
   esicNo: '',
   accountNo: '',
@@ -60,6 +62,7 @@ const toForm = (staff) => ({
   pfApplicable: staff.pfApplicable,
   esiApplicable: staff.esiApplicable,
   isSalesManager: Boolean(staff.isSalesManager),
+  branchId: staff.branchId ?? '',
   uan: staff.uan ?? '',
   esicNo: staff.esicNo ?? '',
   accountNo: staff.bankDetails?.accountNo ?? '',
@@ -88,6 +91,8 @@ const toPayload = (form) => ({
   pfApplicable: form.pfApplicable,
   esiApplicable: form.esiApplicable,
   isSalesManager: form.isSalesManager,
+  // Branch wali holidays isi se lagti hain; khali = koi branch nahi
+  branchId: form.branchId || null,
   uan: form.uan,
   esicNo: form.esicNo,
   bankDetails: { accountNo: form.accountNo, ifsc: form.ifsc, bankName: form.bankName },
@@ -107,6 +112,13 @@ export default function StaffForm() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [branches, setBranches] = useState([]); // company ki office locations
+
+  useEffect(() => {
+    getSettingsApi()
+      .then((res) => setBranches(res.data.company.locations.map((location) => ({ value: location._id, label: location.name }))))
+      .catch(() => setBranches([]));
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return undefined;
@@ -197,6 +209,11 @@ export default function StaffForm() {
                 placeholder: 'e.g. Sales Executive, Team Lead, Manager',
               })}
               {field('joiningDate', 'Joining date', 'joiningDate', { type: 'date' })}
+              {branches.length > 0 &&
+                field('branchId', 'Branch', 'branchId', {
+                  options: [{ value: '', label: 'No branch' }, ...branches],
+                  hint: 'Holidays set for a branch apply only to its staff',
+                })}
               {field('password', isEdit ? 'New password' : 'Password', 'password', {
                 type: 'password',
                 required: !isEdit,

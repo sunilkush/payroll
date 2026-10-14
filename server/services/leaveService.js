@@ -6,6 +6,7 @@ import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { LEAVE_STATUS, ROLES } from '../utils/constants.js';
 import { currentMonth, datesBetween, todayStr, weekdayOf } from '../utils/dateUtil.js';
+import { holidaysFor } from '../utils/holidays.js';
 import { getTenantId } from '../utils/tenantContext.js';
 
 const MAX_RANGE_DAYS = 90;
@@ -115,7 +116,7 @@ export async function applyLeave(user, { type, fromDate, toDate, halfDay, reason
     throw new ApiError(400, `A request cannot span more than ${MAX_RANGE_DAYS} days.`);
   }
   // Week off aur holiday pehle se paid hain, isliye leave mein nahi ginte.
-  const holidays = new Set(company.holidays.map((holiday) => holiday.date));
+  const holidays = new Set(holidaysFor(company, user).map((holiday) => holiday.date));
   const workingDates = dates.filter(
     (date) => !holidays.has(date) && !company.settings.weekOffDays.includes(weekdayOf(date))
   );

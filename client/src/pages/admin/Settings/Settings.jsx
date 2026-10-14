@@ -17,7 +17,14 @@ import { useFeedback } from '../../../utils/useFeedback.js';
 import './Settings.css';
 
 const NEW_LOCATION = { name: '', lat: '', lng: '', radius: '100' };
-const NEW_HOLIDAY = { date: '', name: '' };
+const NEW_HOLIDAY = { date: '', name: '', type: 'COMPANY', branchIds: [] };
+
+// NATIONAL: har saal usi tarikh (26 Jan, 15 Aug). FESTIVAL: tarikh badalti hai. COMPANY: company ki apni chhutti.
+const HOLIDAY_TYPES = [
+  { value: 'NATIONAL', label: 'National' },
+  { value: 'FESTIVAL', label: 'Festival' },
+  { value: 'COMPANY', label: 'Company' },
+];
 
 // Server ka company object -> form state (inputs ke liye sab string).
 const toForm = (company) => ({
@@ -28,7 +35,8 @@ const toForm = (company) => ({
     lng: String(location.lng),
     radius: String(location.radius),
   })),
-  holidays: company.holidays.map(({ date, name }) => ({ date, name })),
+  // branchIds khali = saari branches
+  holidays: company.holidays.map(({ date, name, type, branchIds }) => ({ date, name, type: type ?? 'COMPANY', branchIds: branchIds ?? [] })),
   maxGpsAccuracy: String(company.settings.maxGpsAccuracy),
   weekOffDays: company.settings.weekOffDays,
   leaveEnabled: company.settings.leaveEnabled,
@@ -130,6 +138,8 @@ export default function Settings() {
   if (!form) return <Loader />;
 
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
+  // Holiday ki branches: sirf saved locations (jinka _id hai)
+  const branchOptions = form.locations.filter((location) => location._id).map((location) => ({ value: location._id, label: location.name }));
 
   // locations / holidays ki list ke helpers
   const updateItem = (list, index, changes) =>
@@ -470,11 +480,35 @@ export default function Settings() {
                 placeholder="Diwali"
                 required
               />
+              <FormField
+                label="Type"
+                name={`holiday-type-${index}`}
+                options={HOLIDAY_TYPES}
+                value={holiday.type}
+                onChange={(event) => updateItem('holidays', index, { type: event.target.value })}
+                error={fieldErrors[`holidays.${index}.type`]}
+              />
+              <FormField
+                label="Branches"
+                name={`holiday-branches-${index}`}
+                multiple
+                options={branchOptions}
+                value={holiday.branchIds}
+                placeholder="All branches"
+                onChange={(event) => updateItem('holidays', index, { branchIds: event.target.value })}
+                error={fieldErrors[`holidays.${index}.branchIds`]}
+              />
               <Button size="sm" variant="danger" onClick={() => removeItem('holidays', index)}>
                 Remove
               </Button>
             </div>
           ))}
+          {form.holidays.length > 0 && (
+            <p className="settings__help">
+              Leave Branches empty for all branches. A branch holiday applies only to staff of that branch (set the branch on each staff
+              member). Save a new office location before using it here.
+            </p>
+          )}
 
           <Button variant="secondary" onClick={() => addItem('holidays', NEW_HOLIDAY)}>
             + Add Holiday

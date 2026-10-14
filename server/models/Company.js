@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { COMPANY_PLANS, PLAN_REQUEST_STATUS } from '../utils/constants.js';
+import { HOLIDAY_TYPES } from '../utils/holidays.js';
 
 const locationSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -8,10 +9,14 @@ const locationSchema = new mongoose.Schema({
   radius: { type: Number, required: true, min: 1 }, // meters
 });
 
+// Paid holiday. branchIds: company.locations ke _id; khali = saari branches (dekho utils/holidays.js).
+// type sirf dikhane / agle saal copy karne ke liye (NATIONAL = har saal usi tarikh).
 const holidaySchema = new mongoose.Schema(
   {
     date: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
     name: { type: String, required: true, trim: true },
+    type: { type: String, enum: HOLIDAY_TYPES, default: 'COMPANY' },
+    branchIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
   },
   { _id: false }
 );

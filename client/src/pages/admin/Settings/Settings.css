@@ -73,7 +73,7 @@
   }
 
   .settings__holiday {
-    grid-template-columns: 200px minmax(0, 1fr) auto;
+    grid-template-columns: 180px minmax(0, 1fr) 140px minmax(0, 1fr) auto;
     align-items: center;
     column-gap: var(--space-4);
     margin-bottom: 0;

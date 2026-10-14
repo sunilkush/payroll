@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { HOLIDAY_TYPES } from '../utils/holidays.js';
 import { objectId, timeStr } from './common.js';
 
 const location = Joi.object({
@@ -12,6 +13,9 @@ const location = Joi.object({
 const holiday = Joi.object({
   date: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).required().label('Date'),
   name: Joi.string().trim().min(2).max(100).required().label('Holiday name'),
+  type: Joi.string().valid(...HOLIDAY_TYPES).default('COMPANY').label('Holiday type'),
+  // Khali / na ho = saari branches. Branch ka _id company ki locations mein hona chahiye (service jaanchti hai).
+  branchIds: Joi.array().items(objectId).unique().max(20).default([]).label('Branches'),
 });
 
 // Arrays poore replace hote hain. settings ke sirf bheje gaye keys badalte hain.

@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "PayRoster",
+    "slug": "payroster",
+    "scheme": "payroster",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.payroster.app"
+    },
+    "android": {
+      "package": "com.payroster.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F3F1EC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-mark.png",
+          "imageWidth": 96,
+          "backgroundColor": "#15171C"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "PayRoster uses your location only when you punch in or out or check in to a client visit, to confirm where you are."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "PayRoster uses the camera to scan the client visit QR code and to take visit photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PayRoster lets you attach a photo from your gallery to a client visit."
+        }
+      ],
+      "expo-notifications",
+      "@react-native-community/datetimepicker"
+    ]
+  }
+}

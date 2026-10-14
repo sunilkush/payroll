@@ -63,8 +63,18 @@ async function assertStaffSlot(company) {
   }
 }
 
+// Staff ki branch company ki locations mein se hi ho (holidays isi se lagti hain).
+function assertBranch(company, branchId) {
+  if (!branchId) return;
+  if (!company.locations.some((location) => String(location._id) === String(branchId))) {
+    const message = 'Choose a branch from your office locations.';
+    throw new ApiError(400, message, [{ field: 'branchId', message }]);
+  }
+}
+
 export async function createStaff(data) {
   const company = await Company.findById(getTenantId());
+  assertBranch(company, data.branchId);
   await assertStaffSlot(company);
   const staff = await User.create({ ...data, role: ROLES.STAFF });
   // Naye staff ko joining wale mahine ka leave credit turant mil jata hai
@@ -77,6 +87,7 @@ export const getStaff = (id) => findStaffOrThrow(id);
 
 export async function updateStaff(id, data) {
   const staff = await findStaffOrThrow(id);
+  if (data.branchId) assertBranch(await Company.findById(getTenantId()), data.branchId);
   staff.set(data);
   await staff.save(); // save() se password hash hota hai
   return staff;

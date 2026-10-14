@@ -30,6 +30,7 @@ import {
   weekdayOf,
   zonedTime,
 } from '../utils/dateUtil.js';
+import { holidayOn, holidaysFor } from '../utils/holidays.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { getMonthly } from './attendanceService.js';
 import { planLabel } from './planService.js';
@@ -51,8 +52,9 @@ async function getCompanyOrThrow() {
   return company;
 }
 
-function dayTypeOf(company, date) {
-  if (company.holidays.some((holiday) => holiday.date === date)) return 'HOLIDAY';
+// user do to us staff ki branch ki holiday bhi; na do (admin) to sirf saari branches wali.
+function dayTypeOf(company, date, user) {
+  if (holidayOn(company, date, user)) return 'HOLIDAY';
   return company.settings.weekOffDays.includes(weekdayOf(date)) ? 'WEEK_OFF' : 'WORKING';
 }
 
@@ -63,8 +65,9 @@ function trackedFrom(user) {
   return joining > created ? joining : created;
 }
 
-const upcomingHolidays = (company, today) =>
-  company.holidays
+// Admin: saari holidays. Staff (user diya): sirf jo uski branch par lagti hain.
+const upcomingHolidays = (company, today, user) =>
+  (user ? holidaysFor(company, user) : company.holidays)
     .filter((holiday) => holiday.date >= today)
     .map((holiday) => ({ date: holiday.date, type: 'HOLIDAY', title: holiday.name, subtitle: 'Holiday' }));
 
@@ -300,7 +303,7 @@ export async function getStaffDashboard(user) {
     company: { name: company.name, leaveEnabled: company.settings.leaveEnabled, hasLocation: company.locations.length > 0 },
     today: {
       date: today,
-      dayType: dayTypeOf(company, today),
+      dayType: dayTypeOf(company, today, user),
       punchIn: todayRecord?.punchIn.time ?? null,
       punchOut: todayRecord?.punchOut?.time ?? null,
       locationName: todayRecord?.punchIn.locationName ?? null,
@@ -347,7 +350,7 @@ export async function getStaffDashboard(user) {
         punchIn: day.punchIn?.time ?? null,
         punchOut: day.punchOut?.time ?? null,
       })),
-    upcoming: [...upcomingHolidays(company, today), ...upcomingLeaves].sort(byDate).slice(0, 6),
+    upcoming: [...upcomingHolidays(company, today, user), ...upcomingLeaves].sort(byDate).slice(0, 6),
   };
 }
 
@@ -518,7 +521,7 @@ export async function getNotifications(user) {
       : [],
     Payroll.findOne({ userId: user._id, status: PAYROLL_STATUS.FINAL, finalizedAt: { $gte: new Date(Date.now() - 2 * WEEK_MS) } }).sort({ period: -1 }),
   ]);
-  if (dayTypeOf(company, today) === 'WORKING' && company.locations.length) {
+  if (dayTypeOf(company, today, user) === 'WORKING' && company.locations.length) {
     if (!todayRecord) add('punch-in', 'warning', 'You have not punched in today', 'Open the punch screen when you reach office.', '/staff/punch');
     else if (!todayRecord.punchOut) add('punch-out', 'info', 'Remember to punch out', 'Punch out before you leave office.', '/staff/punch');
   }

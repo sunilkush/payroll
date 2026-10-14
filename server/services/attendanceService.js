@@ -6,6 +6,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { Leave } from '../models/Leave.js';
 import { ATTENDANCE_STATUS, LEAVE_STATUS, ROLES } from '../utils/constants.js';
 import { datesBetween, daysOfMonth, minutesOfDay, timeToMinutes, toDateStr, todayStr, weekdayOf } from '../utils/dateUtil.js';
+import { holidayOn, holidaysFor } from '../utils/holidays.js';
 import { getTenantId } from '../utils/tenantContext.js';
 import { checkGeofence } from './geoService.js';
 
@@ -302,7 +303,8 @@ export async function punchIn(user, position, meta) {
     }
 
     // Company holiday ke din punch block karein
-    const holiday = (company.holidays || []).find((h) => h.date === date);
+    // Sirf wahi holiday jo is staff ki branch par lagti hai
+    const holiday = holidayOn(company, date, user);
     if (holiday) {
       const reason = `Today is a paid holiday (${holiday.name}). Punch-in is not allowed.`;
       await recordAudit({ user, position, meta, type: 'IN', date, status: 'REJECTED', reason });
@@ -469,7 +471,7 @@ export async function getToday(user) {
   const weekday = weekdayOf(date);
   const weekOffDays = company.settings?.weekOffDays ?? [0];
   const isWeekOff = weekOffDays.includes(weekday);
-  const holiday = (company.holidays || []).find((h) => h.date === date);
+  const holiday = holidayOn(company, date, user);
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const weekOffDayName = isWeekOff ? dayNames[weekday] : null;
@@ -561,7 +563,7 @@ function buildMonth({ user, records, leaves, company, month }) {
   const trackedFrom = joining > created ? joining : created;
 
   const recordByDate = new Map(records.map((record) => [record.date, record]));
-  const holidayByDate = new Map(company.holidays.map((holiday) => [holiday.date, holiday.name]));
+  const holidayByDate = new Map(holidaysFor(company, user).map((holiday) => [holiday.date, holiday.name]));
   const summary = { present: 0, absent: 0, weekOff: 0, holiday: 0, leave: 0, missedPunchOut: 0 };
 
   // Working time ON ho to hi late / jaldi jaana ginte hain (purani companies ki report waisi hi rahe).
@@ -759,7 +761,8 @@ export async function getTodaySummary() {
 
   let dayType = 'WORKING';
   if (company.settings.weekOffDays.includes(weekdayOf(date))) dayType = 'WEEK_OFF';
-  if (company.holidays.some((holiday) => holiday.date === date)) dayType = 'HOLIDAY';
+  // Company-wide din: sirf saari branches wali holiday (branch ki holiday par baaki branches kaam karti hain)
+  if (holidayOn(company, date)) dayType = 'HOLIDAY';
 
   return {
     date,

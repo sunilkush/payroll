@@ -27,8 +27,9 @@ export default function FormField({
   onChange,
   ...allProps
 }) {
-  // searchable sirf Select ke liye hai; baaki controls (DOM input) tak na pahunche.
-  const { searchable, ...controlProps } = allProps;
+  // searchable / multiple sirf Select ke liye hain; baaki controls (DOM input) tak na pahunchen.
+  // multiple: kai options chune ja sakte hain, value array hoti hai.
+  const { searchable, multiple, ...controlProps } = allProps;
   const errorId = `${name}-error`;
   const common = {
     id: name,
@@ -47,6 +48,7 @@ export default function FormField({
         id={name}
         className="form-field__select"
         options={options}
+        mode={multiple ? 'multiple' : undefined}
         // '' ka apna option na ho (jaise "All") to khali maano, taaki placeholder dikhe
         value={controlProps.value === '' && !options.some((option) => option.value === '') ? undefined : controlProps.value}
         status={common.status}

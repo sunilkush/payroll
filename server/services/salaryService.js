@@ -211,6 +211,9 @@ export async function updatePayroll(id, { otherDeductions, remarks }) {
   return payroll;
 }
 
+// Mahine ki jo payroll abhi DRAFT hai unke staff (finalize par unhe slip ki notification jati hai).
+export const draftUserIds = (month) => Payroll.distinct('userId', { period: month, status: PAYROLL_STATUS.DRAFT });
+
 export async function finalizePayroll(month) {
   if (month >= currentMonth()) {
     throw new ApiError(400, 'Payroll can be finalized only after the month is over.');

@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { email, pagination, password, personName, phone } from './common.js';
+import { email, objectId, pagination, password, personName, phone } from './common.js';
 
 const money = Joi.number().min(0).max(10000000).precision(2);
 
@@ -35,6 +35,8 @@ export const createStaffSchema = Joi.object({
   pfApplicable: Joi.boolean(),
   esiApplicable: Joi.boolean(),
   isSalesManager: Joi.boolean(),
+  // Company ki kis location (branch) ka staff hai; null = koi branch nahi. Service jaanchti hai ki branch hai.
+  branchId: objectId.allow(null).label('Branch'),
   uan: digits(12, 12, 'UAN', 'UAN must be 12 digits'),
   esicNo: digits(10, 17, 'ESIC number', 'ESIC number must be 10 to 17 digits'),
   bankDetails: Joi.object({

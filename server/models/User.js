@@ -40,6 +40,8 @@ const userSchema = new mongoose.Schema(
     },
     // Sales meetings sirf isi staff ko assign hoti hain (company mein sales module ON ho tab).
     isSalesManager: { type: Boolean, default: false },
+    // Staff kis branch ka hai (company.locations ka _id). Isi se branch wali holidays lagti hain; khali = koi branch nahi.
+    branchId: { type: mongoose.Schema.Types.ObjectId, default: null },
     isActive: { type: Boolean, default: true },
     // Khud register karne wale ko email verify karni hoti hai (admin ke banaye users pehle se verified).
     emailVerified: { type: Boolean, default: true },
